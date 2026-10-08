@@ -59,9 +59,9 @@ local plr = Player
 local Root = HumanoidRootPart
 
 -- ==========================================
--- LOAD UI LIBRARY (Rayfield - Banana Style)
+-- LOAD UI LIBRARY ( - Banana Style)
 -- ==========================================
-local BananaUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/hdanhhub/UI/refs/heads/main/ui_BananaHub_final.lua"))()
+local BananaUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/x1183/Banana-Hub/main/BananaHub.lua"))()
 
 -- Theme John Doe / Banana (đỏ - đen)
 local JohnDoeBananaTheme = {
@@ -97,7 +97,7 @@ local JohnDoeBananaTheme = {
 }
 
 -- Alias để phần code phía dưới không phải sửa
-Library = Rayfield
+Library = BananaUI
 
 Window = Library:CreateWindow({
     Name = "Abysslix Hub | Banana Style",
