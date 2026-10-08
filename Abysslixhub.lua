@@ -103,13 +103,15 @@ local UIColors = {
     RowHover = Color3.fromRGB(36, 40, 46),
     Text = Color3.fromRGB(240, 244, 248),
     Muted = Color3.fromRGB(157, 163, 171),
-    Accent = Color3.fromRGB(255, 196, 62),
-    AccentDark = Color3.fromRGB(196, 135, 23),
-    Stroke = Color3.fromRGB(77, 84, 91),
+    Accent = Color3.fromRGB(255, 55, 55),
+    AccentDark = Color3.fromRGB(190, 0, 0),
+    Stroke = Color3.fromRGB(95, 16, 16),
     Header = Color3.fromRGB(27, 30, 36),
     Panel = Color3.fromRGB(18, 20, 26),
     Success = Color3.fromRGB(86, 223, 117)
 }
+
+local SIDEBAR_ICON_ID = "rbxassetid://128438943223471" -- đổi thành id ảnh của bạn nếu cần
 
 local function uiNew(className, parent, properties)
     local instance = Instance.new(className)
@@ -209,16 +211,16 @@ function OrionLib:MakeWindow(settings)
             AnchorPoint = Vector2.new(1, 0.5),
             Position = UDim2.new(1, -rightOffset, 0.5, 0),
             Size = UDim2.new(0, 24, 0, 24),
-            BackgroundColor3 = Color3.fromRGB(31, 34, 40),
+            BackgroundColor3 = Color3.fromRGB(36, 18, 18),
             BorderSizePixel = 0,
             Text = text,
-            TextColor3 = Color3.fromRGB(227, 234, 242),
+            TextColor3 = Color3.fromRGB(255, 90, 90),
             TextSize = 12,
             Font = Enum.Font.GothamBlack,
             AutoButtonColor = true
         })
         uiCorner(button, 8)
-        uiStroke(button, Color3.fromRGB(72, 76, 83), 1, 0.2)
+        uiStroke(button, Color3.fromRGB(255, 55, 55), 1, 0.2)
         return button
     end
 
@@ -247,6 +249,18 @@ function OrionLib:MakeWindow(settings)
         BackgroundTransparency = 0.5,
         BorderSizePixel = 0
     })
+
+    local sidebarIcon = uiNew("ImageLabel", sidebar, {
+        Name = "SidebarIcon",
+        Position = UDim2.new(0, 12, 0, 10),
+        Size = UDim2.new(0, 30, 0, 30),
+        BackgroundTransparency = 1,
+        Image = SIDEBAR_ICON_ID,
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
+        ScaleType = Enum.ScaleType.Fit,
+        BorderSizePixel = 0
+    })
+    uiNew("UICorner", sidebarIcon, { CornerRadius = UDim.new(0, 8) })
 
     local sidebarSearch = uiNew("TextBox", sidebar, {
         Name = "CategorySearch",
@@ -284,7 +298,7 @@ function OrionLib:MakeWindow(settings)
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ScrollBarThickness = 3,
-        ScrollBarImageColor3 = Color3.fromRGB(255, 198, 74),
+        ScrollBarImageColor3 = Color3.fromRGB(255, 55, 55),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         CanvasSize = UDim2.new(),
         VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
@@ -345,16 +359,16 @@ function OrionLib:MakeWindow(settings)
         AnchorPoint = Vector2.new(0, 1),
         Position = UDim2.new(0, 18, 1, -74),
         Size = UDim2.new(0, 46, 0, 46),
-        BackgroundColor3 = Color3.fromRGB(20, 22, 27),
+        BackgroundColor3 = Color3.fromRGB(28, 12, 12),
         BackgroundTransparency = 0.04,
         Text = "◉",
-        TextColor3 = Color3.fromRGB(255, 196, 62),
+        TextColor3 = Color3.fromRGB(255, 60, 60),
         TextSize = 16,
         Font = Enum.Font.GothamBlack,
         AutoButtonColor = true
     })
     uiCorner(floatingButton, 12)
-    uiStroke(floatingButton, Color3.fromRGB(255, 196, 62), 1.5, 0)
+    uiStroke(floatingButton, Color3.fromRGB(255, 60, 60), 1.5, 0)
 
     local window = { _ui = {
         Gui = gui,
@@ -452,7 +466,7 @@ function OrionLib:MakeWindow(settings)
         tab.Marker = uiNew("Frame", tab.Nav, {
             Size = UDim2.new(0, 3, 1, -10),
             Position = UDim2.new(0, 0, 0, 5),
-            BackgroundColor3 = Color3.fromRGB(255, 196, 62),
+            BackgroundColor3 = Color3.fromRGB(255, 55, 55),
             BorderSizePixel = 0,
             Visible = false
         })
