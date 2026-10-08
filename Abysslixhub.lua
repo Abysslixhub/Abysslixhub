@@ -61,8 +61,7 @@ local Root = HumanoidRootPart
 -- ==========================================
 -- LOAD UI LIBRARY ( - Banana Style)
 -- ==========================================
-local BananaUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/x1183/Banana-Hub/main/BananaHub.lua"))()
-
+local BananaUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/obf-x/Banana-Hub/main/BananaHub.lua"))()
 -- Theme John Doe / Banana (đỏ - đen)
 local JohnDoeBananaTheme = {
     TextColor = Color3.fromRGB(255, 255, 255),
