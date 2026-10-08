@@ -97,17 +97,17 @@ local JohnDoeBananaTheme = {
 
 local UserInputService = game:GetService("UserInputService")
 local UIColors = {
-    Background = Color3.fromRGB(15, 17, 20),
-    Sidebar = Color3.fromRGB(20, 22, 27),
-    Row = Color3.fromRGB(26, 29, 35),
-    RowHover = Color3.fromRGB(36, 40, 46),
-    Text = Color3.fromRGB(240, 244, 248),
-    Muted = Color3.fromRGB(157, 163, 171),
-    Accent = Color3.fromRGB(255, 55, 55),
-    AccentDark = Color3.fromRGB(190, 0, 0),
-    Stroke = Color3.fromRGB(95, 16, 16),
-    Header = Color3.fromRGB(27, 30, 36),
-    Panel = Color3.fromRGB(18, 20, 26),
+    Background = Color3.fromRGB(10, 14, 18),
+    Sidebar = Color3.fromRGB(14, 18, 24),
+    Row = Color3.fromRGB(20, 27, 33),
+    RowHover = Color3.fromRGB(28, 36, 44),
+    Text = Color3.fromRGB(230, 242, 255),
+    Muted = Color3.fromRGB(146, 165, 180),
+    Accent = Color3.fromRGB(52, 209, 255),
+    AccentDark = Color3.fromRGB(0, 123, 192),
+    Stroke = Color3.fromRGB(16, 69, 90),
+    Header = Color3.fromRGB(18, 22, 28),
+    Panel = Color3.fromRGB(12, 16, 22),
     Success = Color3.fromRGB(86, 223, 117)
 }
 
@@ -211,16 +211,16 @@ function OrionLib:MakeWindow(settings)
             AnchorPoint = Vector2.new(1, 0.5),
             Position = UDim2.new(1, -rightOffset, 0.5, 0),
             Size = UDim2.new(0, 24, 0, 24),
-            BackgroundColor3 = Color3.fromRGB(36, 18, 18),
+            BackgroundColor3 = Color3.fromRGB(12, 28, 34),
             BorderSizePixel = 0,
             Text = text,
-            TextColor3 = Color3.fromRGB(255, 90, 90),
+            TextColor3 = Color3.fromRGB(117, 225, 255),
             TextSize = 12,
             Font = Enum.Font.GothamBlack,
             AutoButtonColor = true
         })
         uiCorner(button, 8)
-        uiStroke(button, Color3.fromRGB(255, 55, 55), 1, 0.2)
+        uiStroke(button, Color3.fromRGB(52, 209, 255), 1, 0.2)
         return button
     end
 
@@ -359,16 +359,16 @@ function OrionLib:MakeWindow(settings)
         AnchorPoint = Vector2.new(0, 1),
         Position = UDim2.new(0, 18, 1, -74),
         Size = UDim2.new(0, 46, 0, 46),
-        BackgroundColor3 = Color3.fromRGB(28, 12, 12),
+        BackgroundColor3 = Color3.fromRGB(12, 20, 28),
         BackgroundTransparency = 0.04,
         Text = "◉",
-        TextColor3 = Color3.fromRGB(255, 60, 60),
+        TextColor3 = Color3.fromRGB(52, 209, 255),
         TextSize = 16,
         Font = Enum.Font.GothamBlack,
         AutoButtonColor = true
     })
     uiCorner(floatingButton, 12)
-    uiStroke(floatingButton, Color3.fromRGB(255, 60, 60), 1.5, 0)
+    uiStroke(floatingButton, Color3.fromRGB(52, 209, 255), 1.5, 0)
 
     local window = { _ui = {
         Gui = gui,
@@ -398,8 +398,9 @@ function OrionLib:MakeWindow(settings)
         activeTitle.Text = tab.Name
         for _, item in ipairs(window._ui.Tabs) do
             item.Page.Visible = item == tab
-            item.Nav.BackgroundColor3 = item == tab and Color3.fromRGB(30, 33, 38) or Color3.fromRGB(24, 27, 32)
+            item.Nav.BackgroundColor3 = item == tab and Color3.fromRGB(18, 38, 46) or Color3.fromRGB(17, 22, 28)
             item.Marker.Visible = item == tab
+            item.Marker.BackgroundColor3 = Color3.fromRGB(52, 209, 255)
             if item == tab then
                 item.Nav.Text = ""
             end
@@ -466,7 +467,7 @@ function OrionLib:MakeWindow(settings)
         tab.Marker = uiNew("Frame", tab.Nav, {
             Size = UDim2.new(0, 3, 1, -10),
             Position = UDim2.new(0, 0, 0, 5),
-            BackgroundColor3 = Color3.fromRGB(255, 55, 55),
+            BackgroundColor3 = Color3.fromRGB(52, 209, 255),
             BorderSizePixel = 0,
             Visible = false
         })
