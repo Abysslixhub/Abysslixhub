@@ -166,13 +166,20 @@ function OrionLib:MakeWindow(settings)
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.fromScale(0.5, 0.5),
         Size = UserInputService.TouchEnabled and UDim2.fromScale(0.94, 0.48) or UDim2.fromScale(0.82, 0.58),
-        BackgroundColor3 = UIColors.Background,
-        BackgroundTransparency = 0.04,
+        BackgroundColor3 = Color3.fromRGB(16, 18, 22),
+        BackgroundTransparency = 0.02,
         BorderSizePixel = 0,
         ClipsDescendants = true
     })
-    uiCorner(main, 8)
-    uiStroke(main, UIColors.Stroke, 1.1, 0.12)
+    local mainGradient = uiNew("UIGradient", main, {
+        Rotation = 90,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 20, 25)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 12, 15))
+        })
+    })
+    uiCorner(main, 10)
+    uiStroke(main, Color3.fromRGB(68, 72, 80), 1.1, 0.12)
     uiNew("UISizeConstraint", main, {
         MinSize = Vector2.new(420, 300),
         MaxSize = Vector2.new(1040, 720)
@@ -180,37 +187,49 @@ function OrionLib:MakeWindow(settings)
 
     local header = uiNew("Frame", main, {
         Name = "Header",
-        Size = UDim2.new(1, 0, 0, 36),
-        BackgroundColor3 = UIColors.Header,
+        Size = UDim2.new(1, 0, 0, 42),
+        BackgroundColor3 = Color3.fromRGB(20, 23, 28),
+        BorderSizePixel = 0
+    })
+    local headerLine = uiNew("Frame", header, {
+        Position = UDim2.new(0, 0, 1, -1),
+        Size = UDim2.new(1, 0, 0, 1),
+        BackgroundColor3 = Color3.fromRGB(43, 48, 55),
         BorderSizePixel = 0
     })
     uiText(header, settings.Name or "Banana Cat Hub - Blox Fruit", 13, UIColors.Text, {
-        Position = UDim2.new(0, 12, 0, 0),
-        Size = UDim2.new(1, -88, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, 0, 1, 0),
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Center
     })
 
-    local function headerButton(text, xOffset)
+    local function headerButton(text, rightOffset)
         local button = uiNew("TextButton", header, {
-            AnchorPoint = Vector2.new(1, 0),
-            Position = UDim2.new(1, xOffset, 0, 0),
-            Size = UDim2.new(0, 34, 1, 0),
-            BackgroundTransparency = 1,
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, -rightOffset, 0.5, 0),
+            Size = UDim2.new(0, 24, 0, 24),
+            BackgroundColor3 = Color3.fromRGB(31, 34, 40),
+            BorderSizePixel = 0,
             Text = text,
-            TextColor3 = Color3.fromRGB(14, 25, 14),
-            TextSize = 19,
-            Font = Enum.Font.GothamMedium,
+            TextColor3 = Color3.fromRGB(227, 234, 242),
+            TextSize = 12,
+            Font = Enum.Font.GothamBlack,
             AutoButtonColor = true
         })
+        uiCorner(button, 8)
+        uiStroke(button, Color3.fromRGB(72, 76, 83), 1, 0.2)
         return button
     end
 
-    local minimizeButton = headerButton("−", -34)
-    local closeButton = headerButton("×", 0)
+    local homeButton = headerButton("⌂", 144)
+    local menuButton = headerButton("☰", 116)
+    local infoButton = headerButton("◉", 88)
+    local minimizeButton = headerButton("−", 30)
+    local closeButton = headerButton("×", 4)
     local body = uiNew("Frame", main, {
-        Position = UDim2.new(0, 0, 0, 34),
-        Size = UDim2.new(1, 0, 1, -34),
+        Position = UDim2.new(0, 0, 0, 42),
+        Size = UDim2.new(1, 0, 1, -42),
         BackgroundTransparency = 1
     })
 
@@ -231,9 +250,9 @@ function OrionLib:MakeWindow(settings)
 
     local sidebarSearch = uiNew("TextBox", sidebar, {
         Name = "CategorySearch",
-        Position = UDim2.new(0, 8, 0, 8),
-        Size = UDim2.new(1, -16, 0, 32),
-        BackgroundColor3 = UIColors.Row,
+        Position = UDim2.new(0, 10, 0, 10),
+        Size = UDim2.new(1, -20, 0, 28),
+        BackgroundColor3 = Color3.fromRGB(28, 31, 36),
         BorderSizePixel = 0,
         ClearTextOnFocus = false,
         PlaceholderText = "Search section or function...",
@@ -244,22 +263,31 @@ function OrionLib:MakeWindow(settings)
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left
     })
-    uiCorner(sidebarSearch, 4)
+    uiCorner(sidebarSearch, 6)
+    uiStroke(sidebarSearch, Color3.fromRGB(62, 67, 74), 1, 0.2)
     uiNew("UIPadding", sidebarSearch, {
-        PaddingLeft = UDim.new(0, 9),
-        PaddingRight = UDim.new(0, 6)
+        PaddingLeft = UDim.new(0, 28),
+        PaddingRight = UDim.new(0, 8)
+    })
+    local searchIcon = uiText(sidebarSearch, "⌕", 13, Color3.fromRGB(171, 178, 186), {
+        Position = UDim2.new(0, 8, 0, 0),
+        Size = UDim2.new(0, 16, 1, 0),
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Center,
+        ZIndex = 2
     })
 
     local navigation = uiNew("ScrollingFrame", sidebar, {
         Name = "Navigation",
-        Position = UDim2.new(0, 5, 0, 47),
-        Size = UDim2.new(1, -10, 1, -52),
+        Position = UDim2.new(0, 6, 0, 48),
+        Size = UDim2.new(1, -12, 1, -54),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ScrollBarThickness = 3,
-        ScrollBarImageColor3 = UIColors.Accent,
+        ScrollBarImageColor3 = Color3.fromRGB(255, 198, 74),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        CanvasSize = UDim2.new()
+        CanvasSize = UDim2.new(),
+        VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
     })
     uiNew("UIListLayout", navigation, {
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -317,16 +345,16 @@ function OrionLib:MakeWindow(settings)
         AnchorPoint = Vector2.new(0, 1),
         Position = UDim2.new(0, 18, 1, -74),
         Size = UDim2.new(0, 46, 0, 46),
-        BackgroundColor3 = UIColors.Background,
+        BackgroundColor3 = Color3.fromRGB(20, 22, 27),
         BackgroundTransparency = 0.04,
-        Text = "B",
-        TextColor3 = UIColors.Accent,
-        TextSize = 18,
+        Text = "◉",
+        TextColor3 = Color3.fromRGB(255, 196, 62),
+        TextSize = 16,
         Font = Enum.Font.GothamBlack,
         AutoButtonColor = true
     })
     uiCorner(floatingButton, 12)
-    uiStroke(floatingButton, UIColors.Accent, 1.5, 0)
+    uiStroke(floatingButton, Color3.fromRGB(255, 196, 62), 1.5, 0)
 
     local window = { _ui = {
         Gui = gui,
@@ -356,8 +384,11 @@ function OrionLib:MakeWindow(settings)
         activeTitle.Text = tab.Name
         for _, item in ipairs(window._ui.Tabs) do
             item.Page.Visible = item == tab
-            item.Nav.BackgroundColor3 = item == tab and UIColors.RowHover or UIColors.Sidebar
+            item.Nav.BackgroundColor3 = item == tab and Color3.fromRGB(30, 33, 38) or Color3.fromRGB(24, 27, 32)
             item.Marker.Visible = item == tab
+            if item == tab then
+                item.Nav.Text = ""
+            end
         end
         applySearch(tab)
     end
@@ -409,7 +440,7 @@ function OrionLib:MakeWindow(settings)
         tab.Nav = uiNew("TextButton", navigation, {
             Name = "Nav_" .. tabName,
             Size = UDim2.new(1, -4, 0, 32),
-            BackgroundColor3 = UIColors.Sidebar,
+            BackgroundColor3 = Color3.fromRGB(24, 27, 32),
             BackgroundTransparency = 0.04,
             BorderSizePixel = 0,
             Text = "",
@@ -417,17 +448,19 @@ function OrionLib:MakeWindow(settings)
             LayoutOrder = #window._ui.Tabs + 1
         })
         uiCorner(tab.Nav, 5)
+        uiStroke(tab.Nav, Color3.fromRGB(55, 61, 68), 1, 0.18)
         tab.Marker = uiNew("Frame", tab.Nav, {
             Size = UDim2.new(0, 3, 1, -10),
             Position = UDim2.new(0, 0, 0, 5),
-            BackgroundColor3 = UIColors.Accent,
+            BackgroundColor3 = Color3.fromRGB(255, 196, 62),
             BorderSizePixel = 0,
             Visible = false
         })
         uiText(tab.Nav, tabName, 11, UIColors.Text, {
             Position = UDim2.new(0, 12, 0, 0),
             Size = UDim2.new(1, -18, 1, 0),
-            Font = Enum.Font.GothamMedium
+            Font = Enum.Font.GothamMedium,
+            TextXAlignment = Enum.TextXAlignment.Left
         })
         tab.Page = uiNew("ScrollingFrame", pages, {
             Name = "Page_" .. tabName,
