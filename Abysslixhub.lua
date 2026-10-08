@@ -97,18 +97,18 @@ local JohnDoeBananaTheme = {
 
 local UserInputService = game:GetService("UserInputService")
 local UIColors = {
-    Background = Color3.fromRGB(10, 14, 18),
-    Sidebar = Color3.fromRGB(14, 18, 24),
-    Row = Color3.fromRGB(20, 27, 33),
-    RowHover = Color3.fromRGB(28, 36, 44),
-    Text = Color3.fromRGB(230, 242, 255),
-    Muted = Color3.fromRGB(146, 165, 180),
-    Accent = Color3.fromRGB(52, 209, 255),
-    AccentDark = Color3.fromRGB(0, 123, 192),
-    Stroke = Color3.fromRGB(16, 69, 90),
-    Header = Color3.fromRGB(18, 22, 28),
-    Panel = Color3.fromRGB(12, 16, 22),
-    Success = Color3.fromRGB(86, 223, 117)
+    Background = Color3.fromRGB(12, 12, 14),
+    Sidebar = Color3.fromRGB(18, 14, 14),
+    Row = Color3.fromRGB(28, 20, 20),
+    RowHover = Color3.fromRGB(38, 24, 24),
+    Text = Color3.fromRGB(245, 245, 245),
+    Muted = Color3.fromRGB(180, 150, 150),
+    Accent = Color3.fromRGB(255, 40, 40),
+    AccentDark = Color3.fromRGB(180, 0, 0),
+    Stroke = Color3.fromRGB(95, 0, 0),
+    Header = Color3.fromRGB(24, 16, 16),
+    Panel = Color3.fromRGB(18, 12, 12),
+    Success = Color3.fromRGB(90, 240, 150)
 }
 
 local SIDEBAR_ICON_ID = "rbxassetid://128438943223471" -- đổi thành id ảnh của bạn nếu cần
@@ -168,7 +168,7 @@ function OrionLib:MakeWindow(settings)
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.fromScale(0.5, 0.5),
         Size = UserInputService.TouchEnabled and UDim2.fromScale(0.94, 0.48) or UDim2.fromScale(0.82, 0.58),
-        BackgroundColor3 = Color3.fromRGB(16, 18, 22),
+        BackgroundColor3 = Color3.fromRGB(12, 12, 12),
         BackgroundTransparency = 0.02,
         BorderSizePixel = 0,
         ClipsDescendants = true
@@ -176,12 +176,12 @@ function OrionLib:MakeWindow(settings)
     local mainGradient = uiNew("UIGradient", main, {
         Rotation = 90,
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 20, 25)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 12, 15))
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 14, 14)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(9, 9, 10))
         })
     })
     uiCorner(main, 10)
-    uiStroke(main, Color3.fromRGB(68, 72, 80), 1.1, 0.12)
+    uiStroke(main, Color3.fromRGB(255, 30, 30), 1.2, 0.15)
     uiNew("UISizeConstraint", main, {
         MinSize = Vector2.new(420, 300),
         MaxSize = Vector2.new(1040, 720)
@@ -190,13 +190,13 @@ function OrionLib:MakeWindow(settings)
     local header = uiNew("Frame", main, {
         Name = "Header",
         Size = UDim2.new(1, 0, 0, 42),
-        BackgroundColor3 = Color3.fromRGB(20, 23, 28),
+        BackgroundColor3 = Color3.fromRGB(22, 14, 14),
         BorderSizePixel = 0
     })
     local headerLine = uiNew("Frame", header, {
         Position = UDim2.new(0, 0, 1, -1),
         Size = UDim2.new(1, 0, 0, 1),
-        BackgroundColor3 = Color3.fromRGB(43, 48, 55),
+        BackgroundColor3 = Color3.fromRGB(255, 35, 35),
         BorderSizePixel = 0
     })
     uiText(header, settings.Name or "Banana Cat Hub - Blox Fruit", 13, UIColors.Text, {
@@ -211,16 +211,16 @@ function OrionLib:MakeWindow(settings)
             AnchorPoint = Vector2.new(1, 0.5),
             Position = UDim2.new(1, -rightOffset, 0.5, 0),
             Size = UDim2.new(0, 24, 0, 24),
-            BackgroundColor3 = Color3.fromRGB(12, 28, 34),
+            BackgroundColor3 = Color3.fromRGB(32, 18, 18),
             BorderSizePixel = 0,
             Text = text,
-            TextColor3 = Color3.fromRGB(117, 225, 255),
+            TextColor3 = Color3.fromRGB(255, 110, 110),
             TextSize = 12,
             Font = Enum.Font.GothamBlack,
             AutoButtonColor = true
         })
         uiCorner(button, 8)
-        uiStroke(button, Color3.fromRGB(52, 209, 255), 1, 0.2)
+        uiStroke(button, Color3.fromRGB(255, 55, 55), 1, 0.2)
         return button
     end
 
@@ -467,7 +467,7 @@ function OrionLib:MakeWindow(settings)
         tab.Marker = uiNew("Frame", tab.Nav, {
             Size = UDim2.new(0, 3, 1, -10),
             Position = UDim2.new(0, 0, 0, 5),
-            BackgroundColor3 = Color3.fromRGB(52, 209, 255),
+            BackgroundColor3 = Color3.fromRGB(255, 55, 55),
             BorderSizePixel = 0,
             Visible = false
         })
@@ -798,29 +798,66 @@ function OrionLib:MakeNotification(options)
     local ui = Window and Window._ui
     if not ui then return end
     options = options or {}
+
     local notification = uiNew("Frame", ui.Gui, {
         AnchorPoint = Vector2.new(1, 0),
-        Position = UDim2.new(1, -16, 0, 16),
-        Size = UDim2.new(0, 270, 0, 62),
-        BackgroundColor3 = UIColors.Row,
-        BackgroundTransparency = 0.04,
+        Position = UDim2.new(1, -18, 0, 18),
+        Size = UDim2.new(0, 286, 0, 72),
+        BackgroundColor3 = Color3.fromRGB(20, 16, 16),
         BorderSizePixel = 0,
         ZIndex = 50
     })
-    uiCorner(notification, 5)
-    uiStroke(notification, UIColors.Accent, 1, 0.25)
-    uiText(notification, options.Name or "Abysslix Hub", 12, UIColors.Accent, {
-        Position = UDim2.new(0, 11, 0, 6),
-        Size = UDim2.new(1, -20, 0, 19),
+    uiCorner(notification, 8)
+    uiStroke(notification, Color3.fromRGB(255, 60, 60), 1.3, 0)
+
+    local glow = uiNew("Frame", notification, {
+        Size = UDim2.new(1, 0, 0, 3),
+        BackgroundColor3 = Color3.fromRGB(255, 70, 70),
+        BorderSizePixel = 0,
+        ZIndex = 51
+    })
+    uiCorner(glow, 4)
+
+    local icon = uiNew("ImageLabel", notification, {
+        Position = UDim2.new(0, 12, 0, 16),
+        Size = UDim2.new(0, 22, 0, 22),
+        BackgroundTransparency = 1,
+        Image = HUB_ICON,
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
+        ScaleType = Enum.ScaleType.Fit,
+        ZIndex = 51
+    })
+
+    uiText(notification, options.Name or "Abysslix Hub", 12, Color3.fromRGB(255, 140, 140), {
+        Position = UDim2.new(0, 44, 0, 10),
+        Size = UDim2.new(1, -56, 0, 18),
         Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 51
     })
-    uiText(notification, options.Content or "", 10, UIColors.Text, {
-        Position = UDim2.new(0, 11, 0, 27),
-        Size = UDim2.new(1, -20, 0, 27),
+    uiText(notification, options.Content or "", 10, Color3.fromRGB(245, 245, 245), {
+        Position = UDim2.new(0, 44, 0, 32),
+        Size = UDim2.new(1, -56, 0, 24),
         TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 51
     })
+
+    local closeBtn = uiNew("TextButton", notification, {
+        Position = UDim2.new(1, -18, 0, 8),
+        Size = UDim2.new(0, 12, 0, 12),
+        BackgroundTransparency = 1,
+        Text = "×",
+        TextColor3 = Color3.fromRGB(255, 120, 120),
+        TextSize = 11,
+        Font = Enum.Font.GothamBold,
+        AutoButtonColor = false,
+        ZIndex = 52
+    })
+    closeBtn.Activated:Connect(function()
+        if notification.Parent then notification:Destroy() end
+    end)
+
     task.delay(tonumber(options.Time) or 4, function()
         if notification.Parent then notification:Destroy() end
     end)
