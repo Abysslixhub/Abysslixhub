@@ -97,15 +97,18 @@ local JohnDoeBananaTheme = {
 
 local UserInputService = game:GetService("UserInputService")
 local UIColors = {
-    Background = Color3.fromRGB(13, 15, 18),
-    Sidebar = Color3.fromRGB(18, 20, 24),
-    Row = Color3.fromRGB(23, 25, 29),
-    RowHover = Color3.fromRGB(32, 36, 39),
-    Text = Color3.fromRGB(242, 244, 239),
-    Muted = Color3.fromRGB(157, 164, 159),
-    Accent = Color3.fromRGB(91, 224, 50),
-    AccentDark = Color3.fromRGB(35, 123, 34),
-    Stroke = Color3.fromRGB(83, 87, 74)
+    Background = Color3.fromRGB(15, 17, 20),
+    Sidebar = Color3.fromRGB(20, 22, 27),
+    Row = Color3.fromRGB(26, 29, 35),
+    RowHover = Color3.fromRGB(36, 40, 46),
+    Text = Color3.fromRGB(240, 244, 248),
+    Muted = Color3.fromRGB(157, 163, 171),
+    Accent = Color3.fromRGB(255, 196, 62),
+    AccentDark = Color3.fromRGB(196, 135, 23),
+    Stroke = Color3.fromRGB(77, 84, 91),
+    Header = Color3.fromRGB(27, 30, 36),
+    Panel = Color3.fromRGB(18, 20, 26),
+    Success = Color3.fromRGB(86, 223, 117)
 }
 
 local function uiNew(className, parent, properties)
@@ -164,24 +167,24 @@ function OrionLib:MakeWindow(settings)
         Position = UDim2.fromScale(0.5, 0.5),
         Size = UserInputService.TouchEnabled and UDim2.fromScale(0.94, 0.48) or UDim2.fromScale(0.82, 0.58),
         BackgroundColor3 = UIColors.Background,
-        BackgroundTransparency = 0.08,
+        BackgroundTransparency = 0.04,
         BorderSizePixel = 0,
         ClipsDescendants = true
     })
-    uiCorner(main, 6)
-    uiStroke(main, UIColors.Stroke, 1.2, 0.08)
+    uiCorner(main, 8)
+    uiStroke(main, UIColors.Stroke, 1.1, 0.12)
     uiNew("UISizeConstraint", main, {
-        MinSize = Vector2.new(310, 270),
-        MaxSize = Vector2.new(940, 620)
+        MinSize = Vector2.new(420, 300),
+        MaxSize = Vector2.new(1040, 720)
     })
 
     local header = uiNew("Frame", main, {
         Name = "Header",
-        Size = UDim2.new(1, 0, 0, 34),
-        BackgroundColor3 = UIColors.Accent,
+        Size = UDim2.new(1, 0, 0, 36),
+        BackgroundColor3 = UIColors.Header,
         BorderSizePixel = 0
     })
-    uiText(header, settings.Name or "Banana Cat Hub - Blox Fruit", 13, Color3.fromRGB(12, 22, 12), {
+    uiText(header, settings.Name or "Banana Cat Hub - Blox Fruit", 13, UIColors.Text, {
         Position = UDim2.new(0, 12, 0, 0),
         Size = UDim2.new(1, -88, 1, 0),
         Font = Enum.Font.GothamBold,
@@ -213,16 +216,16 @@ function OrionLib:MakeWindow(settings)
 
     local sidebar = uiNew("Frame", body, {
         Name = "Sidebar",
-        Size = UDim2.new(0.32, 0, 1, 0),
+        Size = UDim2.new(0.34, 0, 1, 0),
         BackgroundColor3 = UIColors.Sidebar,
-        BackgroundTransparency = 0.03,
+        BackgroundTransparency = 0.02,
         BorderSizePixel = 0
     })
     uiNew("Frame", sidebar, {
         Position = UDim2.new(1, -1, 0, 0),
         Size = UDim2.new(0, 1, 1, 0),
         BackgroundColor3 = UIColors.Stroke,
-        BackgroundTransparency = 0.45,
+        BackgroundTransparency = 0.5,
         BorderSizePixel = 0
     })
 
@@ -265,8 +268,8 @@ function OrionLib:MakeWindow(settings)
 
     local content = uiNew("Frame", body, {
         Name = "Content",
-        Position = UDim2.new(0.32, 1, 0, 0),
-        Size = UDim2.new(0.68, -1, 1, 0),
+        Position = UDim2.new(0.34, 1, 0, 0),
+        Size = UDim2.new(0.66, -1, 1, 0),
         BackgroundTransparency = 1
     })
     local contentHeader = uiNew("Frame", content, {
@@ -312,17 +315,17 @@ function OrionLib:MakeWindow(settings)
     local floatingButton = uiNew("TextButton", gui, {
         Name = "OpenButton",
         AnchorPoint = Vector2.new(0, 1),
-        Position = UDim2.new(0, 16, 1, -70),
-        Size = UDim2.new(0, 42, 0, 42),
+        Position = UDim2.new(0, 18, 1, -74),
+        Size = UDim2.new(0, 46, 0, 46),
         BackgroundColor3 = UIColors.Background,
-        BackgroundTransparency = 0.05,
+        BackgroundTransparency = 0.04,
         Text = "B",
         TextColor3 = UIColors.Accent,
-        TextSize = 20,
+        TextSize = 18,
         Font = Enum.Font.GothamBlack,
         AutoButtonColor = true
     })
-    uiCorner(floatingButton, 10)
+    uiCorner(floatingButton, 12)
     uiStroke(floatingButton, UIColors.Accent, 1.5, 0)
 
     local window = { _ui = {
@@ -405,14 +408,15 @@ function OrionLib:MakeWindow(settings)
         local tab = { Name = tabName, Rows = {} }
         tab.Nav = uiNew("TextButton", navigation, {
             Name = "Nav_" .. tabName,
-            Size = UDim2.new(1, -4, 0, 31),
+            Size = UDim2.new(1, -4, 0, 32),
             BackgroundColor3 = UIColors.Sidebar,
-            BackgroundTransparency = 0.05,
+            BackgroundTransparency = 0.04,
             BorderSizePixel = 0,
             Text = "",
             AutoButtonColor = false,
             LayoutOrder = #window._ui.Tabs + 1
         })
+        uiCorner(tab.Nav, 5)
         tab.Marker = uiNew("Frame", tab.Nav, {
             Size = UDim2.new(0, 3, 1, -10),
             Position = UDim2.new(0, 0, 0, 5),
@@ -430,7 +434,7 @@ function OrionLib:MakeWindow(settings)
             Size = UDim2.fromScale(1, 1),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
-            ScrollBarThickness = 3,
+            ScrollBarThickness = 4,
             ScrollBarImageColor3 = UIColors.Accent,
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             CanvasSize = UDim2.new(),
@@ -724,12 +728,12 @@ addTabRow = function(tab, height, kind, searchText)
     local row = uiNew("Frame", tab.Page, {
         Size = UDim2.new(1, 0, 0, height),
         BackgroundColor3 = kind == "Section" and UIColors.Background or UIColors.Row,
-        BackgroundTransparency = kind == "Section" and 1 or 0.08,
+        BackgroundTransparency = kind == "Section" and 1 or 0.04,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         LayoutOrder = #tab.Rows + 1
     })
-    if kind ~= "Section" then uiCorner(row, 3) end
+    if kind ~= "Section" then uiCorner(row, 5) end
     table.insert(tab.Rows, {
         Instance = row,
         Kind = kind,
