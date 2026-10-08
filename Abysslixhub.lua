@@ -61,7 +61,7 @@ local Root = HumanoidRootPart
 -- ==========================================
 -- LOAD UI LIBRARY ( - Banana Style)
 -- ==========================================
-local BananaUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/obf-x/Banana-Hub/main/BananaHub.lua"))()
+local OrionLib = {}
 -- Theme John Doe / Banana (đỏ - đen)
 local JohnDoeBananaTheme = {
     TextColor = Color3.fromRGB(255, 255, 255),
@@ -95,22 +95,697 @@ local JohnDoeBananaTheme = {
     PlaceholderColor = Color3.fromRGB(150, 100, 100)
 }
 
--- Alias để phần code phía dưới không phải sửa
-Library = BananaUI
+local UserInputService = game:GetService("UserInputService")
+local UIColors = {
+    Background = Color3.fromRGB(13, 15, 18),
+    Sidebar = Color3.fromRGB(18, 20, 24),
+    Row = Color3.fromRGB(23, 25, 29),
+    RowHover = Color3.fromRGB(32, 36, 39),
+    Text = Color3.fromRGB(242, 244, 239),
+    Muted = Color3.fromRGB(157, 164, 159),
+    Accent = Color3.fromRGB(91, 224, 50),
+    AccentDark = Color3.fromRGB(35, 123, 34),
+    Stroke = Color3.fromRGB(83, 87, 74)
+}
 
-Window = Library:CreateWindow({
-    Name = "Abysslix Hub | Banana Style",
-    LoadingTitle = "Đang khởi động Abysslix Hub...",
-    LoadingSubtitle = "by Abysslix",
-    Theme = JohnDoeBananaTheme,
-    Image = "rbxassetid://128438943223471",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "AbysslixHubConfig",
-        FileName = "MainConfig"
-    },
-    KeySystem = false
-})
+local function uiNew(className, parent, properties)
+    local instance = Instance.new(className)
+    for property, value in pairs(properties or {}) do
+        instance[property] = value
+    end
+    instance.Parent = parent
+    return instance
+end
+
+local function uiCorner(instance, radius)
+    uiNew("UICorner", instance, { CornerRadius = UDim.new(0, radius or 4) })
+end
+
+local function uiStroke(instance, color, thickness, transparency)
+    return uiNew("UIStroke", instance, {
+        Color = color or UIColors.Stroke,
+        Thickness = thickness or 1,
+        Transparency = transparency or 0.25
+    })
+end
+
+local function uiText(parent, text, size, color, properties)
+    properties = properties or {}
+    properties.BackgroundTransparency = 1
+    properties.Font = properties.Font or Enum.Font.Gotham
+    properties.Text = tostring(text or "")
+    properties.TextSize = size or 12
+    properties.TextColor3 = color or UIColors.Text
+    properties.TextXAlignment = properties.TextXAlignment or Enum.TextXAlignment.Left
+    properties.TextYAlignment = properties.TextYAlignment or Enum.TextYAlignment.Center
+    return uiNew("TextLabel", parent, properties)
+end
+
+local addTabRow
+
+function OrionLib:MakeWindow(settings)
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "AbysslixBananaUI"
+    gui.ResetOnSpawn = false
+    gui.IgnoreGuiInset = true
+    gui.DisplayOrder = 9999
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    local guiParent = PlayerGui
+    if type(gethui) == "function" then
+        local ok, hiddenGui = pcall(gethui)
+        if ok and hiddenGui then guiParent = hiddenGui end
+    end
+    gui.Parent = guiParent
+
+    local main = uiNew("Frame", gui, {
+        Name = "Main",
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.fromScale(0.5, 0.5),
+        Size = UserInputService.TouchEnabled and UDim2.fromScale(0.94, 0.48) or UDim2.fromScale(0.82, 0.58),
+        BackgroundColor3 = UIColors.Background,
+        BackgroundTransparency = 0.08,
+        BorderSizePixel = 0,
+        ClipsDescendants = true
+    })
+    uiCorner(main, 6)
+    uiStroke(main, UIColors.Stroke, 1.2, 0.08)
+    uiNew("UISizeConstraint", main, {
+        MinSize = Vector2.new(310, 270),
+        MaxSize = Vector2.new(940, 620)
+    })
+
+    local header = uiNew("Frame", main, {
+        Name = "Header",
+        Size = UDim2.new(1, 0, 0, 34),
+        BackgroundColor3 = UIColors.Accent,
+        BorderSizePixel = 0
+    })
+    uiText(header, settings.Name or "Banana Cat Hub - Blox Fruit", 13, Color3.fromRGB(12, 22, 12), {
+        Position = UDim2.new(0, 12, 0, 0),
+        Size = UDim2.new(1, -88, 1, 0),
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Center
+    })
+
+    local function headerButton(text, xOffset)
+        local button = uiNew("TextButton", header, {
+            AnchorPoint = Vector2.new(1, 0),
+            Position = UDim2.new(1, xOffset, 0, 0),
+            Size = UDim2.new(0, 34, 1, 0),
+            BackgroundTransparency = 1,
+            Text = text,
+            TextColor3 = Color3.fromRGB(14, 25, 14),
+            TextSize = 19,
+            Font = Enum.Font.GothamMedium,
+            AutoButtonColor = true
+        })
+        return button
+    end
+
+    local minimizeButton = headerButton("−", -34)
+    local closeButton = headerButton("×", 0)
+    local body = uiNew("Frame", main, {
+        Position = UDim2.new(0, 0, 0, 34),
+        Size = UDim2.new(1, 0, 1, -34),
+        BackgroundTransparency = 1
+    })
+
+    local sidebar = uiNew("Frame", body, {
+        Name = "Sidebar",
+        Size = UDim2.new(0.32, 0, 1, 0),
+        BackgroundColor3 = UIColors.Sidebar,
+        BackgroundTransparency = 0.03,
+        BorderSizePixel = 0
+    })
+    uiNew("Frame", sidebar, {
+        Position = UDim2.new(1, -1, 0, 0),
+        Size = UDim2.new(0, 1, 1, 0),
+        BackgroundColor3 = UIColors.Stroke,
+        BackgroundTransparency = 0.45,
+        BorderSizePixel = 0
+    })
+
+    local sidebarSearch = uiNew("TextBox", sidebar, {
+        Name = "CategorySearch",
+        Position = UDim2.new(0, 8, 0, 8),
+        Size = UDim2.new(1, -16, 0, 32),
+        BackgroundColor3 = UIColors.Row,
+        BorderSizePixel = 0,
+        ClearTextOnFocus = false,
+        PlaceholderText = "Search section or function...",
+        PlaceholderColor3 = UIColors.Muted,
+        Text = "",
+        TextColor3 = UIColors.Text,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    uiCorner(sidebarSearch, 4)
+    uiNew("UIPadding", sidebarSearch, {
+        PaddingLeft = UDim.new(0, 9),
+        PaddingRight = UDim.new(0, 6)
+    })
+
+    local navigation = uiNew("ScrollingFrame", sidebar, {
+        Name = "Navigation",
+        Position = UDim2.new(0, 5, 0, 47),
+        Size = UDim2.new(1, -10, 1, -52),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 3,
+        ScrollBarImageColor3 = UIColors.Accent,
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        CanvasSize = UDim2.new()
+    })
+    uiNew("UIListLayout", navigation, {
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 2)
+    })
+
+    local content = uiNew("Frame", body, {
+        Name = "Content",
+        Position = UDim2.new(0.32, 1, 0, 0),
+        Size = UDim2.new(0.68, -1, 1, 0),
+        BackgroundTransparency = 1
+    })
+    local contentHeader = uiNew("Frame", content, {
+        Size = UDim2.new(1, 0, 0, 38),
+        BackgroundTransparency = 1
+    })
+    local activeTitle = uiText(contentHeader, "", 13, UIColors.Text, {
+        Position = UDim2.new(0, 12, 0, 0),
+        Size = UDim2.new(0.48, -12, 1, 0),
+        Font = Enum.Font.GothamBold
+    })
+    local function makeSearch(parent, name, placeholder, position, size)
+        local box = uiNew("TextBox", parent, {
+            Name = name,
+            Position = position,
+            Size = size,
+            BackgroundColor3 = UIColors.Row,
+            BorderSizePixel = 0,
+            ClearTextOnFocus = false,
+            PlaceholderText = placeholder,
+            PlaceholderColor3 = UIColors.Muted,
+            Text = "",
+            TextColor3 = UIColors.Text,
+            TextSize = 10,
+            Font = Enum.Font.Gotham,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        uiCorner(box, 4)
+        uiNew("UIPadding", box, {
+            PaddingLeft = UDim.new(0, 8),
+            PaddingRight = UDim.new(0, 5)
+        })
+        return box
+    end
+    local controlSearch = makeSearch(contentHeader, "ControlSearch", "⌕  Search", UDim2.new(1, -142, 0, 6), UDim2.new(0, 132, 0, 26))
+
+    local pages = uiNew("Frame", content, {
+        Position = UDim2.new(0, 0, 0, 38),
+        Size = UDim2.new(1, 0, 1, -38),
+        BackgroundTransparency = 1
+    })
+
+    local floatingButton = uiNew("TextButton", gui, {
+        Name = "OpenButton",
+        AnchorPoint = Vector2.new(0, 1),
+        Position = UDim2.new(0, 16, 1, -70),
+        Size = UDim2.new(0, 42, 0, 42),
+        BackgroundColor3 = UIColors.Background,
+        BackgroundTransparency = 0.05,
+        Text = "B",
+        TextColor3 = UIColors.Accent,
+        TextSize = 20,
+        Font = Enum.Font.GothamBlack,
+        AutoButtonColor = true
+    })
+    uiCorner(floatingButton, 10)
+    uiStroke(floatingButton, UIColors.Accent, 1.5, 0)
+
+    local window = { _ui = {
+        Gui = gui,
+        Main = main,
+        Navigation = navigation,
+        Pages = pages,
+        SidebarSearch = sidebarSearch,
+        ControlSearch = controlSearch,
+        ActiveTitle = activeTitle,
+        Tabs = {},
+        ActiveTab = nil
+    } }
+
+    local function applySearch(tab)
+        local query = string.lower(controlSearch.Text or "")
+        for _, entry in ipairs(tab.Rows) do
+            if entry.Kind == "Section" then
+                entry.Instance.Visible = true
+            else
+                entry.Instance.Visible = query == "" or string.find(entry.SearchText, query, 1, true) ~= nil
+            end
+        end
+    end
+
+    local function selectTab(tab)
+        window._ui.ActiveTab = tab
+        activeTitle.Text = tab.Name
+        for _, item in ipairs(window._ui.Tabs) do
+            item.Page.Visible = item == tab
+            item.Nav.BackgroundColor3 = item == tab and UIColors.RowHover or UIColors.Sidebar
+            item.Marker.Visible = item == tab
+        end
+        applySearch(tab)
+    end
+
+    local function filterTabs()
+        local query = string.lower(sidebarSearch.Text or "")
+        for _, tab in ipairs(window._ui.Tabs) do
+            tab.Nav.Visible = query == "" or string.find(string.lower(tab.Name), query, 1, true) ~= nil
+        end
+    end
+    sidebarSearch:GetPropertyChangedSignal("Text"):Connect(filterTabs)
+    controlSearch:GetPropertyChangedSignal("Text"):Connect(function()
+        if window._ui.ActiveTab then applySearch(window._ui.ActiveTab) end
+    end)
+
+    local function hideWindow()
+        main.Visible = false
+    end
+    minimizeButton.Activated:Connect(hideWindow)
+    closeButton.Activated:Connect(hideWindow)
+    floatingButton.Activated:Connect(function()
+        main.Visible = not main.Visible
+    end)
+
+    local dragging = false
+    local dragOrigin, frameOrigin
+    header.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragOrigin = input.Position
+            frameOrigin = main.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragOrigin
+            main.Position = UDim2.new(frameOrigin.X.Scale, frameOrigin.X.Offset + delta.X, frameOrigin.Y.Scale, frameOrigin.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    function window:MakeTab(tabSettings)
+        local tabName = tabSettings.Name or "Tab"
+        local tab = { Name = tabName, Rows = {} }
+        tab.Nav = uiNew("TextButton", navigation, {
+            Name = "Nav_" .. tabName,
+            Size = UDim2.new(1, -4, 0, 31),
+            BackgroundColor3 = UIColors.Sidebar,
+            BackgroundTransparency = 0.05,
+            BorderSizePixel = 0,
+            Text = "",
+            AutoButtonColor = false,
+            LayoutOrder = #window._ui.Tabs + 1
+        })
+        tab.Marker = uiNew("Frame", tab.Nav, {
+            Size = UDim2.new(0, 3, 1, -10),
+            Position = UDim2.new(0, 0, 0, 5),
+            BackgroundColor3 = UIColors.Accent,
+            BorderSizePixel = 0,
+            Visible = false
+        })
+        uiText(tab.Nav, tabName, 11, UIColors.Text, {
+            Position = UDim2.new(0, 12, 0, 0),
+            Size = UDim2.new(1, -18, 1, 0),
+            Font = Enum.Font.GothamMedium
+        })
+        tab.Page = uiNew("ScrollingFrame", pages, {
+            Name = "Page_" .. tabName,
+            Size = UDim2.fromScale(1, 1),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = UIColors.Accent,
+            AutomaticCanvasSize = Enum.AutomaticSize.Y,
+            CanvasSize = UDim2.new(),
+            Visible = false
+        })
+        uiNew("UIPadding", tab.Page, {
+            PaddingTop = UDim.new(0, 3),
+            PaddingBottom = UDim.new(0, 8),
+            PaddingLeft = UDim.new(0, 8),
+            PaddingRight = UDim.new(0, 8)
+        })
+        uiNew("UIListLayout", tab.Page, {
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 4)
+        })
+        tab.Nav.Activated:Connect(function() selectTab(tab) end)
+        table.insert(window._ui.Tabs, tab)
+        if not window._ui.ActiveTab then selectTab(tab) end
+
+        function tab:AddSection(sectionSettings)
+            local sectionName = type(sectionSettings) == "table" and sectionSettings.Name or sectionSettings
+            local row = addTabRow(self, 25, "Section", sectionName)
+            uiText(row, sectionName or "", 11, UIColors.Accent, {
+                Position = UDim2.new(0, 4, 0, 0),
+                Size = UDim2.new(1, -8, 1, 0),
+                Font = Enum.Font.GothamBold
+            })
+            return row
+        end
+
+        function tab:AddToggle(controlSettings)
+            controlSettings = controlSettings or {}
+            local value = controlSettings.Default == true
+            local row = addTabRow(self, 34, "Toggle", controlSettings.Name)
+            uiText(row, controlSettings.Name or "Toggle", 11, UIColors.Text, {
+                Position = UDim2.new(0, 10, 0, 0),
+                Size = UDim2.new(1, -54, 1, 0)
+            })
+            local toggleButton = uiNew("TextButton", row, {
+                AnchorPoint = Vector2.new(1, 0.5),
+                Position = UDim2.new(1, -9, 0.5, 0),
+                Size = UDim2.new(0, 30, 0, 17),
+                BackgroundColor3 = value and UIColors.AccentDark or Color3.fromRGB(58, 61, 62),
+                BorderSizePixel = 0,
+                Text = "",
+                AutoButtonColor = false
+            })
+            uiCorner(toggleButton, 9)
+            local knob = uiNew("Frame", toggleButton, {
+                Position = value and UDim2.new(1, -15, 0, 2) or UDim2.new(0, 2, 0, 2),
+                Size = UDim2.new(0, 13, 0, 13),
+                BackgroundColor3 = value and UIColors.Accent or Color3.fromRGB(205, 209, 202),
+                BorderSizePixel = 0
+            })
+            uiCorner(knob, 8)
+            local object = {}
+            function object:Set(newValue)
+                value = newValue == true
+                toggleButton.BackgroundColor3 = value and UIColors.AccentDark or Color3.fromRGB(58, 61, 62)
+                knob.Position = value and UDim2.new(1, -15, 0, 2) or UDim2.new(0, 2, 0, 2)
+                knob.BackgroundColor3 = value and UIColors.Accent or Color3.fromRGB(205, 209, 202)
+                if controlSettings.Callback then pcall(controlSettings.Callback, value) end
+            end
+            object.SetStage = object.Set
+            object.GetValue = function() return value end
+            toggleButton.Activated:Connect(function() object:Set(not value) end)
+            return object
+        end
+
+        function tab:AddButton(controlSettings)
+            controlSettings = controlSettings or {}
+            local row = addTabRow(self, 34, "Button", controlSettings.Name)
+            local button = uiNew("TextButton", row, {
+                Position = UDim2.new(0, 5, 0, 3),
+                Size = UDim2.new(1, -10, 1, -6),
+                BackgroundTransparency = 1,
+                Text = controlSettings.Name or "Button",
+                TextColor3 = UIColors.Text,
+                TextSize = 11,
+                Font = Enum.Font.GothamMedium,
+                AutoButtonColor = true
+            })
+            button.Activated:Connect(function()
+                if controlSettings.Callback then pcall(controlSettings.Callback) end
+            end)
+            return button
+        end
+
+        function tab:AddDropdown(controlSettings)
+            controlSettings = controlSettings or {}
+            local options = controlSettings.Options or {}
+            local value = controlSettings.Default
+            if type(value) == "table" then value = value[1] end
+            if value == nil then value = options[1] end
+            local row = addTabRow(self, 36, "Dropdown", controlSettings.Name)
+            uiText(row, controlSettings.Name or "Select", 10, UIColors.Muted, {
+                Position = UDim2.new(0, 9, 0, 1),
+                Size = UDim2.new(1, -18, 0, 14)
+            })
+            local selectButton = uiNew("TextButton", row, {
+                Position = UDim2.new(0, 7, 0, 16),
+                Size = UDim2.new(1, -14, 0, 17),
+                BackgroundColor3 = Color3.fromRGB(16, 18, 20),
+                BorderSizePixel = 0,
+                Text = "",
+                AutoButtonColor = true
+            })
+            uiCorner(selectButton, 3)
+            local valueLabel = uiText(selectButton, "", 10, UIColors.Text, {
+                Position = UDim2.new(0, 7, 0, 0),
+                Size = UDim2.new(1, -22, 1, 0)
+            })
+            uiText(selectButton, "⌄", 12, UIColors.Accent, {
+                Position = UDim2.new(1, -19, 0, 0),
+                Size = UDim2.new(0, 16, 1, 0),
+                TextXAlignment = Enum.TextXAlignment.Center
+            })
+            local function updateLabel()
+                valueLabel.Text = tostring(value or "Select...")
+            end
+            local object = {}
+            function object:Set(newValue)
+                if type(newValue) == "table" then newValue = newValue[1] end
+                value = newValue
+                updateLabel()
+                if controlSettings.Callback then pcall(controlSettings.Callback, value) end
+            end
+            object.GetValue = function() return value end
+            selectButton.Activated:Connect(function()
+                if #options == 0 then return end
+                local currentIndex = table.find(options, value) or 0
+                local nextIndex = currentIndex % #options + 1
+                object:Set(options[nextIndex])
+            end)
+            updateLabel()
+            return object
+        end
+
+        function tab:AddSlider(controlSettings)
+            controlSettings = controlSettings or {}
+            local minimum = controlSettings.Min or 0
+            local maximum = controlSettings.Max or 100
+            local increment = controlSettings.Increment or 1
+            local value = math.clamp(tonumber(controlSettings.Default) or minimum, minimum, maximum)
+            local row = addTabRow(self, 43, "Slider", controlSettings.Name)
+            local valueLabel = uiText(row, "", 10, UIColors.Muted, {
+                Position = UDim2.new(1, -56, 0, 3),
+                Size = UDim2.new(0, 48, 0, 15),
+                TextXAlignment = Enum.TextXAlignment.Right
+            })
+            uiText(row, controlSettings.Name or "Slider", 10, UIColors.Text, {
+                Position = UDim2.new(0, 9, 0, 3),
+                Size = UDim2.new(1, -72, 0, 15)
+            })
+            local track = uiNew("TextButton", row, {
+                Position = UDim2.new(0, 9, 0, 25),
+                Size = UDim2.new(1, -18, 0, 8),
+                BackgroundColor3 = Color3.fromRGB(53, 58, 55),
+                BorderSizePixel = 0,
+                Text = "",
+                AutoButtonColor = false
+            })
+            uiCorner(track, 4)
+            local fill = uiNew("Frame", track, {
+                Size = UDim2.new(0, 0, 1, 0),
+                BackgroundColor3 = UIColors.Accent,
+                BorderSizePixel = 0
+            })
+            uiCorner(fill, 4)
+            local object = {}
+            function object:Set(newValue)
+                value = math.clamp(tonumber(newValue) or minimum, minimum, maximum)
+                if increment > 0 then value = math.floor(value / increment + 0.5) * increment end
+                local alpha = maximum == minimum and 0 or (value - minimum) / (maximum - minimum)
+                fill.Size = UDim2.new(alpha, 0, 1, 0)
+                valueLabel.Text = tostring(value) .. (controlSettings.Suffix or "")
+                if controlSettings.Callback then pcall(controlSettings.Callback, value) end
+            end
+            object.GetValue = function() return value end
+            local function setFromInput(input)
+                local alpha = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+                object:Set(minimum + (maximum - minimum) * alpha)
+            end
+            local sliding = false
+            track.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    sliding = true
+                    setFromInput(input)
+                end
+            end)
+            UserInputService.InputChanged:Connect(function(input)
+                if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    setFromInput(input)
+                end
+            end)
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliding = false end
+            end)
+            object:Set(value)
+            return object
+        end
+
+        function tab:AddTextbox(controlSettings)
+            controlSettings = controlSettings or {}
+            local row = addTabRow(self, 54, "Input", controlSettings.Name)
+            uiText(row, controlSettings.Name or "Input", 10, UIColors.Text, {
+                Position = UDim2.new(0, 9, 0, 3),
+                Size = UDim2.new(1, -18, 0, 16)
+            })
+            local textBox = uiNew("TextBox", row, {
+                Position = UDim2.new(0, 7, 0, 22),
+                Size = UDim2.new(1, -14, 0, 25),
+                BackgroundColor3 = Color3.fromRGB(16, 18, 20),
+                BorderSizePixel = 0,
+                ClearTextOnFocus = false,
+                PlaceholderText = controlSettings.Placeholder or "Enter text...",
+                PlaceholderColor3 = UIColors.Muted,
+                Text = tostring(controlSettings.Default or ""),
+                TextColor3 = UIColors.Text,
+                TextSize = 10,
+                Font = Enum.Font.Gotham,
+                TextXAlignment = Enum.TextXAlignment.Left
+            })
+            uiCorner(textBox, 3)
+            uiNew("UIPadding", textBox, { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 6) })
+            textBox.FocusLost:Connect(function()
+                if controlSettings.Callback then pcall(controlSettings.Callback, textBox.Text) end
+            end)
+            local object = { Textbox = textBox }
+            function object:Set(newValue)
+                textBox.Text = tostring(newValue or "")
+                if controlSettings.Callback then pcall(controlSettings.Callback, textBox.Text) end
+            end
+            object.GetValue = function() return textBox.Text end
+            return object
+        end
+
+        function tab:AddParagraph(controlSettings)
+            controlSettings = controlSettings or {}
+            local row = addTabRow(self, 52, "Paragraph", (controlSettings.Name or "") .. " " .. (controlSettings.Content or ""))
+            local titleLabel = uiText(row, controlSettings.Name or "", 10, UIColors.Accent, {
+                Position = UDim2.new(0, 9, 0, 4),
+                Size = UDim2.new(1, -18, 0, 16),
+                Font = Enum.Font.GothamBold
+            })
+            local contentLabel = uiText(row, controlSettings.Content or "", 10, UIColors.Text, {
+                Position = UDim2.new(0, 9, 0, 19),
+                Size = UDim2.new(1, -18, 1, -22),
+                TextWrapped = true,
+                TextYAlignment = Enum.TextYAlignment.Top
+            })
+            local object = {}
+            function object:Set(newValue)
+                if type(newValue) == "table" then
+                    titleLabel.Text = tostring(newValue.Name or titleLabel.Text)
+                    contentLabel.Text = tostring(newValue.Content or "")
+                else
+                    contentLabel.Text = tostring(newValue or "")
+                end
+            end
+            object.SetDesc = function(_, text) object:Set({ Name = titleLabel.Text, Content = text }) end
+            object.SetText = function(_, text) object:Set({ Name = text, Content = "" }) end
+            return object
+        end
+
+        function tab:AddLabel(text)
+            local row = addTabRow(self, 27, "Label", text)
+            uiText(row, text, 10, UIColors.Text, {
+                Position = UDim2.new(0, 9, 0, 0),
+                Size = UDim2.new(1, -18, 1, 0)
+            })
+            local object = {}
+            function object:Set(newText)
+                local label = row:FindFirstChildOfClass("TextLabel")
+                if label then label.Text = tostring(newText) end
+            end
+            return object
+        end
+
+        return tab
+    end
+
+    function window:CreateTab(name)
+        return self:MakeTab({ Name = name })
+    end
+
+    return window
+end
+
+addTabRow = function(tab, height, kind, searchText)
+    local row = uiNew("Frame", tab.Page, {
+        Size = UDim2.new(1, 0, 0, height),
+        BackgroundColor3 = kind == "Section" and UIColors.Background or UIColors.Row,
+        BackgroundTransparency = kind == "Section" and 1 or 0.08,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        LayoutOrder = #tab.Rows + 1
+    })
+    if kind ~= "Section" then uiCorner(row, 3) end
+    table.insert(tab.Rows, {
+        Instance = row,
+        Kind = kind,
+        SearchText = string.lower(tostring(searchText or ""))
+    })
+    if tab == Window._ui.ActiveTab then
+        local query = string.lower(Window._ui.ControlSearch.Text or "")
+        row.Visible = kind == "Section" or query == "" or string.find(string.lower(tostring(searchText or "")), query, 1, true) ~= nil
+    end
+    return row
+end
+
+function OrionLib:MakeNotification(options)
+    local ui = Window and Window._ui
+    if not ui then return end
+    options = options or {}
+    local notification = uiNew("Frame", ui.Gui, {
+        AnchorPoint = Vector2.new(1, 0),
+        Position = UDim2.new(1, -16, 0, 16),
+        Size = UDim2.new(0, 270, 0, 62),
+        BackgroundColor3 = UIColors.Row,
+        BackgroundTransparency = 0.04,
+        BorderSizePixel = 0,
+        ZIndex = 50
+    })
+    uiCorner(notification, 5)
+    uiStroke(notification, UIColors.Accent, 1, 0.25)
+    uiText(notification, options.Name or "Abysslix Hub", 12, UIColors.Accent, {
+        Position = UDim2.new(0, 11, 0, 6),
+        Size = UDim2.new(1, -20, 0, 19),
+        Font = Enum.Font.GothamBold,
+        ZIndex = 51
+    })
+    uiText(notification, options.Content or "", 10, UIColors.Text, {
+        Position = UDim2.new(0, 11, 0, 27),
+        Size = UDim2.new(1, -20, 0, 27),
+        TextWrapped = true,
+        ZIndex = 51
+    })
+    task.delay(tonumber(options.Time) or 4, function()
+        if notification.Parent then notification:Destroy() end
+    end)
+    return notification
+end
+
+Library = OrionLib
+Window = OrionLib:MakeWindow({ Name = "Banana Cat Hub - Blox Fruit" })
+
+function Library:Notify(options)
+    options = options or {}
+    return OrionLib:MakeNotification({
+        Name = options.Title or options.Name or "Abysslix Hub",
+        Content = options.Content or options.Description or "",
+        Time = options.Duration or options.Time or 4
+    })
+end
 
 -- Icon dùng chung cho Hub
 HUB_ICON = "rbxassetid://128438943223471"
@@ -145,24 +820,11 @@ local function makeProxy(obj, callbackHolder)
             if k == "SetValue" then
                 return function(_, v)
                     if obj.Set then
-                        -- Rayfield dropdown :Set() yêu cầu bảng option
-                        local isDropdown = obj.Options ~= nil
-                        if isDropdown and type(v) ~= "table" then v = { v } end
                         pcall(obj.Set, obj, v)
                     elseif obj.SetValue then
                         local ok = pcall(obj.SetValue, v)
                         if not ok then pcall(function() obj:SetValue(v) end) end
                     end
-                end
-            end
-            -- SetText / SetDesc (paragraph/label)
-            if k == "SetText" or k == "SetDesc" then
-                return function(_, t)
-                    -- Paragraph của Rayfield: :Set({ Title, Content })
-                    if obj.Set and obj.Content then
-                        pcall(obj.Set, obj, { Title = obj.Title.Text, Content = tostring(t) })
-                    elseif obj.SetDesc then pcall(obj.SetDesc, obj, t)
-                    elseif obj.SetText then pcall(obj.SetText, obj, t) end
                 end
             end
             -- GetValue
@@ -180,7 +842,9 @@ local function makeProxy(obj, callbackHolder)
             if k == "SetText" or k == "SetDesc" then
                 return function(_, t)
                     if obj.Set then
-                        pcall(obj.Set, obj, { Title = tostring(t), Content = "" })
+                        local name = k == "SetDesc" and callbackHolder.name or tostring(t)
+                        local content = k == "SetDesc" and tostring(t) or ""
+                        pcall(obj.Set, obj, { Name = name or "", Content = content })
                     elseif obj.SetText then pcall(obj.SetText, obj, t)
                     elseif obj.SetDesc then pcall(obj.SetDesc, obj, t) end
                 end
@@ -199,7 +863,7 @@ local function makeProxy(obj, callbackHolder)
                 end
             end
             -- fallback: raw value
-            local v = rawget(obj, k) or (type(obj) == "table" and obj[k])
+            local v = type(obj) == "table" and (rawget(obj, k) or obj[k]) or nil
             if type(v) == "function" then
                 return function(_, ...) return pcall(v, obj, ...) end
             end
@@ -210,168 +874,92 @@ local function makeProxy(obj, callbackHolder)
 end
 
 local function wrapTab(rawTab)
-    local _currentSection = nil
+    local wrapped = {}
 
-    -- Đảm bảo có section để dùng (lazy init)
-    local function ensureSection()
-        if not _currentSection then
-            _currentSection = rawTab:CreateSection("")
+    local function makeCallback(setting, holder)
+        local original = setting.Callback
+        setting.Callback = function(value)
+            holder.value = value
+            if original then pcall(original, value) end
+            if holder.extra then pcall(holder.extra, value) end
         end
     end
 
-    local wrapped = {}
+    local function optionValue(value)
+        if type(value) == "table" then return value[1] end
+        return value
+    end
 
-    -- AddSection: Rayfield dùng Tab:CreateSection(name)
     function wrapped:AddSection(name)
-        _currentSection = rawTab:CreateSection(name or "")
-        return _currentSection
+        return rawTab:AddSection({ Name = name or "" })
     end
 
     function wrapped:AddToggle(id, setting)
-        ensureSection()
-        local holder = { extra = nil }
-        local origCb = setting.Callback or setting["Callback"]
-        setting.Callback = function(v)
-            if origCb then pcall(origCb, v) end
-            if holder.extra then pcall(holder.extra, v) end
-        end
-        setting["Callback"] = setting.Callback
-        -- Rayfield: Name, CurrentValue (thay cho Title, Default)
-        setting.Name = setting.Name or setting.Title or setting["Title"] or id
-        setting.Title = nil
-        setting["Title"] = nil
-        if setting.CurrentValue == nil then setting.CurrentValue = setting["Default"] end
-        setting["Default"] = nil
-        setting.Default = nil
-        setting.Description = nil
-        setting["Description"] = nil
-        local obj = _currentSection:AddToggle(id, setting)
-        return makeProxy(obj, holder)
+        setting = setting or {}
+        local holder = {}
+        setting.Name = setting.Name or setting.Title or id
+        if setting.Default == nil then setting.Default = false end
+        makeCallback(setting, holder)
+        return makeProxy(rawTab:AddToggle(setting), holder)
     end
 
-    function wrapped:AddButton(setting, cb)
-        ensureSection()
-        if type(setting) == "table" then
-            setting.Name = setting.Name or setting.Title or setting["Title"] or ""
-            setting.Title = nil
-            setting["Title"] = nil
-            setting.Description = nil
-            setting["Description"] = nil
-        end
-        local proxy = _currentSection:AddButton(setting, cb)
-        if proxy then
-            local holder = {}
-            return makeProxy(proxy, holder)
-        end
+    function wrapped:AddButton(setting, callback)
+        setting = setting or {}
+        local title = setting.Name or setting.Title or ""
+        local description = setting.Description or ""
+        setting.Name = description ~= "" and (title .. " | " .. description) or title
+        setting.Callback = setting.Callback or callback
+        return rawTab:AddButton(setting)
     end
 
     function wrapped:AddDropdown(id, setting)
-        ensureSection()
-        local holder = { extra = nil }
-        local origCb = setting.Callback or setting["Callback"]
-        setting.Callback = function(v)
-            -- Rayfield trả về bảng option, code cũ cần string
-            local value = v
-            if type(v) == "table" then value = v[1] end
-            if origCb then pcall(origCb, value) end
+        setting = setting or {}
+        local holder = {}
+        setting.Name = setting.Name or setting.Title or id
+        setting.Options = setting.Options or setting.Values or {}
+        local original = setting.Callback
+        local default = setting.Default
+        if type(default) == "number" then default = setting.Options[default] end
+        setting.Default = default or setting.Options[1]
+        setting.Callback = function(value)
+            value = optionValue(value)
+            holder.value = value
+            if original then pcall(original, value) end
             if holder.extra then pcall(holder.extra, value) end
         end
-        setting["Callback"] = setting.Callback
-        -- Rayfield: Name, Options, CurrentOption
-        setting.Name = setting.Name or setting.Title or setting["Title"] or id
-        setting.Title = nil
-        setting["Title"] = nil
-        setting.Options = setting.Options or setting["Values"] or {}
-        setting["Values"] = nil
-        setting.Values = nil
-        if setting.MultipleOptions == nil then setting.MultipleOptions = setting["Multi"] end
-        setting["Multi"] = nil
-        -- Lấy option mặc định trước khi xoá
-        local defaultOpt = setting["Default"] or setting.Default
-        setting["Default"] = nil
-        setting.Default = nil
-        setting.Description = nil
-        setting["Description"] = nil
-        -- CurrentOption phải là bảng (Rayfield yêu cầu)
-        if type(setting.CurrentOption) == "string" then
-            setting.CurrentOption = { setting.CurrentOption }
-        elseif type(setting.CurrentOption) ~= "table" then
-            local pick = nil
-            if type(defaultOpt) == "number" then pick = setting.Options[defaultOpt]
-            elseif type(defaultOpt) == "string" then pick = defaultOpt end
-            pick = pick or setting.Options[1]
-            setting.CurrentOption = pick and { pick } or {}
-        end
-        local obj = _currentSection:AddDropdown(id, setting)
-        return makeProxy(obj, holder)
+        return makeProxy(rawTab:AddDropdown(setting), holder)
     end
 
     function wrapped:AddSlider(id, setting)
-        ensureSection()
-        local holder = { extra = nil }
-        local origCb = setting.Callback or setting["Callback"]
-        setting.Callback = function(v)
-            if origCb then pcall(origCb, v) end
-            if holder.extra then pcall(holder.extra, v) end
-        end
-        setting["Callback"] = setting.Callback
-        -- Rayfield: Name, Range {min, max}, Increment, CurrentValue, Suffix
-        setting.Name = setting.Name or setting.Title or setting["Title"] or id
-        setting.Title = nil
-        setting["Title"] = nil
-        local minV = setting.Min or setting["Min"] or 0
-        local maxV = setting.Max or setting["Max"] or 100
-        setting.Range = setting.Range or { minV, maxV }
-        setting.Min = nil
-        setting["Min"] = nil
-        setting.Max = nil
-        setting["Max"] = nil
-        setting.Increment = setting.Increment or setting["Rounding"] or 1
-        setting["Rounding"] = nil
-        setting.Rounding = nil
-        if setting.CurrentValue == nil then setting.CurrentValue = setting["Default"] end
-        setting["Default"] = nil
-        setting.Default = nil
-        setting.Description = nil
-        setting["Description"] = nil
-        local obj = _currentSection:AddSlider(id, setting)
-        return makeProxy(obj, holder)
+        setting = setting or {}
+        local holder = {}
+        setting.Name = setting.Name or setting.Title or id
+        setting.Increment = setting.Increment or setting.Rounding or 1
+        makeCallback(setting, holder)
+        return makeProxy(rawTab:AddSlider(setting), holder)
     end
 
     function wrapped:AddInput(id, setting)
-        ensureSection()
-        local holder = { extra = nil }
-        local origCb = setting.Callback or setting["Callback"]
-        setting.Callback = function(v)
-            if origCb then pcall(origCb, v) end
-            if holder.extra then pcall(holder.extra, v) end
-        end
-        setting["Callback"] = setting.Callback
-        -- Rayfield: Name, PlaceholderText, CurrentValue
-        setting.Name = setting.Name or setting.Title or setting["Title"] or id
-        setting.Title = nil
-        setting["Title"] = nil
-        if setting.CurrentValue == nil then setting.CurrentValue = setting["Default"] end
-        setting["Default"] = nil
-        setting.Default = nil
-        local obj = _currentSection:AddInput(id, setting)
-        return makeProxy(obj, holder)
+        setting = setting or {}
+        local holder = {}
+        setting.Name = setting.Name or setting.Title or id
+        setting.Default = setting.Default or ""
+        makeCallback(setting, holder)
+        return makeProxy(rawTab:AddTextbox(setting), holder)
     end
 
     function wrapped:AddParagraph(setting)
-        ensureSection()
-        local title = setting.Title or setting["Title"] or ""
-        local desc  = setting.Description or setting["Description"] or setting.Desc or ""
-        local obj = _currentSection:CreateLabel(title ~= "" and (title .. (desc ~= "" and ("\n" .. desc) or "")) or desc)
+        setting = setting or {}
         local holder = {}
+        local title = setting.Title or setting.Name or ""
+        local content = setting.Description or setting.Content or setting.Desc or ""
+        holder.name = title
+        local obj = rawTab:AddParagraph({ Name = title, Content = content })
         return makeProxy(obj, holder)
     end
 
     function wrapped:AddLabel(text)
-        ensureSection()
-        local obj = _currentSection:CreateLabel(text)
-        local holder = {}
-        return makeProxy(obj, holder)
+        return makeProxy(rawTab:AddLabel(tostring(text)), {})
     end
 
     return wrapped
@@ -381,42 +969,22 @@ end
 -- TẠO CÁC TABS VỚI WRAPPER
 -- ==========================================
 Tabs = {
-    ["Info"]     = wrapTab(Window:CreateTab("Thông Tin", HUB_ICON)),
-    ["Main"]     = wrapTab(Window:CreateTab("Cày Cấp", HUB_ICON)),
-    ["Sea"]      = wrapTab(Window:CreateTab("Sự Kiện", HUB_ICON)),
-    ["Item"]     = wrapTab(Window:CreateTab("Lấy & Nâng Cấp Vật Phẩm", HUB_ICON)),
-    ["Setting"]  = wrapTab(Window:CreateTab("Cài Đặt", HUB_ICON)),
-    ["Status"]   = wrapTab(Window:CreateTab("Webhook", HUB_ICON)),
-    ["Stats"]    = wrapTab(Window:CreateTab("Chỉ Số", HUB_ICON)),
-    ["Player"]   = wrapTab(Window:CreateTab("Người Chơi", HUB_ICON)),
-    ["Teleport"] = wrapTab(Window:CreateTab("Dịch Chuyển", HUB_ICON)),
-    ["Visual"]   = wrapTab(Window:CreateTab("Giả Mạo", HUB_ICON)),
-    ["Fruit"]    = wrapTab(Window:CreateTab("Trái Ác Quỷ", HUB_ICON)),
-    ["Raid"]     = wrapTab(Window:CreateTab("Đột Kích", HUB_ICON)),
-    ["Race"]     = wrapTab(Window:CreateTab("Nâng Cấp Chủng Tộc", HUB_ICON)),
-    ["Shop"]     = wrapTab(Window:CreateTab("Cửa Hàng", HUB_ICON)),
-    ["Misc"]     = wrapTab(Window:CreateTab("Khác", HUB_ICON)),
+    ["Info"]     = wrapTab(Window:MakeTab({ Name = "Thông Tin", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Main"]     = wrapTab(Window:MakeTab({ Name = "Cày Cấp", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Sea"]      = wrapTab(Window:MakeTab({ Name = "Sự Kiện", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Item"]     = wrapTab(Window:MakeTab({ Name = "Lấy & Nâng Cấp Vật Phẩm", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Setting"]  = wrapTab(Window:MakeTab({ Name = "Cài Đặt", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Status"]   = wrapTab(Window:MakeTab({ Name = "Webhook", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Stats"]    = wrapTab(Window:MakeTab({ Name = "Chỉ Số", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Player"]   = wrapTab(Window:MakeTab({ Name = "Người Chơi", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Teleport"] = wrapTab(Window:MakeTab({ Name = "Dịch Chuyển", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Visual"]   = wrapTab(Window:MakeTab({ Name = "Giả Mạo", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Fruit"]    = wrapTab(Window:MakeTab({ Name = "Trái Ác Quỷ", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Raid"]     = wrapTab(Window:MakeTab({ Name = "Đột Kích", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Race"]     = wrapTab(Window:MakeTab({ Name = "Nâng Cấp Chủng Tộc", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Shop"]     = wrapTab(Window:MakeTab({ Name = "Cửa Hàng", Icon = HUB_ICON, PremiumOnly = false })),
+    ["Misc"]     = wrapTab(Window:MakeTab({ Name = "Khác", Icon = HUB_ICON, PremiumOnly = false })),
 }
-
--- ==========================================
--- GIỮ THEME BANANA (ĐỎ - ĐEN) CHO TOÀN BỘ UI
--- ==========================================
-pcall(function()
-    -- Nếu Rayfield chưa có theme Banana thì thoát
-    if not (Library.SetTheme and Library.Theme and Library.Theme.Default) then return end
-
-    -- Áp lại theme Banana
-    Library:SetTheme(JohnDoeBananaTheme)
-
-    -- Ghi lại theme mặc định để tránh việc Rayfield reset về Default
-    if Library.Theme and Library.Theme.Default then
-        for k, v in pairs(JohnDoeBananaTheme) do
-            if Library.Theme.Default[k] ~= nil then
-                Library.Theme.Default[k] = v
-            end
-        end
-    end
-end)
 
 wait(1)
 
