@@ -56,152 +56,109 @@ local plr = Player
 local Root = HumanoidRootPart
 
 -- ==========================================
--- LOAD BANANA HUB UI ENGINE (RedzLib V5)
--- Theme & Layout chuẩn 100% Banana Hub / Duck Hub
+-- LOAD BANANA HUB UI ENGINE (Native Banana Hub Library)
+-- Chuẩn 100% Banana Hub / Duck Hub / Banana Cat Hub UI
 -- Giữ nguyên 100% Logo Abysslix & Màu Xanh Đen (Abyss Black & Neon Cyan Glow)
+-- Phím tắt Ctrl (LeftControl / RightControl) & Nút nổi kéo thả
 -- ==========================================
 local HUB_ICON = "rbxassetid://128438943223471"
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
-local RedzLib
-local RedzLibURLs = {
-    "https://gist.githubusercontent.com/IIRyoII/a112000e256270ba92606a9ad966bf05/raw/0547a0107441dad00602232211f67eb79f4c10d0/Banana%2520Hub",
-    "https://raw.githubusercontent.com/tlredz/Library/refs/heads/main/V5/Source.lua",
-    "https://raw.githubusercontent.com/tlredz/Library/main/V5/Source.lua",
-    "https://raw.githubusercontent.com/realredz/RedzLibV5/main/Source.lua",
-    "https://raw.githubusercontent.com/REDzHUB/RedzLibV5/main/Source.Lua"
-}
-
-for _, url in ipairs(RedzLibURLs) do
-    local success, result = pcall(function()
-        return loadstring(game:HttpGet(url))()
-    end)
-    if success and type(result) == "table" and result.MakeWindow then
-        RedzLib = result
-        break
-    end
-end
-
-if not RedzLib then
-    task.wait(0.5)
-    for _, url in ipairs(RedzLibURLs) do
-        local success, result = pcall(function()
-            return loadstring(game:HttpGet(url))()
-        end)
-        if success and type(result) == "table" and result.MakeWindow then
-            RedzLib = result
-            break
-        end
-    end
-end
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/hdanhhub/UI/main/ui_BananaHub_lua.txt"))()
 
 -- ==========================================
--- CẤU HÌNH THEME XANH ĐEN (Abyss Black & Neon Cyan Glow)
--- Nền đen sâu huyền ảo + Accent Xanh Neon Cyan (#00F0FF / #06B6D4)
--- Viền phát sáng nhẹ (Glow Effect) màu xanh biển trên nền tối
+-- CẤU HÌNH THEME XANH ĐEN (Abyss Black & Neon Cyan Glow #00F0FF)
 -- ==========================================
-local AbysslixNeonTheme = {
-    ["Color Hub 1"] = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(10, 12, 16)),
-        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(14, 18, 25)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(10, 12, 16))
-    }),
-    ["Color Hub 2"] = Color3.fromRGB(13, 16, 22),
-    ["Color Stroke"] = Color3.fromRGB(0, 180, 255), -- Viền xanh biển / cyan phát sáng
-    ["Color Theme"] = Color3.fromRGB(0, 240, 255),  -- Xanh Neon Cyan (#00F0FF) cho Toggle ON, Slider, ScrollBar, Selection
-    ["Color Text"] = Color3.fromRGB(0, 240, 255),   -- Chữ chính: Xanh Neon Cyan (#00F0FF)
-    ["Color Dark Text"] = Color3.fromRGB(6, 182, 212) -- Chữ phụ: Xanh Cyan (#06B6D4)
-}
-
-if RedzLib and RedzLib.Themes then
-    RedzLib.Themes["AbysslixNeon"] = AbysslixNeonTheme
-    RedzLib.Themes.Darker = AbysslixNeonTheme
-    RedzLib.Themes.Dark = AbysslixNeonTheme
-    RedzLib.Themes.Purple = AbysslixNeonTheme
-    pcall(function() RedzLib:SetTheme("AbysslixNeon") end)
+if getgenv().UIColor then
+    getgenv().UIColor["Logo Image"] = HUB_ICON
+    getgenv().UIColor["Border Color"] = Color3.fromRGB(0, 180, 255)
+    getgenv().UIColor["Click Effect Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Setting Icon Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Search Icon Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Search Icon Highlight Color"] = Color3.fromRGB(0, 255, 255)
+    getgenv().UIColor["GUI Text Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Text Color"] = Color3.fromRGB(230, 240, 250)
+    getgenv().UIColor["Placeholder Text Color"] = Color3.fromRGB(100, 140, 170)
+    getgenv().UIColor["Title Text Color"] = Color3.fromRGB(0, 240, 255)
+    
+    -- Màu nền Xanh Đen (Abyss Black)
+    getgenv().UIColor["Background Main Color"] = Color3.fromRGB(10, 12, 16)
+    getgenv().UIColor["Background 1 Color"] = Color3.fromRGB(13, 16, 22)
+    getgenv().UIColor["Background 1 Transparency"] = 0.05
+    getgenv().UIColor["Background 2 Color"] = Color3.fromRGB(18, 23, 32)
+    getgenv().UIColor["Background 3 Color"] = Color3.fromRGB(15, 19, 27)
+    
+    getgenv().UIColor["Page Selected Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Section Text Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Section Underline Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Toggle Border Color"] = Color3.fromRGB(0, 140, 180)
+    getgenv().UIColor["Toggle Checked Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Toggle Desc Color"] = Color3.fromRGB(160, 200, 220)
+    
+    getgenv().UIColor["Button Color"] = Color3.fromRGB(18, 24, 34)
+    getgenv().UIColor["Label Color"] = Color3.fromRGB(14, 18, 26)
+    getgenv().UIColor["Dropdown Icon Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Dropdown Selected Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Dropdown Selected Check Color"] = Color3.fromRGB(0, 240, 255)
+    
+    getgenv().UIColor["Textbox Highlight Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Box Highlight Color"] = Color3.fromRGB(0, 240, 255)
+    getgenv().UIColor["Slider Line Color"] = Color3.fromRGB(25, 33, 45)
+    getgenv().UIColor["Slider Highlight Color"] = Color3.fromRGB(0, 240, 255)
 end
 
 -- ==========================================
 -- TẠO CỬA SỔ CHÍNH (WINDOW) CHUẨN BANANA HUB 100%
 -- ==========================================
-local Window = RedzLib:MakeWindow({
-    Title = "BANANA HUB",
-    SubTitle = "Abysslix | Blox Fruits",
-    SaveFolder = "BananaHubConfig.json"
+local Window = Library:CreateWindow({
+    Title = "ABYSSLIX HUB",
+    Desc = "Banana Hub Theme",
+    Image = HUB_ICON
 })
 
 -- ==========================================
--- NÚT FLOATING THU NHỎ / BẬT TẮT MENU (MINIMIZE BUTTON)
--- Kèm Logo Abysslix, có thể kéo thả tự do trên mobile & PC
+-- PHÍM TẮT CTRL & NÚT NỔI KÈM LOGO ABYSSLIX
 -- ==========================================
-pcall(function()
-    Window:AddMinimizeButton({
-        Button = {
-            Image = HUB_ICON,
-            BackgroundTransparency = 0,
-            BackgroundColor3 = Color3.fromRGB(12, 16, 24)
-        },
-        Corner = { CornerRadius = UDim.new(0, 8) }
-    })
-end)
-
--- Phím tắt Ctrl (LeftControl hoặc RightControl) trên PC để ẩn/hiện menu
 UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and (input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl) then
-        pcall(function() Window:Minimize() end)
+        if Library and Library.ToggleUI then
+            pcall(function() Library.ToggleUI() end)
+        end
     end
 end)
 
--- Gắn thêm Logo Abysslix vào thanh TopBar của Window
+-- Cập nhật Logo Abysslix & Hiệu ứng phát sáng cho nút nổi (BananaToggleGui)
 task.spawn(function()
-    for _ = 1, 20 do
-        local attached = false
-        pcall(function()
-            local gethui = gethui or function() return game:GetService("CoreGui") end
-            local pGui = gethui() or Player:FindFirstChild("PlayerGui")
-            local screenGui = pGui and pGui:FindFirstChild("Redz Library V5")
-            if not screenGui and Player:FindFirstChild("PlayerGui") then
-                screenGui = Player.PlayerGui:FindFirstChild("Redz Library V5")
-            end
-            if screenGui then
-                local hub = screenGui:FindFirstChild("Hub")
-                if hub then
-                    local comps = hub:FindFirstChild("Components")
-                    if comps then
-                        local topBar = comps:FindFirstChild("Top Bar")
-                        if topBar then
-                            local titleLbl = topBar:FindFirstChild("Title")
-                            if titleLbl and not topBar:FindFirstChild("AbysslixTopLogo") then
-                                titleLbl.Position = UDim2.new(0, 36, 0.5, 0)
-                                local logo = Instance.new("ImageLabel")
-                                logo.Name = "AbysslixTopLogo"
-                                logo.Parent = topBar
-                                logo.BackgroundTransparency = 1
-                                logo.Position = UDim2.new(0, 10, 0.5, 0)
-                                logo.AnchorPoint = Vector2.new(0, 0.5)
-                                logo.Size = UDim2.fromOffset(18, 18)
-                                logo.Image = HUB_ICON
-                                logo.ScaleType = Enum.ScaleType.Fit
-                                local corner = Instance.new("UICorner")
-                                corner.CornerRadius = UDim.new(0, 4)
-                                corner.Parent = logo
-                                attached = true
-                            elseif topBar:FindFirstChild("AbysslixTopLogo") then
-                                attached = true
-                            end
-                        end
-                    end
+    local gethui = gethui or function() return game:GetService("CoreGui") end
+    local pGui = gethui() or game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
+    for _ = 1, 40 do
+        local toggleGui = (pGui and pGui:FindFirstChild("BananaToggleGui")) or (game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui") and game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("BananaToggleGui"))
+        if toggleGui then
+            local btn = toggleGui:FindFirstChildOfClass("ImageButton")
+            if btn then
+                btn.BackgroundColor3 = Color3.fromRGB(10, 12, 16)
+                local icon = btn:FindFirstChildOfClass("ImageLabel")
+                if icon then
+                    icon.Image = HUB_ICON
+                end
+                if not btn:FindFirstChild("MiniGlowStroke") then
+                    local bStroke = Instance.new("UIStroke")
+                    bStroke.Name = "MiniGlowStroke"
+                    bStroke.Color = Color3.fromRGB(0, 240, 255)
+                    bStroke.Thickness = 1.5
+                    bStroke.Transparency = 0.2
+                    bStroke.Parent = btn
                 end
             end
-        end)
-        if attached then break end
+            break
+        end
         task.wait(0.1)
     end
 end)
 
 -- ==========================================
 -- HIỆU ỨNG PHÁT SÁNG CHỮ (GLOW EFFECT) XANH BIỂN TRÊN NỀN TỐI
--- Tự động thêm viền ánh sáng xanh biển (Ocean Blue Glow) vào mọi chữ Neon Cyan
 -- ==========================================
 local function applyTextGlow(inst)
     if not inst or not inst:IsA("GuiObject") then return end
@@ -210,7 +167,7 @@ local function applyTextGlow(inst)
             local glow = Instance.new("UIStroke")
             glow.Name = "NeonOceanGlow"
             glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
-            glow.Color = Color3.fromRGB(0, 140, 255) -- Xanh biển phát sáng dịu
+            glow.Color = Color3.fromRGB(0, 140, 255)
             glow.Thickness = 1.1
             glow.Transparency = 0.45
             glow.Parent = inst
@@ -220,26 +177,24 @@ end
 
 task.spawn(function()
     local gethui = gethui or function() return game:GetService("CoreGui") end
-    local pGui = gethui() or Player:FindFirstChild("PlayerGui")
+    local pGui = gethui() or game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
+    
     local function setupGlow(gui)
         if not gui then return end
-        local hub = gui:FindFirstChild("Hub")
-        if hub then
-            local stroke = hub:FindFirstChild("HubGlowStroke") or Instance.new("UIStroke")
-            stroke.Name = "HubGlowStroke"
-            stroke.Color = Color3.fromRGB(0, 180, 255)
-            stroke.Thickness = 1.4
-            stroke.Transparency = 0.3
-            stroke.Parent = hub
-        end
-        for _, btn in ipairs(gui:GetChildren()) do
-            if btn:IsA("ImageButton") and btn.Name ~= "Hub" then
-                local bStroke = btn:FindFirstChild("MiniGlowStroke") or Instance.new("UIStroke")
-                bStroke.Name = "MiniGlowStroke"
-                bStroke.Color = Color3.fromRGB(0, 240, 255)
-                bStroke.Thickness = 1.5
-                bStroke.Transparency = 0.2
-                bStroke.Parent = btn
+        local main = gui:FindFirstChild("Main")
+        if main then
+            local mainCont = main:FindFirstChild("MainContainer")
+            if mainCont then
+                local st = mainCont:FindFirstChildOfClass("UIStroke")
+                if st then
+                    st.Color = Color3.fromRGB(0, 240, 255)
+                    st.Thickness = 1.2
+                else
+                    local nSt = Instance.new("UIStroke")
+                    nSt.Color = Color3.fromRGB(0, 240, 255)
+                    nSt.Thickness = 1.2
+                    nSt.Parent = mainCont
+                end
             end
         end
         for _, obj in ipairs(gui:GetDescendants()) do
@@ -252,114 +207,151 @@ task.spawn(function()
         end)
     end
 
-    for _ = 1, 30 do
-        local screenGui = (pGui and pGui:FindFirstChild("Redz Library V5")) or (Player:FindFirstChild("PlayerGui") and Player.PlayerGui:FindFirstChild("Redz Library V5"))
-        if screenGui then
-            setupGlow(screenGui)
+    for _ = 1, 40 do
+        local zinerGui = (pGui and pGui:FindFirstChild("Ziner hub GUI")) or (game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui") and game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Ziner hub GUI"))
+        if zinerGui then
+            setupGlow(zinerGui)
             break
         end
         task.wait(0.1)
     end
 end)
 
+-- Tự động mở menu khi load script
+task.spawn(function()
+    repeat task.wait() until getgenv().ReadyForGuiLoaded
+    task.wait(0.1)
+    if not getgenv().UIToggled and Library and Library.ToggleUI then
+        Library.ToggleUI()
+    end
+end)
+
 -- ==========================================
--- HỆ THỐNG THÔNG BÁO (NOTIFICATION / DIALOG)
+-- HỆ THỐNG THÔNG BÁO (NOTIFICATION / COMPATIBILITY)
 -- ==========================================
 local OrionLib = {}
-local Library = OrionLib
 
 function OrionLib:MakeNotification(options)
     options = options or {}
     local title = options.Title or options.Name or "Abysslix Hub"
     local text = options.Content or options.Description or options.Text or ""
     pcall(function()
-        if Window and Window.Dialog then
-            Window:Dialog({
+        if Library and Library.Notify then
+            Library:Notify({
                 Title = title,
-                Text = text,
-                Options = {
-                    {"Đóng", function() end}
-                }
-            })
-        elseif RedzLib and RedzLib.Dialog then
-            RedzLib:Dialog({
-                Title = title,
-                Text = text,
-                Options = {
-                    {"Đóng", function() end}
-                }
-            })
+                Content = text,
+                Duration = 5
+            }, true)
         end
     end)
 end
 
-function Library:Notify(options)
+function Library:MakeNotification(options)
     return OrionLib:MakeNotification(options)
 end
 
 -- ==========================================
--- WRAPPER ELEMENTS: TƯƠNG THÍCH 100% VỚI CODE CŨ
--- Chuyển tiếp toàn bộ Toggle, Dropdown, Slider, Input, Paragraph, Button, Section
--- sang RedzLib V5 mà không làm lỗi bất kỳ logic nào
+-- WRAPPER ELEMENTS: TƯƠNG THÍCH 100% VỚI CODE CŨ & BANANA HUB
 -- ==========================================
-local function wrapTab(rawTab)
+local function wrapSection(rawSec, tabWrapped)
+    local secProxy = {}
+    function secProxy:AddToggle(...) return tabWrapped:AddToggle(...) end
+    function secProxy:AddButton(...) return tabWrapped:AddButton(...) end
+    function secProxy:AddDropdown(...) return tabWrapped:AddDropdown(...) end
+    function secProxy:AddSlider(...) return tabWrapped:AddSlider(...) end
+    function secProxy:AddInput(...) return tabWrapped:AddInput(...) end
+    function secProxy:AddTextBox(...) return tabWrapped:AddInput(...) end
+    function secProxy:AddLabel(...) return tabWrapped:AddLabel(...) end
+    function secProxy:AddParagraph(...) return tabWrapped:AddParagraph(...) end
+    function secProxy:AddSeperator(...) return tabWrapped:AddSeperator(...) end
+    function secProxy:Set(...) end
+    function secProxy:SetDesc(...) end
+    function secProxy:Destroy(...) end
+    setmetatable(secProxy, { __index = rawSec })
+    return secProxy
+end
+
+local function wrapTab(rawTab, defaultTitle)
     local wrapped = { _raw = rawTab }
+    local currentSection = nil
+
+    local function getSection()
+        if not currentSection then
+            if rawTab.AddLeftGroupbox then
+                currentSection = rawTab:AddLeftGroupbox(defaultTitle or "Chung")
+            elseif rawTab.AddSection then
+                currentSection = rawTab:AddSection(defaultTitle or "Chung")
+            end
+        end
+        return currentSection
+    end
+
+    currentSection = getSection()
 
     -- 1. SECTION
     function wrapped:AddSection(arg1)
         local secName = (type(arg1) == "table" and (arg1.Name or arg1.Title or arg1.Section)) or tostring(arg1 or "")
-        local rawSec = rawTab:AddSection(secName)
-        return {
-            Set = function(_, newName)
-                if rawSec and rawSec.Set then pcall(rawSec.Set, rawSec, newName) end
-            end,
-            SetDesc = function() end,
-            Destroy = function()
-                if rawSec and rawSec.Destroy then pcall(rawSec.Destroy, rawSec) end
-            end
-        }
+        if rawTab.AddLeftGroupbox then
+            currentSection = rawTab:AddLeftGroupbox(secName)
+        elseif rawTab.AddSection then
+            currentSection = rawTab:AddSection(secName)
+        end
+        return wrapSection(currentSection, wrapped)
     end
 
     -- 2. BUTTON
     function wrapped:AddButton(arg1, arg2)
+        local sec = getSection()
         local setting = (type(arg1) == "table" and arg1) or (type(arg2) == "table" and arg2) or {}
-        local title = setting.Title or setting.Name or (type(arg1) == "string" and arg1) or "Button"
+        local title = setting.Title or setting.Name or setting.Text or (type(arg1) == "string" and arg1) or "Button"
         local desc = setting.Description or setting.Desc or ""
-        local callback = setting.Callback or (type(arg2) == "function" and arg2) or function() end
+        local callback = setting.Callback or setting.Func or (type(arg2) == "function" and arg2) or function() end
 
-        local rawBtn = rawTab:AddButton({
-            Name = title,
-            Description = desc,
+        local rawBtn = sec:AddButton({
+            Title = title,
+            Text = title,
+            Desc = desc,
             Callback = callback
         })
 
         local proxy = {}
-        function proxy:Set(v1, v2)
-            if rawBtn and rawBtn.Set then pcall(rawBtn.Set, rawBtn, v1, v2) end
+        function proxy:SetTitle(t)
+            if rawBtn and rawBtn.SetTitle then pcall(rawBtn.SetTitle, rawBtn, tostring(t or "")) end
         end
-        function proxy:Destroy()
-            if rawBtn and rawBtn.Destroy then pcall(rawBtn.Destroy, rawBtn) end
+        function proxy:Set(t)
+            return proxy:SetTitle(t)
         end
-        function proxy:Visible(...)
-            if rawBtn and rawBtn.Visible then pcall(rawBtn.Visible, rawBtn, ...) end
-        end
+        function proxy:Destroy() end
+        function proxy:Visible(...) end
         setmetatable(proxy, { __index = rawBtn })
         return proxy
     end
 
     -- 3. TOGGLE
     function wrapped:AddToggle(arg1, arg2)
-        local setting = (type(arg1) == "table" and arg1) or (type(arg2) == "table" and arg2) or {}
-        local title = setting.Title or setting.Name or (type(arg1) == "string" and arg1) or "Toggle"
+        local sec = getSection()
+        local id, setting
+        if type(arg1) == "string" and type(arg2) == "table" then
+            id = arg1
+            setting = arg2
+        elseif type(arg1) == "table" then
+            id = arg1.Title or arg1.Name or arg1.Text or "Toggle"
+            setting = arg1
+        else
+            id = tostring(arg1 or "Toggle")
+            setting = arg2 or {}
+        end
+
+        local title = setting.Title or setting.Name or setting.Text or id
         local desc = setting.Description or setting.Desc or ""
         local default = (setting.Default == true)
         local origCallback = setting.Callback
-
         local holder = { extraCallback = nil, value = default }
 
-        local rawToggle = rawTab:AddToggle({
-            Name = title,
-            Description = desc,
+        local rawToggle = sec:AddToggle(id, {
+            Title = title,
+            Text = title,
+            Desc = desc,
             Default = default,
             Callback = function(val)
                 holder.value = val
@@ -374,38 +366,47 @@ local function wrapTab(rawTab)
             return proxy
         end
         function proxy:SetValue(val)
-            holder.value = val
-            if rawToggle and rawToggle.Set then
-                pcall(rawToggle.Set, rawToggle, val)
+            local boolVal = (val == true)
+            holder.value = boolVal
+            if rawToggle and rawToggle.SetStage then
+                pcall(rawToggle.SetStage, boolVal)
             end
         end
         function proxy:SetStage(val)
             return proxy:SetValue(val)
         end
-        function proxy:Set(v1, v2)
-            if type(v1) == "boolean" then
-                return proxy:SetValue(v1)
+        function proxy:Set(v)
+            if type(v) == "boolean" then
+                return proxy:SetValue(v)
             elseif rawToggle and rawToggle.Set then
-                pcall(rawToggle.Set, rawToggle, v1, v2)
+                pcall(rawToggle.Set, rawToggle, v)
             end
         end
         function proxy:GetValue()
             return holder.value
         end
-        function proxy:Destroy()
-            if rawToggle and rawToggle.Destroy then pcall(rawToggle.Destroy, rawToggle) end
-        end
-        function proxy:Visible(...)
-            if rawToggle and rawToggle.Visible then pcall(rawToggle.Visible, rawToggle, ...) end
-        end
+        function proxy:Destroy() end
+        function proxy:Visible(...) end
         setmetatable(proxy, { __index = rawToggle })
         return proxy
     end
 
     -- 4. DROPDOWN
     function wrapped:AddDropdown(arg1, arg2)
-        local setting = (type(arg1) == "table" and arg1) or (type(arg2) == "table" and arg2) or {}
-        local title = setting.Title or setting.Name or (type(arg1) == "string" and arg1) or "Dropdown"
+        local sec = getSection()
+        local id, setting
+        if type(arg1) == "string" and type(arg2) == "table" then
+            id = arg1
+            setting = arg2
+        elseif type(arg1) == "table" then
+            id = arg1.Title or arg1.Name or arg1.Text or "Dropdown"
+            setting = arg1
+        else
+            id = tostring(arg1 or "Dropdown")
+            setting = arg2 or {}
+        end
+
+        local title = setting.Title or setting.Name or setting.Text or id
         local desc = setting.Description or setting.Desc or ""
         local values = setting.Values or setting.Options or {}
         local default = setting.Default
@@ -414,17 +415,19 @@ local function wrapTab(rawTab)
         elseif type(default) == "table" then
             default = default[1]
         end
+        local multi = (setting.Multi == true or setting.Selected == true)
         local origCallback = setting.Callback
-        local multi = (setting.Multi == true or setting.MultiSelect == true)
+        local holder = { extraCallback = nil, value = default or values[1] }
 
-        local holder = { extraCallback = nil, value = default }
-
-        local rawDropdown = rawTab:AddDropdown({
-            Name = title,
-            Description = desc,
-            Options = values,
-            Default = default or values[1],
-            MultiSelect = multi,
+        local rawDropdown = sec:AddDropdown(id, {
+            Title = title,
+            Text = title,
+            Desc = desc,
+            Values = values,
+            Multi = multi,
+            Selected = multi,
+            Default = default,
+            Search = (setting.Search == true),
             Callback = function(val)
                 holder.value = val
                 if origCallback then pcall(origCallback, val) end
@@ -439,58 +442,68 @@ local function wrapTab(rawTab)
         end
         function proxy:SetValue(val)
             holder.value = val
-            if rawDropdown and rawDropdown.Select then
-                pcall(rawDropdown.Select, rawDropdown, val)
+            if rawDropdown and rawDropdown.SetValue then
+                pcall(rawDropdown.SetValue, rawDropdown, val)
             end
         end
         function proxy:Select(val)
             return proxy:SetValue(val)
         end
         function proxy:Set(newValues, clear)
-            if type(newValues) == "table" and rawDropdown and rawDropdown.Set then
-                pcall(rawDropdown.Set, rawDropdown, newValues, clear)
+            if type(newValues) == "table" and rawDropdown and rawDropdown.GetNewList then
+                pcall(rawDropdown.GetNewList, rawDropdown, newValues)
+            elseif type(newValues) == "string" then
+                return proxy:SetValue(newValues)
             end
         end
         function proxy:Refresh(newValues)
-            return proxy:Set(newValues, true)
+            if rawDropdown and rawDropdown.GetNewList then
+                pcall(rawDropdown.GetNewList, rawDropdown, newValues)
+            end
         end
         function proxy:GetNewList(newValues)
-            return proxy:Set(newValues, true)
+            if rawDropdown and rawDropdown.GetNewList then
+                pcall(rawDropdown.GetNewList, rawDropdown, newValues)
+            end
         end
-        function proxy:ClearText() end
+        function proxy:ClearText(v)
+            if rawDropdown and rawDropdown.ClearText then
+                pcall(rawDropdown.ClearText, rawDropdown, v)
+            end
+        end
         function proxy:GetValue()
+            if rawDropdown and rawDropdown.GetValue then
+                local success, val = pcall(rawDropdown.GetValue, rawDropdown)
+                if success and val ~= nil then return val end
+            end
             return holder.value
         end
-        function proxy:Destroy()
-            if rawDropdown and rawDropdown.Destroy then pcall(rawDropdown.Destroy, rawDropdown) end
-        end
-        function proxy:Visible(...)
-            if rawDropdown and rawDropdown.Visible then pcall(rawDropdown.Visible, rawDropdown, ...) end
-        end
+        function proxy:Destroy() end
+        function proxy:Visible(...) end
         setmetatable(proxy, { __index = rawDropdown })
         return proxy
     end
 
     -- 5. SLIDER
     function wrapped:AddSlider(arg1, arg2)
+        local sec = getSection()
         local setting = (type(arg1) == "table" and arg1) or (type(arg2) == "table" and arg2) or {}
-        local title = setting.Title or setting.Name or (type(arg1) == "string" and arg1) or "Slider"
+        local title = setting.Title or setting.Name or setting.Text or (type(arg1) == "string" and arg1) or "Slider"
         local desc = setting.Description or setting.Desc or ""
         local min = tonumber(setting.Min) or tonumber(setting.MinValue) or 0
         local max = tonumber(setting.Max) or tonumber(setting.MaxValue) or 100
-        local rounding = tonumber(setting.Increment) or tonumber(setting.Rounding) or tonumber(setting.Increase) or 1
         local default = tonumber(setting.Default) or min
         local origCallback = setting.Callback
-
         local holder = { extraCallback = nil, value = default }
 
-        local rawSlider = rawTab:AddSlider({
-            Name = title,
-            Description = desc,
+        local rawSlider = sec:AddSlider({
+            Title = title,
+            Text = title,
+            Desc = desc,
             Min = min,
             Max = max,
-            Increase = rounding,
             Default = default,
+            Precise = (setting.Precise == true),
             Callback = function(val)
                 holder.value = val
                 if origCallback then pcall(origCallback, val) end
@@ -506,42 +519,54 @@ local function wrapTab(rawTab)
         function proxy:SetValue(val)
             local num = tonumber(val) or val
             holder.value = num
-            if rawSlider and rawSlider.Set then
-                pcall(rawSlider.Set, rawSlider, num)
+            if rawSlider and rawSlider.SetValue then
+                pcall(rawSlider.SetValue, num)
             end
         end
         function proxy:Set(val)
             return proxy:SetValue(val)
         end
         function proxy:GetValue()
+            if rawSlider and rawSlider.GetValue then
+                local success, v = pcall(rawSlider.GetValue)
+                if success and v ~= nil then return v end
+            end
             return holder.value
         end
-        function proxy:Destroy()
-            if rawSlider and rawSlider.Destroy then pcall(rawSlider.Destroy, rawSlider) end
-        end
-        function proxy:Visible(...)
-            if rawSlider and rawSlider.Visible then pcall(rawSlider.Visible, rawSlider, ...) end
-        end
+        function proxy:Destroy() end
+        function proxy:Visible(...) end
         setmetatable(proxy, { __index = rawSlider })
         return proxy
     end
 
     -- 6. INPUT (TEXTBOX)
     function wrapped:AddInput(arg1, arg2)
-        local setting = (type(arg1) == "table" and arg1) or (type(arg2) == "table" and arg2) or {}
-        local title = setting.Title or setting.Name or (type(arg1) == "string" and arg1) or "Input"
+        local sec = getSection()
+        local id, setting
+        if type(arg1) == "string" and type(arg2) == "table" then
+            id = arg1
+            setting = arg2
+        elseif type(arg1) == "table" then
+            id = arg1.Title or arg1.Name or arg1.Text or "Input"
+            setting = arg1
+        else
+            id = tostring(arg1 or "Input")
+            setting = arg2 or {}
+        end
+
+        local title = setting.Title or setting.Name or setting.Text or id
         local desc = setting.Description or setting.Desc or ""
         local default = tostring(setting.Default or "")
         local placeholder = setting.Placeholder or setting.PlaceholderText or "Nhập..."
         local origCallback = setting.Callback
-
         local holder = { extraCallback = nil, value = default }
 
-        local rawBox = rawTab:AddTextBox({
-            Name = title,
-            Description = desc,
+        local rawBox = sec:AddInput(id, {
+            Title = title,
+            Text = title,
+            Desc = desc,
             Default = default,
-            PlaceholderText = placeholder,
+            Placeholder = placeholder,
             Callback = function(val)
                 holder.value = val
                 if origCallback then pcall(origCallback, val) end
@@ -556,6 +581,9 @@ local function wrapTab(rawTab)
         end
         function proxy:SetValue(val)
             holder.value = tostring(val)
+            if rawBox and rawBox.SetValue then
+                pcall(rawBox.SetValue, val)
+            end
         end
         function proxy:Set(val)
             return proxy:SetValue(val)
@@ -563,12 +591,8 @@ local function wrapTab(rawTab)
         function proxy:GetValue()
             return holder.value
         end
-        function proxy:Destroy()
-            if rawBox and rawBox.Destroy then pcall(rawBox.Destroy, rawBox) end
-        end
-        function proxy:Visible(...)
-            if rawBox and rawBox.Visible then pcall(rawBox.Visible, rawBox, ...) end
-        end
+        function proxy:Destroy() end
+        function proxy:Visible(...) end
         setmetatable(proxy, { __index = rawBox })
         return proxy
     end
@@ -576,66 +600,106 @@ local function wrapTab(rawTab)
 
     -- 7. PARAGRAPH
     function wrapped:AddParagraph(arg1, arg2)
+        local sec = getSection()
         local setting = (type(arg1) == "table" and arg1) or (type(arg2) == "table" and arg2) or {}
         local title = setting.Title or setting.Name or (type(arg1) == "string" and arg1) or ""
         local content = setting.Content or setting.Description or setting.Desc or (type(arg2) == "string" and arg2) or ""
 
-        local rawPara = rawTab:AddParagraph({
-            Title = title,
-            Text = content
-        })
+        local labelText = title
+        if content ~= "" then
+            if labelText ~= "" then
+                labelText = labelText .. ": " .. content
+            else
+                labelText = content
+            end
+        end
+
+        local rawLabel = sec:AddLabel(labelText)
 
         local proxy = {}
         function proxy:SetTitle(newTitle)
-            if rawPara and rawPara.SetTitle then
-                pcall(rawPara.SetTitle, rawPara, tostring(newTitle or ""))
+            if rawLabel and rawLabel.SetText then
+                pcall(rawLabel.SetText, rawLabel, tostring(newTitle or ""))
             end
         end
         function proxy:SetDesc(newDesc)
-            if rawPara and rawPara.SetDesc then
-                pcall(rawPara.SetDesc, rawPara, tostring(newDesc or ""))
+            if rawLabel and rawLabel.SetText then
+                pcall(rawLabel.SetText, rawLabel, tostring(newDesc or ""))
             end
         end
-        function proxy:SetText(newDesc)
-            return proxy:SetDesc(newDesc)
+        function proxy:SetText(newText)
+            if rawLabel and rawLabel.SetText then
+                pcall(rawLabel.SetText, rawLabel, tostring(newText or ""))
+            end
         end
         function proxy:Set(v1, v2)
-            if type(v1) == "table" then
-                local nTitle = v1.Title or v1.Name or ""
-                local nDesc = v1.Content or v1.Description or v1.Desc or ""
-                if rawPara and rawPara.Set then
-                    pcall(rawPara.Set, rawPara, nTitle, nDesc)
-                end
-            else
-                if rawPara and rawPara.Set then
-                    pcall(rawPara.Set, rawPara, v1, v2)
-                end
-            end
+            local t = (type(v1) == "table" and (v1.Title or v1.Content or v1.Description)) or tostring(v1 or "")
+            return proxy:SetText(t)
         end
-        function proxy:Destroy()
-            if rawPara and rawPara.Destroy then pcall(rawPara.Destroy, rawPara) end
-        end
-        function proxy:Visible(...)
-            if rawPara and rawPara.Visible then pcall(rawPara.Visible, rawPara, ...) end
-        end
-        setmetatable(proxy, { __index = rawPara })
+        function proxy:Destroy() end
+        function proxy:Visible(...) end
+        setmetatable(proxy, { __index = rawLabel })
         return proxy
     end
 
     -- 8. LABEL
     function wrapped:AddLabel(text)
-        return wrapped:AddParagraph({ Title = "", Description = tostring(text or "") })
+        local sec = getSection()
+        local rawLabel = sec:AddLabel(tostring(text or ""))
+        local proxy = {}
+        function proxy:SetText(t)
+            if rawLabel and rawLabel.SetText then
+                pcall(rawLabel.SetText, rawLabel, tostring(t or ""))
+            end
+        end
+        function proxy:Set(t)
+            return proxy:SetText(t)
+        end
+        function proxy:SetColor(c)
+            if rawLabel and rawLabel.SetColor then
+                pcall(rawLabel.SetColor, c)
+            end
+        end
+        setmetatable(proxy, { __index = rawLabel })
+        return proxy
+    end
+
+    -- 9. SEPARATOR
+    function wrapped:AddSeperator(text)
+        local sec = getSection()
+        if sec and sec.AddSeperator then
+            return sec:AddSeperator(text or "")
+        end
     end
 
     return wrapped
 end
 
 -- ==========================================
--- TẠO CÁC TABS (BANANA HUB STYLE VỚI ICON LUCIDE CHUẨN)
+-- TẠO CÁC TABS (BANANA HUB STYLE VỚI ICON RBXASSETID CHUẨN)
 -- ==========================================
+local LucideToAsset = {
+    ["info"]          = "rbxassetid://10723346959",
+    ["swords"]        = "rbxassetid://10734954701",
+    ["waves"]         = "rbxassetid://10709819149",
+    ["package"]       = "rbxassetid://10709782497",
+    ["settings"]      = "rbxassetid://10734950309",
+    ["radio"]         = "rbxassetid://10709789310",
+    ["bar-chart-2"]   = "rbxassetid://10709752317",
+    ["user"]          = "rbxassetid://10747373176",
+    ["map-pin"]       = "rbxassetid://10734914109",
+    ["eye"]           = "rbxassetid://10723346959",
+    ["cherry"]        = "rbxassetid://10709775086",
+    ["flame"]         = "rbxassetid://10709768000",
+    ["zap"]           = "rbxassetid://10734975486",
+    ["shopping-cart"] = "rbxassetid://10747372992",
+    ["folder"]        = "rbxassetid://10723387563",
+}
+
 local function createTab(tabTitle, lucideIcon)
-    local raw = Window:MakeTab({ tabTitle, lucideIcon or HUB_ICON })
-    return wrapTab(raw)
+    local iconId = LucideToAsset[lucideIcon] or (string.find(tostring(lucideIcon or ""), "rbxassetid://") and lucideIcon) or HUB_ICON
+    local raw = Window:AddTab(tabTitle, iconId)
+    return wrapTab(raw, tabTitle)
 end
 
 Tabs = {
@@ -659,8 +723,8 @@ Tabs = {
 task.wait(0.5)
 
 Library:Notify({
-    Title = "BANANA HUB",
-    Content = "Khởi chạy thành công Banana Hub!\nBấm logo nổi hoặc phím Ctrl để đóng/mở menu."
+    Title = "ABYSSLIX HUB",
+    Content = "Khởi chạy thành công Banana Hub Native!\nBấm logo nổi hoặc phím Ctrl để đóng/mở menu."
 })
 
 -- Anti AFK
