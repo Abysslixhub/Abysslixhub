@@ -155,36 +155,49 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 
 -- Gắn thêm Logo Abysslix vào thanh TopBar của Window
-pcall(function()
-    local coreGui = game:GetService("CoreGui")
-    local playerGui = Player:FindFirstChild("PlayerGui")
-    local screenGui = (coreGui and coreGui:FindFirstChild("Redz Library V5")) or (playerGui and playerGui:FindFirstChild("Redz Library V5"))
-    if screenGui then
-        local hub = screenGui:FindFirstChild("Hub")
-        if hub then
-            local comps = hub:FindFirstChild("Components")
-            if comps then
-                local topBar = comps:FindFirstChild("Top Bar")
-                if topBar then
-                    local titleLbl = topBar:FindFirstChild("Title")
-                    if titleLbl and not topBar:FindFirstChild("AbysslixTopLogo") then
-                        titleLbl.Position = UDim2.new(0, 36, 0.5, 0)
-                        local logo = Instance.new("ImageLabel")
-                        logo.Name = "AbysslixTopLogo"
-                        logo.Parent = topBar
-                        logo.BackgroundTransparency = 1
-                        logo.Position = UDim2.new(0, 10, 0.5, 0)
-                        logo.AnchorPoint = Vector2.new(0, 0.5)
-                        logo.Size = UDim2.fromOffset(18, 18)
-                        logo.Image = HUB_ICON
-                        logo.ScaleType = Enum.ScaleType.Fit
-                        local corner = Instance.new("UICorner")
-                        corner.CornerRadius = UDim.new(0, 4)
-                        corner.Parent = logo
+task.spawn(function()
+    for _ = 1, 20 do
+        local attached = false
+        pcall(function()
+            local gethui = gethui or function() return game:GetService("CoreGui") end
+            local pGui = gethui() or Player:FindFirstChild("PlayerGui")
+            local screenGui = pGui and pGui:FindFirstChild("Redz Library V5")
+            if not screenGui and Player:FindFirstChild("PlayerGui") then
+                screenGui = Player.PlayerGui:FindFirstChild("Redz Library V5")
+            end
+            if screenGui then
+                local hub = screenGui:FindFirstChild("Hub")
+                if hub then
+                    local comps = hub:FindFirstChild("Components")
+                    if comps then
+                        local topBar = comps:FindFirstChild("Top Bar")
+                        if topBar then
+                            local titleLbl = topBar:FindFirstChild("Title")
+                            if titleLbl and not topBar:FindFirstChild("AbysslixTopLogo") then
+                                titleLbl.Position = UDim2.new(0, 36, 0.5, 0)
+                                local logo = Instance.new("ImageLabel")
+                                logo.Name = "AbysslixTopLogo"
+                                logo.Parent = topBar
+                                logo.BackgroundTransparency = 1
+                                logo.Position = UDim2.new(0, 10, 0.5, 0)
+                                logo.AnchorPoint = Vector2.new(0, 0.5)
+                                logo.Size = UDim2.fromOffset(18, 18)
+                                logo.Image = HUB_ICON
+                                logo.ScaleType = Enum.ScaleType.Fit
+                                local corner = Instance.new("UICorner")
+                                corner.CornerRadius = UDim.new(0, 4)
+                                corner.Parent = logo
+                                attached = true
+                            elseif topBar:FindFirstChild("AbysslixTopLogo") then
+                                attached = true
+                            end
+                        end
                     end
                 end
             end
-        end
+        end)
+        if attached then break end
+        task.wait(0.1)
     end
 end)
 
