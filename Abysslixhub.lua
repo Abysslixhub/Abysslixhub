@@ -98,30 +98,29 @@ if not RedzLib then
 end
 
 -- ==========================================
--- CẤU HÌNH THEME ĐỎ ABYSSLIX (Abysslix Red)
--- Nền đen vực thẳm + Accent đỏ rực rỡ đặc trưng
--- Ghi đè vào RedzLib Themes để giữ trọn vẹn màu sắc Abysslix
+-- CẤU HÌNH THEME XANH NEON CYAN (Neon Cyan & Ocean Blue Glow)
+-- Nền đen vực thẳm + Accent Xanh Neon Cyan (#00F0FF / #06B6D4)
+-- Hiệu ứng phát sáng nhẹ (Glow Effect) màu xanh biển trên nền tối
 -- ==========================================
-local AbysslixRedTheme = {
+local AbysslixNeonTheme = {
     ["Color Hub 1"] = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(20, 16, 16)),
-        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(28, 20, 20)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(18, 14, 14))
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(10, 14, 20)),
+        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(15, 20, 28)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(10, 14, 20))
     }),
-    ["Color Hub 2"] = Color3.fromRGB(24, 18, 18),
-    ["Color Stroke"] = Color3.fromRGB(65, 25, 25),
-    ["Color Theme"] = Color3.fromRGB(230, 30, 36), -- Màu đỏ Abysslix rực rỡ
-    -- Màu chữ: Xanh Neon Cyan (#00F0FF) và Xanh Cyan dịu (#06B6D4)
-    ["Color Text"] = Color3.fromRGB(0, 240, 255),
-    ["Color Dark Text"] = Color3.fromRGB(6, 182, 212)
+    ["Color Hub 2"] = Color3.fromRGB(14, 18, 25),
+    ["Color Stroke"] = Color3.fromRGB(0, 160, 230), -- Viền xanh biển / cyan phát sáng
+    ["Color Theme"] = Color3.fromRGB(0, 240, 255),  -- Xanh Neon Cyan (#00F0FF) cho Toggle ON, Slider, ScrollBar, Selection
+    ["Color Text"] = Color3.fromRGB(0, 240, 255),   -- Chữ chính: Xanh Neon Cyan (#00F0FF)
+    ["Color Dark Text"] = Color3.fromRGB(6, 182, 212) -- Chữ phụ: Xanh Cyan (#06B6D4)
 }
 
 if RedzLib and RedzLib.Themes then
-    RedzLib.Themes["AbysslixRed"] = AbysslixRedTheme
-    RedzLib.Themes.Darker = AbysslixRedTheme
-    RedzLib.Themes.Dark = AbysslixRedTheme
-    RedzLib.Themes.Purple = AbysslixRedTheme
-    pcall(function() RedzLib:SetTheme("AbysslixRed") end)
+    RedzLib.Themes["AbysslixNeon"] = AbysslixNeonTheme
+    RedzLib.Themes.Darker = AbysslixNeonTheme
+    RedzLib.Themes.Dark = AbysslixNeonTheme
+    RedzLib.Themes.Purple = AbysslixNeonTheme
+    pcall(function() RedzLib:SetTheme("AbysslixNeon") end)
 end
 
 -- ==========================================
@@ -142,7 +141,7 @@ pcall(function()
         Button = {
             Image = HUB_ICON,
             BackgroundTransparency = 0,
-            BackgroundColor3 = Color3.fromRGB(28, 18, 18)
+            BackgroundColor3 = Color3.fromRGB(12, 16, 24)
         },
         Corner = { CornerRadius = UDim.new(0, 10) }
     })
@@ -226,6 +225,25 @@ task.spawn(function()
     local pGui = gethui() or Player:FindFirstChild("PlayerGui")
     local function setupGlow(gui)
         if not gui then return end
+        local hub = gui:FindFirstChild("Hub")
+        if hub then
+            local stroke = hub:FindFirstChild("HubGlowStroke") or Instance.new("UIStroke")
+            stroke.Name = "HubGlowStroke"
+            stroke.Color = Color3.fromRGB(0, 180, 255)
+            stroke.Thickness = 1.4
+            stroke.Transparency = 0.3
+            stroke.Parent = hub
+        end
+        for _, btn in ipairs(gui:GetChildren()) do
+            if btn:IsA("ImageButton") and btn.Name ~= "Hub" then
+                local bStroke = btn:FindFirstChild("MiniGlowStroke") or Instance.new("UIStroke")
+                bStroke.Name = "MiniGlowStroke"
+                bStroke.Color = Color3.fromRGB(0, 240, 255)
+                bStroke.Thickness = 1.5
+                bStroke.Transparency = 0.2
+                bStroke.Parent = btn
+            end
+        end
         for _, obj in ipairs(gui:GetDescendants()) do
             applyTextGlow(obj)
         end
