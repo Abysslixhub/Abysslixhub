@@ -111,8 +111,9 @@ local AbysslixRedTheme = {
     ["Color Hub 2"] = Color3.fromRGB(24, 18, 18),
     ["Color Stroke"] = Color3.fromRGB(65, 25, 25),
     ["Color Theme"] = Color3.fromRGB(230, 30, 36), -- Màu đỏ Abysslix rực rỡ
-    ["Color Text"] = Color3.fromRGB(245, 245, 245),
-    ["Color Dark Text"] = Color3.fromRGB(185, 150, 150)
+    -- Màu chữ: Xanh Neon Cyan (#00F0FF) và Xanh Cyan dịu (#06B6D4)
+    ["Color Text"] = Color3.fromRGB(0, 240, 255),
+    ["Color Dark Text"] = Color3.fromRGB(6, 182, 212)
 }
 
 if RedzLib and RedzLib.Themes then
@@ -197,6 +198,50 @@ task.spawn(function()
             end
         end)
         if attached then break end
+        task.wait(0.1)
+    end
+end)
+
+-- ==========================================
+-- HIỆU ỨNG PHÁT SÁNG CHỮ (GLOW EFFECT) XANH BIỂN TRÊN NỀN TỐI
+-- Tự động thêm viền ánh sáng xanh biển (Ocean Blue Glow) vào mọi chữ Neon Cyan
+-- ==========================================
+local function applyTextGlow(inst)
+    if not inst or not inst:IsA("GuiObject") then return end
+    if inst:IsA("TextLabel") or inst:IsA("TextBox") then
+        if not inst:FindFirstChild("NeonOceanGlow") then
+            local glow = Instance.new("UIStroke")
+            glow.Name = "NeonOceanGlow"
+            glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+            glow.Color = Color3.fromRGB(0, 140, 255) -- Xanh biển phát sáng dịu
+            glow.Thickness = 1.1
+            glow.Transparency = 0.45
+            glow.Parent = inst
+        end
+    end
+end
+
+task.spawn(function()
+    local gethui = gethui or function() return game:GetService("CoreGui") end
+    local pGui = gethui() or Player:FindFirstChild("PlayerGui")
+    local function setupGlow(gui)
+        if not gui then return end
+        for _, obj in ipairs(gui:GetDescendants()) do
+            applyTextGlow(obj)
+        end
+        gui.DescendantAdded:Connect(function(obj)
+            task.defer(function()
+                applyTextGlow(obj)
+            end)
+        end)
+    end
+
+    for _ = 1, 30 do
+        local screenGui = (pGui and pGui:FindFirstChild("Redz Library V5")) or (Player:FindFirstChild("PlayerGui") and Player.PlayerGui:FindFirstChild("Redz Library V5"))
+        if screenGui then
+            setupGlow(screenGui)
+            break
+        end
         task.wait(0.1)
     end
 end)
