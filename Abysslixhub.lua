@@ -127,9 +127,9 @@ end
 -- TẠO CỬA SỔ CHÍNH (WINDOW) CHUẨN BANANA HUB 100%
 -- ==========================================
 local Window = RedzLib:MakeWindow({
-    Title = "ABYSSLIX HUB",
-    SubTitle = "Blox Fruits | Banana UI",
-    SaveFolder = "AbysslixHubConfig.json"
+    Title = "BANANA HUB",
+    SubTitle = "Abysslix | Blox Fruits",
+    SaveFolder = "BananaHubConfig.json"
 })
 
 -- ==========================================
@@ -661,8 +661,8 @@ Tabs = {
 task.wait(0.5)
 
 Library:Notify({
-    Title = "Abysslix Hub",
-    Content = "Khởi chạy thành công Banana UI!\nBấm logo nổi hoặc phím Ctrl để đóng/mở menu."
+    Title = "BANANA HUB",
+    Content = "Khởi chạy thành công Banana Hub!\nBấm logo nổi hoặc phím Ctrl để đóng/mở menu."
 })
 
 -- Anti AFK
