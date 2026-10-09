@@ -65,6 +65,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local RedzLib
 local RedzLibURLs = {
+    "https://gist.githubusercontent.com/IIRyoII/a112000e256270ba92606a9ad966bf05/raw/0547a0107441dad00602232211f67eb79f4c10d0/Banana%2520Hub",
     "https://raw.githubusercontent.com/tlredz/Library/refs/heads/main/V5/Source.lua",
     "https://raw.githubusercontent.com/tlredz/Library/main/V5/Source.lua",
     "https://raw.githubusercontent.com/realredz/RedzLibV5/main/Source.lua",
@@ -12563,13 +12564,41 @@ Tabs.Misc:AddButton({
     end
 })
 
--- ========== AUTO CODES ==========
-Tabs.Misc:AddSection("Auto Code")
+Tabs.Misc:AddSection("Tiện Ích Chat & Khác")
 Tabs.Misc:AddButton({
-    ["Title"] = "Nhập Tất Cả Code (Redeem All Codes)",
-    ["Description"] = "Tự động nhập toàn bộ mã quà tặng Blox Fruits",
+    ["Title"] = "Bật Chat Spy (Đọc Tin Nhắn Ẩn)",
+    ["Description"] = "Xem tin nhắn riêng/ẩn của tất cả người chơi trong server",
     ["Callback"] = function()
-        RedeemAllCodes()
+        pcall(function()
+            local StarterGui = game:GetService("StarterGui")
+            local Players = game:GetService("Players")
+            local player = Players.LocalPlayer
+            local chatEvents = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+            local getmsg = chatEvents and chatEvents:FindFirstChild("OnMessageDoneFiltering")
+            if not getmsg then
+                Library:Notify({ Title = "Chat Spy", Content = "Hệ thống chat mới (TextChatService) đang được dùng!" })
+                return
+            end
+            local instance = (_G.chatSpyInstance or 0) + 1
+            _G.chatSpyInstance = instance
+            local function onChatted(p, msg)
+                if _G.chatSpyInstance == instance and p ~= player then
+                    StarterGui:SetCore("ChatMakeSystemMessage", {
+                        Text = "[Spy] [" .. p.Name .. "]: " .. tostring(msg),
+                        Color = Color3.fromRGB(0, 240, 255),
+                        Font = Enum.Font.SourceSansBold,
+                        TextSize = 16
+                    })
+                end
+            end
+            for _, p in ipairs(Players:GetPlayers()) do
+                p.Chatted:Connect(function(msg) onChatted(p, msg) end)
+            end
+            Players.PlayerAdded:Connect(function(p)
+                p.Chatted:Connect(function(msg) onChatted(p, msg) end)
+            end)
+            Library:Notify({ Title = "Chat Spy", Content = "Đã kích hoạt Chat Spy thành công!" })
+        end)
     end
 })
 
