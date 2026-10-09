@@ -61,7 +61,7 @@ local Root = HumanoidRootPart
 -- ==========================================
 -- LOAD BANANA HUB UI ENGINE (RedzLib V5)
 -- Theme & Layout chuẩn 100% Banana Hub / Duck Hub
--- Giữ nguyên 100% Logo và Màu Đỏ của Abysslix
+-- Giữ nguyên 100% Logo Abysslix & Màu Xanh Đen (Abyss Black & Neon Cyan Glow)
 -- ==========================================
 local HUB_ICON = "rbxassetid://128438943223471"
 local UserInputService = game:GetService("UserInputService")
@@ -98,18 +98,18 @@ if not RedzLib then
 end
 
 -- ==========================================
--- CẤU HÌNH THEME XANH NEON CYAN (Neon Cyan & Ocean Blue Glow)
--- Nền đen vực thẳm + Accent Xanh Neon Cyan (#00F0FF / #06B6D4)
--- Hiệu ứng phát sáng nhẹ (Glow Effect) màu xanh biển trên nền tối
+-- CẤU HÌNH THEME XANH ĐEN (Abyss Black & Neon Cyan Glow)
+-- Nền đen sâu huyền ảo + Accent Xanh Neon Cyan (#00F0FF / #06B6D4)
+-- Viền phát sáng nhẹ (Glow Effect) màu xanh biển trên nền tối
 -- ==========================================
 local AbysslixNeonTheme = {
     ["Color Hub 1"] = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(10, 14, 20)),
-        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(15, 20, 28)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(10, 14, 20))
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(10, 12, 16)),
+        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(14, 18, 25)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(10, 12, 16))
     }),
-    ["Color Hub 2"] = Color3.fromRGB(14, 18, 25),
-    ["Color Stroke"] = Color3.fromRGB(0, 160, 230), -- Viền xanh biển / cyan phát sáng
+    ["Color Hub 2"] = Color3.fromRGB(13, 16, 22),
+    ["Color Stroke"] = Color3.fromRGB(0, 180, 255), -- Viền xanh biển / cyan phát sáng
     ["Color Theme"] = Color3.fromRGB(0, 240, 255),  -- Xanh Neon Cyan (#00F0FF) cho Toggle ON, Slider, ScrollBar, Selection
     ["Color Text"] = Color3.fromRGB(0, 240, 255),   -- Chữ chính: Xanh Neon Cyan (#00F0FF)
     ["Color Dark Text"] = Color3.fromRGB(6, 182, 212) -- Chữ phụ: Xanh Cyan (#06B6D4)
@@ -124,10 +124,10 @@ if RedzLib and RedzLib.Themes then
 end
 
 -- ==========================================
--- TẠO CỬA SỔ CHÍNH (WINDOW) CHUẨN BANANA HUB
+-- TẠO CỬA SỔ CHÍNH (WINDOW) CHUẨN BANANA HUB 100%
 -- ==========================================
 local Window = RedzLib:MakeWindow({
-    Title = "Abysslix Hub",
+    Title = "ABYSSLIX HUB",
     SubTitle = "Blox Fruits | Banana UI",
     SaveFolder = "AbysslixHubConfig.json"
 })
@@ -143,13 +143,13 @@ pcall(function()
             BackgroundTransparency = 0,
             BackgroundColor3 = Color3.fromRGB(12, 16, 24)
         },
-        Corner = { CornerRadius = UDim.new(0, 10) }
+        Corner = { CornerRadius = UDim.new(0, 8) }
     })
 end)
 
--- Phím tắt K trên bàn phím PC để ẩn/hiện menu
+-- Phím tắt Ctrl (LeftControl hoặc RightControl) trên PC để ẩn/hiện menu
 UserInputService.InputBegan:Connect(function(input, processed)
-    if not processed and input.KeyCode == Enum.KeyCode.K then
+    if not processed and (input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl) then
         pcall(function() Window:Minimize() end)
     end
 end)
@@ -662,7 +662,7 @@ task.wait(0.5)
 
 Library:Notify({
     Title = "Abysslix Hub",
-    Content = "Khởi chạy thành công Banana UI!\nBấm logo nổi hoặc phím K để đóng/mở menu."
+    Content = "Khởi chạy thành công Banana UI!\nBấm logo nổi hoặc phím Ctrl để đóng/mở menu."
 })
 
 -- Anti AFK
