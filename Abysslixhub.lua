@@ -151,7 +151,7 @@ task.spawn(function()
                     bStroke.Parent = btn
                 end
             end
-            break
+            end
         end
         task.wait(0.1)
     end
@@ -211,7 +211,7 @@ task.spawn(function()
         local zinerGui = (pGui and pGui:FindFirstChild("Ziner hub GUI")) or (game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui") and game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Ziner hub GUI"))
         if zinerGui then
             setupGlow(zinerGui)
-            break
+            end
         end
         task.wait(0.1)
     end
@@ -1969,7 +1969,7 @@ function UpdateIslandESP()
         local vu11
         v10, vu11 = v8(v9, v10)
         if v10 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu11
@@ -2015,7 +2015,7 @@ function UpdatePlayerChams()
         local vu20
         v19, vu20 = v17(v18, v19)
         if v19 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu20, (ref) vu16
@@ -2059,7 +2059,7 @@ function UpdateChestChams()
         local vu26
         v25, vu26 = v23(v24, v25)
         if v25 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu26, (ref) vu16
@@ -2111,7 +2111,7 @@ function UpdateDevilChams()
         local vu32
         v31, vu32 = v29(v30, v31)
         if v31 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu32, (ref) vu16
@@ -2151,7 +2151,7 @@ function UpdateFlowerChams()
         local vu38
         v37, vu38 = v35(v36, v37)
         if v37 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu38, (ref) vu16
@@ -2198,7 +2198,7 @@ function UpdateRealFruitChams()
         local v44
         v43, v44 = v41(v42, v43)
         if v43 == nil then
-            break
+            end
         end
         if v44:IsA("Tool") then
             if RealFruitESP then
@@ -2232,7 +2232,7 @@ function UpdateRealFruitChams()
         local v50
         v49, v50 = v47(v48, v49)
         if v49 == nil then
-            break
+            end
         end
         if v50:IsA("Tool") then
             if RealFruitESP then
@@ -2266,7 +2266,7 @@ function UpdateRealFruitChams()
         local v56
         v55, v56 = v53(v54, v55)
         if v55 == nil then
-            break
+            end
         end
         if v56:IsA("Tool") then
             if RealFruitESP then
@@ -2303,7 +2303,7 @@ function UpdateIslandESP()
         local vu62
         v61, vu62 = v59(v60, v61)
         if v61 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu62, (ref) vu16
@@ -2349,7 +2349,7 @@ function UpdatePlayerChams()
         local vu71
         v70, vu71 = v68(v69, v70)
         if v70 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu71, (ref) vu67
@@ -2393,7 +2393,7 @@ function UpdateChestChams()
         local vu77
         v76, vu77 = v74(v75, v76)
         if v76 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu77, (ref) vu67
@@ -2445,7 +2445,7 @@ function UpdateDevilChams()
         local vu83
         v82, vu83 = v80(v81, v82)
         if v82 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu83, (ref) vu67
@@ -2485,7 +2485,7 @@ function UpdateFlowerChams()
         local vu89
         v88, vu89 = v86(v87, v88)
         if v88 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu89, (ref) vu67
@@ -2532,7 +2532,7 @@ function UpdateRealFruitChams()
         local v95
         v94, v95 = v92(v93, v94)
         if v94 == nil then
-            break
+            end
         end
         if v95:IsA("Tool") then
             if RealFruitESP then
@@ -2566,7 +2566,7 @@ function UpdateRealFruitChams()
         local v101
         v100, v101 = v98(v99, v100)
         if v100 == nil then
-            break
+            end
         end
         if v101:IsA("Tool") then
             if RealFruitESP then
@@ -2600,7 +2600,7 @@ function UpdateRealFruitChams()
         local v107
         v106, v107 = v104(v105, v106)
         if v106 == nil then
-            break
+            end
         end
         if v107:IsA("Tool") then
             if RealFruitESP then
@@ -2639,7 +2639,7 @@ spawn(function()
                     local v113
                     v112, v113 = v110(v111, v112)
                     if v112 == nil then
-                        break
+                        end
                     end
                     if v113:FindFirstChild("HumanoidRootPart") then
                         if not v113:FindFirstChild("MobEap") then
@@ -2671,7 +2671,7 @@ spawn(function()
                     local v120
                     v119, v120 = v117(v118, v119)
                     if v119 == nil then
-                        break
+                        end
                     end
                     if v120:FindFirstChild("MobEap") then
                         v120.MobEap:Destroy()
@@ -2690,7 +2690,7 @@ spawn(function()
                     local v124
                     v123, v124 = v121(v122, v123)
                     if v123 == nil then
-                        break
+                        end
                     end
                     if v124:FindFirstChild("HumanoidRootPart") then
                         if not v124:FindFirstChild("Seaesps") then
@@ -2722,7 +2722,7 @@ spawn(function()
                     local v131
                     v130, v131 = v128(v129, v130)
                     if v130 == nil then
-                        break
+                        end
                     end
                     if v131:FindFirstChild("Seaesps") then
                         v131.Seaesps:Destroy()
@@ -2741,7 +2741,7 @@ spawn(function()
                     local v135
                     v134, v135 = v132(v133, v134)
                     if v134 == nil then
-                        break
+                        end
                     end
                     if v135:FindFirstChild("HumanoidRootPart") then
                         if not v135:FindFirstChild("NpcEspes") then
@@ -2773,7 +2773,7 @@ spawn(function()
                     local v142
                     v141, v142 = v139(v140, v141)
                     if v141 == nil then
-                        break
+                        end
                     end
                     if v142:FindFirstChild("NpcEspes") then
                         v142.NpcEspes:Destroy()
@@ -2797,7 +2797,7 @@ function UpdateIslandMirageESP()
         local vu149
         v148, vu149 = v146(v147, v148)
         if v148 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu149, (ref) vu145
@@ -2836,7 +2836,7 @@ function UpdateAuraESP()
         local vu155
         v154, vu155 = v152(v153, v154)
         if v154 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu155, (ref) vu145
@@ -2875,7 +2875,7 @@ function UpdateLSDESP()
         local vu161
         v160, vu161 = v158(v159, v160)
         if v160 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu161, (ref) vu145
@@ -2914,7 +2914,7 @@ function UpdateGeaESP()
         local vu167
         v166, vu167 = v164(v165, v166)
         if v166 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu167, (ref) vu145
@@ -2983,10 +2983,10 @@ local function SafeMove(targetCF, checkStop)
 
     local targetPos = targetCF.Position
     while true do
-        if checkStop and checkStop() then break end
+        if checkStop and checkStop() then end
         local curPos = hrp.Position
         local remaining = (targetPos - curPos).Magnitude
-        if remaining < 8 then break end
+        if remaining < 8 then end
 
         -- Tính điểm đến của bước này
         local dir = (targetPos - curPos).Unit
@@ -3092,7 +3092,7 @@ spawn(function()
                     local v187
                     v186, v187 = v184(v185, v186)
                     if v186 == nil then
-                        break
+                        end
                     end
                     if v187:IsA("BasePart") then
                         v187.CanCollide = false
@@ -3119,7 +3119,7 @@ function CheckMaterial(p188)
         local v192
         v191, v192 = v189(v190, v191)
         if v191 == nil then
-            break
+            end
         end
         if type(v192) == "table" and (v192.Type == "Material" and v192.Name == p188) then
             return v192.Count
@@ -3133,7 +3133,7 @@ function GetWeaponInventory(p193)
         local v197
         v196, v197 = v194(v195, v196)
         if v196 == nil then
-            break
+            end
         end
         if type(v197) == "table" and (v197.Type == "Sword" and v197.Name == p193) then
             return true
@@ -3155,10 +3155,10 @@ function AttackNoCoolDown()
         v202, vu204 = v200(v201, v202)
         if v202 == nil then
             vu204 = v203
-            break
+            end
         end
         if vu204:IsA("Tool") then
-            break
+            end
         end
     end
     if vu204 then
@@ -3179,7 +3179,7 @@ function AttackNoCoolDown()
                 local v215
                 v213, v215 = v211(v212, v213)
                 if v213 == nil then
-                    break
+                    end
                 end
                 local v216 = v215:FindFirstChild("HumanoidRootPart")
                 if v216 and (vu207(v215) and (v216.Position - v210).Magnitude <= p208) then
@@ -3196,7 +3196,7 @@ function AttackNoCoolDown()
                 local v223
                 v221, v223 = v219(v220, v221)
                 if v221 == nil then
-                    break
+                    end
                 end
                 local vu224 = (v223.HumanoidRootPart.Position - vu199:GetPivot().Position).Unit
                 pcall(function()
@@ -3216,7 +3216,7 @@ function AttackNoCoolDown()
             while true do
                 local v234, v235 = v228(v229, v230)
                 if v234 == nil then
-                    break
+                    end
                 end
                 v230 = v234
                 if not v235:GetAttribute("IsBoat") and v231(v235) then
@@ -3751,7 +3751,7 @@ local function StartFXLoop()
                             local pos = mob.HumanoidRootPart.Position
                             SpawnSparkFX(mob)
                             PlayHitSound(pos)
-                            break
+                            end
                         end
                     end
                 end
@@ -3889,7 +3889,7 @@ spawn(function()
                     local v280
                     v279, v280 = v277(v278, v279)
                     if v279 == nil then
-                        break
+                        end
                     end
                     if v280:FindFirstChild("Humanoid") and (v280:FindFirstChild("HumanoidRootPart") and (v280.Humanoid.Health > 0 and (v280.Name and (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - v280:FindFirstChild("HumanoidRootPart").Position).Magnitude <= 5000))) then
                         repeat
@@ -3936,7 +3936,7 @@ spawn(function()
                         local v286
                         v285, v286 = v283(v284, v285)
                         if v285 == nil then
-                            break
+                            end
                         end
                         if _G.CastleRaid and (v286:FindFirstChild("HumanoidRootPart") and (v286:FindFirstChild("Humanoid") and (v286.Humanoid.Health > 0 and (v286.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude < 2000))) then
                             repeat
@@ -4061,7 +4061,7 @@ spawn(function()
                     local v319
                     v318, v319 = v316(v317, v318)
                     if v318 == nil then
-                        break
+                        end
                     end
                     local v320 = (v315.Parent:GetPivot().Position - v309).Magnitude
                     if v320 < v311 then
@@ -4298,7 +4298,7 @@ spawn(function()
         local v347
         v346, v347 = v344(v345, v346)
         if v346 == nil then
-            break
+            end
         end
         if v347.Name ~= "Ship Steward" then
             if v347.Name ~= "Ship Engineer" then
@@ -4386,7 +4386,7 @@ spawn(function()
         local v356
         v355, v356 = v353(v354, v355)
         if v355 == nil then
-            break
+            end
         end
         if v356.Name ~= "Cookie Crafter" then
             if v356.Name ~= "Cake Guard" then
@@ -4599,7 +4599,7 @@ spawn(function()
         local v373
         v372, v373 = v370(v371, v372)
         if v372 == nil then
-            break
+            end
         end
         if v373.Name ~= "Reborn Skeleton" then
             if v373.Name ~= "Living Zombie" then
@@ -4794,7 +4794,7 @@ spawn(function()
         local v390
         v389, v390 = v387(v388, v389)
         if v389 == nil then
-            break
+            end
         end
         if v390.Name ~= "Ship Steward" then
             if v390.Name ~= "Ship Engineer" then
@@ -4882,7 +4882,7 @@ spawn(function()
         local v399
         v398, v399 = v396(v397, v398)
         if v398 == nil then
-            break
+            end
         end
         if v399.Name ~= "Cookie Crafter" then
             if v399.Name ~= "Cake Guard" then
@@ -5095,7 +5095,7 @@ spawn(function()
         local v416
         v415, v416 = v413(v414, v415)
         if v415 == nil then
-            break
+            end
         end
         if v416.Name ~= "Reborn Skeleton" then
             if v416.Name ~= "Living Zombie" then
@@ -5135,7 +5135,7 @@ function EquipToolGun()
             local v420
             v419, v420 = v417(v418, v419)
             if v419 == nil then
-                break
+                end
             end
             if v420.ToolTip == "Gun" and v420:IsA("Tool") then
                 local v421 = game.Players.LocalPlayer.Backpack:FindFirstChild(v420.Name)
@@ -5320,7 +5320,7 @@ if Sea3 then
                         if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
                         repeat
                             wait(_G.Fast_Delay)
-                            if not v439 or not v439.Parent or not v439:FindFirstChild("Humanoid") or not v439:FindFirstChild("HumanoidRootPart") then break end
+                            if not v439 or not v439.Parent or not v439:FindFirstChild("Humanoid") or not v439:FindFirstChild("HumanoidRootPart") then end
                             AttackNoCoolDown()
                             AutoHaki()
                             bringmob = true
@@ -5444,7 +5444,7 @@ if Sea3 then
                                 local v446
                                 v445, v446 = v443(v444, v445)
                                 if v445 == nil then
-                                    break
+                                    end
                                 end
                                 if v446.Name == "Cake Prince" or v446.Name == "Dough King" then
                                     repeat
@@ -5469,7 +5469,7 @@ if Sea3 then
                             local v450
                             v449, v450 = v447(v448, v449)
                             if v449 == nil then
-                                break
+                                end
                             end
                             if (v450.Name == "Baking Staff" or (v450.Name == "Head Baker" or (v450.Name == "Cake Guard" or v450.Name == "Cookie Crafter"))) and v450.Humanoid.Health > 0 then
                                 repeat
@@ -5501,7 +5501,7 @@ if Sea3 then
                     local v454
                     v453, v454 = v451(v452, v453)
                     if v453 == nil then
-                        break
+                        end
                     end
                     if _G.Cake and (bringmob and (v454.Name == "Cookie Crafter" or (v454.Name == "Cake Guard" or (v454.Name == "Baking Staff" or v454.Name == "Head Baker")))) and (v454.HumanoidRootPart.Position - POSCAKE.Position).magnitude <= 350 then
                         v454.HumanoidRootPart.CFrame = POSCAKE
@@ -5527,7 +5527,7 @@ if Sea3 then
                                 local v458
                                 v457, v458 = v455(v456, v457)
                                 if v457 == nil then
-                                    break
+                                    end
                                 end
                                 if v458.Name == "Cake Prince" or v458.Name == "Dough King" then
                                     repeat
@@ -5552,7 +5552,7 @@ if Sea3 then
                             local v462
                             v461, v462 = v459(v460, v461)
                             if v461 == nil then
-                                break
+                                end
                             end
                             if (v462.Name == "Baking Staff" or (v462.Name == "Head Baker" or (v462.Name == "Cake Guard" or v462.Name == "Cookie Crafter"))) and v462.Humanoid.Health > 0 then
                                 repeat
@@ -5616,7 +5616,7 @@ if Sea2 then
                             local v468
                             v467, v468 = v465(v466, v467)
                             if v467 == nil then
-                                break
+                                end
                             end
                             if (v468.Name == "Ship Steward" or (v468.Name == "Ship Engineer" or (v468.Name == "Ship Deckhand" or v468.Name == "Ship Officer" and v468:FindFirstChild("Humanoid")))) and v468.Humanoid.Health > 0 then
                                 repeat
@@ -5720,7 +5720,7 @@ spawn(function()
                         local v475
                         v474, v475 = v472(v473, v474)
                         if v474 == nil then
-                            break
+                            end
                         end
                         if v475.Name == _G.SelectBoss and (v475:FindFirstChild("Humanoid") and (v475:FindFirstChild("HumanoidRootPart") and v475.Humanoid.Health > 0)) then
                             repeat
@@ -5813,7 +5813,7 @@ spawn(function()
                         local v482
                         v481, v482 = v479(v480, v481)
                         if v481 == nil then
-                            break
+                            end
                         end
                         if v482:FindFirstChild("Humanoid") and (v482:FindFirstChild("HumanoidRootPart") and (v482.Humanoid.Health > 0 and v482.Name == MMon)) then
                             repeat
@@ -5841,7 +5841,7 @@ spawn(function()
                         local v486
                         v485, v486 = v483(v484, v485)
                         if v485 == nil then
-                            break
+                            end
                         end
                         if string.find(v486.Name, Mon) and (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - v486.Position).Magnitude >= 10 then
                             local _mc47 = v486.HumanoidRootPart.CFrame * Pos
@@ -5895,7 +5895,7 @@ if Sea3 then
                         local v494
                         v493, v494 = v491(v492, v493)
                         if v493 == nil then
-                            break
+                            end
                         end
                         if v494:IsA("BasePart") and v494.Name:find("NeonShrinePart") then
                             Tween2(v494.CFrame)
@@ -5953,7 +5953,7 @@ if Sea3 then
             local v510
             v509, v510 = v507(v508, v509)
             if v509 == nil then
-                break
+                end
             end
             local v511 = v510:FindFirstChild("VehicleSeat")
             if v511 then
@@ -6042,11 +6042,11 @@ if Sea3 then
                             local v532
                             v531, v532 = v529(v530, v531)
                             if v531 == nil then
-                                break
+                                end
                             end
                             if v532 and (v532.Parent and (v532.Name == "VehicleSeat" and not v532.Occupant)) then
                                 Tween2(v532.CFrame)
-                                break
+                                end
                             end
                         end
                         vu518 = false
@@ -6058,7 +6058,7 @@ if Sea3 then
                         local v539
                         v536, v539 = v534(v535, v536)
                         if v536 == nil then
-                            break
+                            end
                         end
                         local v540 = v539:FindFirstChild("VehicleSeat")
                         if v540 then
@@ -6082,7 +6082,7 @@ if Sea3 then
                             local v544
                             v543, v544 = v541(v542, v543)
                             if v543 == nil then
-                                break
+                                end
                             end
                             if v544:IsA("BasePart") then
                                 v544.CanCollide = false
@@ -6094,7 +6094,7 @@ if Sea3 then
                             local v549
                             v548, v549 = v546(v547, v548)
                             if v548 == nil then
-                                break
+                                end
                             end
                             if v549:IsA("BasePart") then
                                 v549.CanCollide = false
@@ -6105,7 +6105,7 @@ if Sea3 then
                             local v553
                             v552, v553 = v550(v551, v552)
                             if v552 == nil then
-                                break
+                                end
                             end
                             local v554 = vu499.Map:FindFirstChild(v553)
                             if v554 and v554:IsA("Model") then
@@ -6160,11 +6160,11 @@ if Sea3 then
             v561, v563 = v559(v560, v561)
             if v561 == nil then
                 v564 = v562
-                break
+                end
             end
             local v564 = v563:FindFirstChild("VehicleSeat")
             if v564 and v564.Occupant == v558 then
-                break
+                end
             end
         end
         if v564 then
@@ -6205,11 +6205,11 @@ if Sea3 then
             v574, v576 = v572(v573, v574)
             if v574 == nil then
                 v577 = v575
-                break
+                end
             end
             local v577 = v576:FindFirstChild("VehicleSeat")
             if v577 and v577.Occupant == v571 then
-                break
+                end
             end
         end
         if v577 then
@@ -6271,7 +6271,7 @@ if Sea3 then
                 local v589
                 v588, v589 = v586(v587, v588)
                 if v588 == nil then
-                    break
+                    end
                 end
                 if v589:IsA("Model") and v589.Name == pu585 then
                     local v590 = v589:FindFirstChild("VehicleSeat")
@@ -6289,7 +6289,7 @@ if Sea3 then
             local v595
             v594, v595 = v592(v593, v594)
             if v594 == nil then
-                break
+                end
             end
             if v595 and (v595.Parent and (v595.Name == "VehicleSeat" and not v595.Occupant)) then
                 Tween2(v595.CFrame)
@@ -6303,7 +6303,7 @@ if Sea3 then
             local v600
             v599, v600 = v597(v598, v599)
             if v599 == nil then
-                break
+                end
             end
             if v600 and (v600.Parent and (v600.Name == "VehicleSeat" and not v600.Occupant)) then
                 vu582[v599] = v600
@@ -6549,7 +6549,7 @@ if Sea3 then
             if _G.CollectSeaChests then
                 pcall(function()
                     for _, chest in ipairs(workspace:GetDescendants()) do
-                        if not _G.CollectSeaChests then break end
+                        if not _G.CollectSeaChests then end
                         if chest:IsA("Part") or chest:IsA("MeshPart") or chest:IsA("Model") then
                             if string.find(chest.Name, "Chest") then
                                 local touchPart = chest:IsA("Model") and (chest.PrimaryPart or chest:FindFirstChildOfClass("BasePart")) or chest
@@ -6684,7 +6684,7 @@ if Sea3 then
                                     local v606
                                     v605, v606 = v603(v604, v605)
                                     if v605 == nil then
-                                        break
+                                        end
                                     end
                                     if v606.Name == "Terrorshark" and (v606:FindFirstChild("Humanoid") and (v606:FindFirstChild("HumanoidRootPart") and v606.Humanoid.Health > 0)) then
                                         while true do
@@ -6692,7 +6692,7 @@ if Sea3 then
                                             if v602.Humanoid.Health < 6000 then
                                                 _G.IsFlying = true
                                                 Tween2(CFrame.new(v602.HumanoidRootPart.Position.X, 360, v602.HumanoidRootPart.Position.Z))
-                                                break
+                                                end
                                             end
                                             AttackNoCoolDown()
                                             AutoHaki()
@@ -6703,7 +6703,7 @@ if Sea3 then
                                             local _mc48 = v606.HumanoidRootPart.CFrame * Pos
                                             if (v606.HumanoidRootPart.CFrame.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc48) end
                                             if not _G.AutoTerrorshark or (not v606.Parent or (v606.Humanoid.Health <= 0 or _G.IsFlying)) then
-                                                break
+                                                end
                                             end
                                         end
                                     end
@@ -6735,7 +6735,7 @@ if Sea3 then
                             local v611
                             v610, v611 = v608(v609, v610)
                             if v610 == nil then
-                                break
+                                end
                             end
                             if v611.Name == "Piranha" and (v611:FindFirstChild("Humanoid") and (v611:FindFirstChild("HumanoidRootPart") and v611.Humanoid.Health > 0)) then
                                 repeat
@@ -6776,7 +6776,7 @@ if Sea3 then
                             local v616
                             v615, v616 = v613(v614, v615)
                             if v615 == nil then
-                                break
+                                end
                             end
                             if v616.Name == "Shark" and (v616:FindFirstChild("Humanoid") and (v616:FindFirstChild("HumanoidRootPart") and v616.Humanoid.Health > 0)) then
                                 repeat
@@ -6821,7 +6821,7 @@ if Sea3 then
                             local v621
                             v620, v621 = v618(v619, v620)
                             if v620 == nil then
-                                break
+                                end
                             end
                             if v621.Name == "Fish Crew Member" and (v621:FindFirstChild("Humanoid") and (v621:FindFirstChild("HumanoidRootPart") and v621.Humanoid.Health > 0)) then
                                 repeat
@@ -6867,7 +6867,7 @@ if Sea3 then
             local v627
             v625, v627 = v623(v624, v625)
             if v625 == nil then
-                break
+                end
             end
             if table.find(v626, v627.Name) and (v627:FindFirstChild("Health") and v627.Health.Value > 0) then
                 return v627
@@ -6915,7 +6915,7 @@ if Sea3 then
             local v634
             v632, v634 = v630(v631, v632)
             if v632 == nil then
-                break
+                end
             end
             if table.find(v633, v634.Name) and (v634:FindFirstChild("Health") and v634.Health.Value > 0) then
                 return v634
@@ -6956,7 +6956,7 @@ if Sea3 then
                             local v639
                             v638, v639 = v636(v637, v638)
                             if v638 == nil then
-                                break
+                                end
                             end
                             if v639:IsA("Tool") and v639.ToolTip == "Melee" then
                                 game.Players.LocalPlayer.Character.Humanoid:EquipTool(v639)
@@ -6977,7 +6977,7 @@ if Sea3 then
                             local v643
                             v642, v643 = v640(v641, v642)
                             if v642 == nil then
-                                break
+                                end
                             end
                             if v643:IsA("Tool") and v643.ToolTip == "Blox Fruit" then
                                 game.Players.LocalPlayer.Character.Humanoid:EquipTool(v643)
@@ -7000,7 +7000,7 @@ if Sea3 then
                             local v647
                             v646, v647 = v644(v645, v646)
                             if v646 == nil then
-                                break
+                                end
                             end
                             if v647:IsA("Tool") and v647.ToolTip == "Sword" then
                                 game.Players.LocalPlayer.Character.Humanoid:EquipTool(v647)
@@ -7020,7 +7020,7 @@ if Sea3 then
                             local v651
                             v650, v651 = v648(v649, v650)
                             if v650 == nil then
-                                break
+                                end
                             end
                             if v651:IsA("Tool") and v651.ToolTip == "Gun" then
                                 game.Players.LocalPlayer.Character.Humanoid:EquipTool(v651)
@@ -7077,7 +7077,7 @@ if Sea3 then
                                 local v657
                                 v656, v657 = v654(v655, v656)
                                 if v656 == nil then
-                                    break
+                                    end
                                 end
                                 if v657:FindFirstChild("Humanoid") and (v657:FindFirstChild("HumanoidRootPart") and (v657.Humanoid.Health > 0 and (v657.Name == "Diablo" or (v657.Name == "Deandre" or v657.Name == "Urban")))) then
                                     repeat
@@ -7118,7 +7118,7 @@ if Sea3 then
                     for _, enemy in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
                         if enemy.Name == "Diablo" or enemy.Name == "Deandre" or enemy.Name == "Urban" then
                             hasElite = true
-                            break
+                            end
                         end
                     end
                     if not hasElite then
@@ -7264,7 +7264,7 @@ if Sea3 then
             local v664
             v663, v664 = v661(v662, v663)
             if v663 == nil then
-                break
+                end
             end
             if v664:IsA("MeshPart") and v664.MeshId == "rbxassetid://6745037796" then
                 return v664
@@ -7310,7 +7310,7 @@ spawn(function()
                     local v672
                     v671, v672 = v669(v670, v671)
                     if v671 == nil then
-                        break
+                        end
                     end
                     if v672:IsA("MeshPart") and v672.Material == Enum.Material.Neon then
                         Tween2(v672.CFrame)
@@ -7366,7 +7366,7 @@ spawn(function()
                             local v680
                             v679, v680 = v677(v678, v679)
                             if v679 == nil then
-                                break
+                                end
                             end
                             if v680:FindFirstChild("Humanoid") and (v680:FindFirstChild("HumanoidRootPart") and (v680.Humanoid.Health > 0 and v680.Name == "Saber Expert")) then
                                 repeat
@@ -7410,7 +7410,7 @@ spawn(function()
                                         local v684
                                         v683, v684 = v681(v682, v683)
                                         if v683 == nil then
-                                            break
+                                            end
                                         end
                                         if v684.Name == "Mob Leader" then
                                             if game:GetService("Workspace").Enemies:FindFirstChild("Mob Leader [Lv. 120] [Boss]") and (v684:FindFirstChild("Humanoid") and (v684:FindFirstChild("HumanoidRootPart") and v684.Humanoid.Health > 0)) then
@@ -7491,7 +7491,7 @@ spawn(function()
                         local v690
                         v689, v690 = v687(v688, v689)
                         if v689 == nil then
-                            break
+                            end
                         end
                         if v690.Name == "Thunder God" and (v690:FindFirstChild("Humanoid") and (v690:FindFirstChild("HumanoidRootPart") and v690.Humanoid.Health > 0)) then
                             repeat
@@ -7539,7 +7539,7 @@ spawn(function()
                         local v696
                         v695, v696 = v693(v694, v695)
                         if v695 == nil then
-                            break
+                            end
                         end
                         if v696.Name == "The Saw" and (v696:FindFirstChild("Humanoid") and (v696:FindFirstChild("HumanoidRootPart") and v696.Humanoid.Health > 0)) then
                             repeat
@@ -7587,7 +7587,7 @@ spawn(function()
                         local v702
                         v701, v702 = v699(v700, v701)
                         if v701 == nil then
-                            break
+                            end
                         end
                         if v702.Name == "Chief Warden" and (v702:FindFirstChild("Humanoid") and (v702:FindFirstChild("HumanoidRootPart") and v702.Humanoid.Health > 0)) then
                             repeat
@@ -7633,7 +7633,7 @@ if Sea3 then
                             local v707
                             v706, v707 = v704(v705, v706)
                             if v706 == nil then
-                                break
+                                end
                             end
                             if string.find(v707.Name, "Soul Reaper") then
                                 repeat
@@ -7689,7 +7689,7 @@ if Sea3 then
                 wait()
                 fireclickdetector(game:GetService("Workspace").Map.Waterfall.SealedKatana.Handle.ClickDetector)
                 if not game:GetService("Players").LocalPlayer.Backpack:FindFirstChild("Yama") and _G.AutoYama then
-                    break
+                    end
                 end
             end
         end
@@ -7710,7 +7710,7 @@ if Sea3 then
                 end
             until AutoTushita
             if game:GetService("Workspace").Enemies:FindFirstChild("Longma") then
-                break
+                end
             end
             Tween2(CFrame.new(- 10238.875976563, 389.7912902832, - 9549.7939453125))
         end
@@ -7812,7 +7812,7 @@ spawn(function()
                         local v720
                         v719, v720 = v717(v718, v719)
                         if v719 == nil then
-                            break
+                            end
                         end
                         if v720.Name == "Beautiful Pirate" and (v720:FindFirstChild("Humanoid") and (v720:FindFirstChild("HumanoidRootPart") and v720.Humanoid.Health > 0)) then
                             repeat
@@ -7863,7 +7863,7 @@ spawn(function()
                                 local vu725
                                 v724, vu725 = v722(v723, v724)
                                 if v724 == nil then
-                                    break
+                                    end
                                 end
                                 if vu725.Name == "Captain Elephant" then
                                     OldCFrameElephant = vu725.HumanoidRootPart.CFrame
@@ -7901,7 +7901,7 @@ spawn(function()
                             local vu729
                             v728, vu729 = v726(v727, v728)
                             if v728 == nil then
-                                break
+                                end
                             end
                             if vu729.Name == "Forest Pirate" then
                                 repeat
@@ -7975,7 +7975,7 @@ spawn(function()
                             local v734
                             v733, v734 = v731(v732, v733)
                             if v733 == nil then
-                                break
+                                end
                             end
                             if v734.Name == "Apple" or (v734.Name == "Banana" or v734.Name == "Pineapple") then
                                 v734.Handle.CFrame = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 1, 10)
@@ -8009,7 +8009,7 @@ spawn(function()
                                 local v739
                                 v738, v739 = v736(v737, v738)
                                 if v738 == nil then
-                                    break
+                                    end
                                 end
                                 if v739.Name == "Stone" then
                                     OldCFrameRainbow = v739.HumanoidRootPart.CFrame
@@ -8035,7 +8035,7 @@ spawn(function()
                                 local v743
                                 v742, v743 = v740(v741, v742)
                                 if v742 == nil then
-                                    break
+                                    end
                                 end
                                 if v743.Name == "Hydra Leader" then
                                     OldCFrameRainbow = v743.HumanoidRootPart.CFrame
@@ -8061,7 +8061,7 @@ spawn(function()
                                 local v747
                                 v746, v747 = v744(v745, v746)
                                 if v746 == nil then
-                                    break
+                                    end
                                 end
                                 if v747.Name == "Kilo Admiral" then
                                     OldCFrameRainbow = v747.HumanoidRootPart.CFrame
@@ -8087,7 +8087,7 @@ spawn(function()
                                 local v751
                                 v750, v751 = v748(v749, v750)
                                 if v750 == nil then
-                                    break
+                                    end
                                 end
                                 if v751.Name == "Captain Elephant" then
                                     OldCFrameRainbow = v751.HumanoidRootPart.CFrame
@@ -8113,7 +8113,7 @@ spawn(function()
                                 local v755
                                 v754, v755 = v752(v753, v754)
                                 if v754 == nil then
-                                    break
+                                    end
                                 end
                                 if v755.Name == "Beautiful Pirate" then
                                     OldCFrameRainbow = v755.HumanoidRootPart.CFrame
@@ -8227,7 +8227,7 @@ spawn(function()
                                 local v760
                                 v759, v760 = v757(v758, v759)
                                 if v759 == nil then
-                                    break
+                                    end
                                 end
                                 if v760:FindFirstChild("HumanoidRootPart") and (v760:FindFirstChild("Humanoid") and (v760.Humanoid.Health > 0 and v760.Name == "Living Zombie")) then
                                     EquipTool(SelectWeapon)
@@ -8292,7 +8292,7 @@ spawn(function()
                         local v766
                         v765, v766 = v763(v764, v765)
                         if v765 == nil then
-                            break
+                            end
                         end
                         if v766.Name == "Cake Queen" and (v766:FindFirstChild("Humanoid") and (v766:FindFirstChild("HumanoidRootPart") and v766.Humanoid.Health > 0)) then
                             repeat
@@ -8370,7 +8370,7 @@ spawn(function()
                                                         local v771
                                                         v770, v771 = v768(v769, v770)
                                                         if v770 == nil then
-                                                            break
+                                                            end
                                                         end
                                                         if (v771.Name == "Cursed Skeleton Boss" or v771.Name == "Cursed Skeleton") and v771.Humanoid.Health > 0 then
                                                             EquipTool(SelectWeapon or Sword)
@@ -8476,7 +8476,7 @@ spawn(function()
                         local v775
                         v774, v775 = v772(v773, v774)
                         if v774 == nil then
-                            break
+                            end
                         end
                         if v775.Name == "Mythological Pirate" then
                             repeat
@@ -8502,7 +8502,7 @@ spawn(function()
                     local v779
                     v778, v779 = v776(v777, v778)
                     if v778 == nil then
-                        break
+                        end
                     end
                     if v779:FindFirstChild("HazeESP") then
                         v779.HazeESP.Size = UDim2.new(50, 50, 50, 50)
@@ -8514,7 +8514,7 @@ spawn(function()
                     local v783
                     v782, v783 = v780(v781, v782)
                     if v782 == nil then
-                        break
+                        end
                     end
                     if v783:FindFirstChild("HazeESP") then
                         v783.HazeESP.Size = UDim2.new(50, 50, 50, 50)
@@ -8533,7 +8533,7 @@ spawn(function()
                 local v787
                 v786, v787 = v784(v785, v786)
                 if v786 == nil then
-                    break
+                    end
                 end
                 if Auto_Quest_Yama_2 and v787:FindFirstChild("HazeESP") and GetMaterial("Alucard Fragment") ~= nil then
                     local _farmEsp = FarmPossEsp or (FarmPos and FarmPos.Position and FarmPos) or nil
@@ -8565,14 +8565,14 @@ spawn(function()
                             return
                         end
                         if v792:FindFirstChild("HazeESP") then
-                            break
+                            end
                         end
                         local v793, v794, v795 = pairs(game:GetService("ReplicatedStorage"):GetChildren())
                         while true do
                             local v796
                             v795, v796 = v793(v794, v795)
                             if v795 == nil then
-                                break
+                                end
                             end
                             if v796:FindFirstChild("HazeESP") then
                                 if (v796.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 2000 then
@@ -8608,7 +8608,7 @@ if (_mc796.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Positi
                         end
                     end
                     if _G.Auto_DualKatana ~= false and (Auto_Quest_Yama_2 ~= false and (v792.Parent and (v792.Humanoid.Health > 0 and v792:FindFirstChild("HazeESP")))) then
-                        break
+                        end
                     end
                 end
             end)
@@ -8636,13 +8636,13 @@ spawn(function()
                         local _sr = nil
                         for _, mob in pairs(_ws.Enemies:GetChildren()) do
                             if mob.Name == "Soul Reaper" and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
-                                _sr = mob; break
+                                _sr = mob; end
                             end
                         end
                         if _sr then
                             repeat
                                 wait()
-                                if not _sr.Parent or not _sr:FindFirstChild("HumanoidRootPart") then break end
+                                if not _sr.Parent or not _sr:FindFirstChild("HumanoidRootPart") then end
                                 local _mc71 = _sr.HumanoidRootPart.CFrame * Pos
                                 if (_sr.HumanoidRootPart.CFrame.Position - _myHrp.Position).Magnitude > 5 then BKP(_mc71) end
                             until not _G.Auto_DualKatana or not Auto_Quest_Yama_3 or _ws.Map:FindFirstChild("HellDimension")
@@ -8662,13 +8662,13 @@ spawn(function()
                     if (mob.Name == "Cursed Skeleton" or mob.Name == "Hell\'s Messenger")
                         and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart")
                         and mob.Humanoid.Health > 0 then
-                        _target = mob; break
+                        _target = mob; end
                     end
                 end
                 if _target then
                     repeat
                         wait()
-                        if not _target.Parent or not _target:FindFirstChild("Humanoid") then break end
+                        if not _target.Parent or not _target:FindFirstChild("Humanoid") then end
                         EquipTool(SelectWeapon or Sword)
                         local _mc72 = _target.HumanoidRootPart.CFrame * Pos
                         if (_target.HumanoidRootPart.CFrame.Position - _myHrp.Position).Magnitude > 5 then BKP(_mc72) end
@@ -8734,14 +8734,14 @@ spawn(function()
                         and mob.Humanoid.Health > 0
                         and (mob.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude < 2000 then
                         v808 = mob
-                        break
+                        end
                     end
                 end
                 if not v808 then return end
 
                 repeat
                     wait()
-                    if not v808 or not v808.Parent or not v808:FindFirstChild("Humanoid") or not v808:FindFirstChild("HumanoidRootPart") then break end
+                    if not v808 or not v808.Parent or not v808:FindFirstChild("Humanoid") or not v808:FindFirstChild("HumanoidRootPart") then end
                     EquipTool(SelectWeapon or Sword)
                     local _mc73 = v808.HumanoidRootPart.CFrame * Pos
                     if (v808.HumanoidRootPart.CFrame.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc73) end
@@ -8779,13 +8779,13 @@ spawn(function()
                     for _, mob in pairs(_ws.Enemies:GetChildren()) do
                         if mob.Name == "Cake Queen" and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
                             _cq = mob
-                            break
+                            end
                         end
                     end
                     if _cq then
                         repeat
                             wait()
-                            if not _cq.Parent or not _cq:FindFirstChild("Humanoid") then break end
+                            if not _cq.Parent or not _cq:FindFirstChild("Humanoid") then end
                             EquipTool(SelectWeapon or Sword)
                             local _mc74 = _cq.HumanoidRootPart.CFrame * Pos
                             if (_cq.HumanoidRootPart.CFrame.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc74) end
@@ -8811,13 +8811,13 @@ spawn(function()
                         and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart")
                         and mob.Humanoid.Health > 0 then
                         _tg = mob
-                        break
+                        end
                     end
                 end
                 if _tg then
                     repeat
                         wait()
-                        if not _tg.Parent or not _tg:FindFirstChild("Humanoid") then break end
+                        if not _tg.Parent or not _tg:FindFirstChild("Humanoid") then end
                         EquipTool(SelectWeapon or Sword)
                         local _mc75 = _tg.HumanoidRootPart.CFrame * Pos
                         if (_tg.HumanoidRootPart.CFrame.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc75) end
@@ -8875,13 +8875,13 @@ if Sea2 then
                 end
             until _G.Factory
             if game.Workspace.Enemies:FindFirstChild("Core") then
-                break
+                end
             end
             if game.ReplicatedStorage:FindFirstChild("Core") then
                 Tween2(CFrame.new(448.46756, 199.356781, - 441.389252))
                 wait()
                 if _G.Factory and (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - Vector3.new(448.46756, 199.356781, - 441.389252)).Magnitude > 10 then
-                    break
+                    end
                 end
             end
         end
@@ -8943,7 +8943,7 @@ spawn(function()
                         local vu826
                         v825, vu826 = v823(v824, v825)
                         if v825 == nil then
-                            break
+                            end
                         end
                         if vu826.Name == "Don Swan" and (vu826.Humanoid.Health > 0 and (vu826:IsA("Model") and (vu826:FindFirstChild("Humanoid") and vu826:FindFirstChild("HumanoidRootPart")))) then
                             repeat
@@ -8991,7 +8991,7 @@ spawn(function()
                         local v831
                         v830, v831 = v828(v829, v830)
                         if v830 == nil then
-                            break
+                            end
                         end
                         if (v831.Name == "Snow Lurker" or v831.Name == "Arctic Warrior") and v831.Humanoid.Health > 0 then
                             repeat
@@ -9088,7 +9088,7 @@ if Sea2 then
                                                     local v838
                                                     v837, v838 = v835(v836, v837)
                                                     if v837 == nil then
-                                                        break
+                                                        end
                                                     end
                                                     if v838.Name == "Zombie" then
                                                         repeat
@@ -9231,7 +9231,7 @@ Tabs.Setting:AddButton({
             local v851
             v849, v851 = v847(v848, v849)
             if v849 == nil then
-                break
+                end
             end
             if v851:IsA("Part") or (v851:IsA("Union") or (v851:IsA("CornerWedgePart") or v851:IsA("TrussPart"))) then
                 v851.Material = "Plastic"
@@ -9256,7 +9256,7 @@ Tabs.Setting:AddButton({
             local v855
             v854, v855 = v852(v853, v854)
             if v854 == nil then
-                break
+                end
             end
             if v855:IsA("BlurEffect") or (v855:IsA("SunRaysEffect") or (v855:IsA("ColorCorrectionEffect") or (v855:IsA("BloomEffect") or v855:IsA("DepthOfFieldEffect")))) then
                 v855.Enabled = false
@@ -9583,7 +9583,7 @@ while true do
     local v898
     v895, v898 = v893(v894, v895)
     if v895 == nil then
-        break
+        end
     end
     table.insert(vu897, v898.Name)
 end
@@ -9608,7 +9608,7 @@ Tabs.Player:AddButton({
             local v904
             v903, v904 = v901(v902, v903)
             if v903 == nil then
-                break
+                end
             end
             table.insert(vu897, v904.Name)
         end
@@ -9723,7 +9723,7 @@ spawn(function()
                     local v914
                     v913, v914 = v911(v912, v913)
                     if v913 == nil then
-                        break
+                        end
                     end
                     if v914:IsA("BasePart") then
                         v914.CanCollide = false
@@ -9788,7 +9788,7 @@ spawn(function()
                             local v922
                             v921, v922 = v919(v920, v921)
                             if v921 == nil then
-                                break
+                                end
                             end
                             if v922.Name == "Ice Admiral" then
                                 if not v922.Humanoid.Health > 0 then
@@ -9850,7 +9850,7 @@ spawn(function()
                                 local v927
                                 v926, v927 = v924(v925, v926)
                                 if v926 == nil then
-                                    break
+                                    end
                                 end
                                 if v927.Name == "rip_indra" then
                                     OldCFrameThird = v927.HumanoidRootPart.CFrame
@@ -10259,7 +10259,7 @@ while true do
     local v946
     v945, v946 = v944(v943, v945)
     if v945 == nil then
-        break
+        end
     end
     table.insert(Table_DevilFruitSniper, v946.Name)
     if v946.OnSale then
@@ -10473,7 +10473,7 @@ spawn(function()
                 local v960
                 v959, v960 = v957(v958, v959)
                 if v959 == nil then
-                    break
+                    end
                 end
                 if string.find(v960.Name, "Fruit") then
                     game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v960.Handle.CFrame
@@ -10497,7 +10497,7 @@ spawn(function()
                 local v965
                 v964, v965 = v962(v963, v964)
                 if v964 == nil then
-                    break
+                    end
                 end
                 if string.find(v965.Name, "Fruit") then
                     Tween2(v965.Handle.CFrame)
@@ -10582,7 +10582,7 @@ function UpdateRealFruitEsp()
         local v974
         v973, v974 = v971(v972, v973)
         if v973 == nil then
-            break
+            end
         end
         if v974:IsA("Tool") then
             if RealFruitEsp then
@@ -10616,7 +10616,7 @@ function UpdateRealFruitEsp()
         local v980
         v979, v980 = v977(v978, v979)
         if v979 == nil then
-            break
+            end
         end
         if v980:IsA("Tool") then
             if RealFruitEsp then
@@ -10650,7 +10650,7 @@ function UpdateRealFruitEsp()
         local v986
         v985, v986 = v983(v984, v985)
         if v985 == nil then
-            break
+            end
         end
         if v986:IsA("Tool") then
             if RealFruitEsp then
@@ -10705,7 +10705,7 @@ function UpdateIslandMirageEsp()
         local vu996
         v995, vu996 = v993(v994, v995)
         if v995 == nil then
-            break
+            end
         end
         pcall(function()
 			-- upvalues: (ref) vu996, (ref) vu992
@@ -11014,7 +11014,7 @@ spawn(function()
                             local v1015
                             v1014, v1015 = v1012(v1013, v1014)
                             if v1014 == nil then
-                                break
+                                end
                             end
                             if v1015.Name == "Order" then
                                 repeat
@@ -11117,7 +11117,7 @@ spawn(function()
                                             local v1021
                                             v1020, v1021 = v1018(v1019, v1020)
                                             if v1020 == nil then
-                                                break
+                                                end
                                             end
                                             if v1021.Name == "StartPoint" then
                                                 Tween2(v1021.CFrame * CFrame.new(0, 10, 0))
@@ -11130,7 +11130,7 @@ spawn(function()
                                         local vu1025
                                         v1024, vu1025 = v1022(v1023, v1024)
                                         if v1024 == nil then
-                                            break
+                                            end
                                         end
                                         if vu1025:FindFirstChild("Humanoid") and (vu1025:FindFirstChild("HumanoidRootPart") and vu1025.Humanoid.Health > 0) then
                                             pcall(function()
@@ -11154,7 +11154,7 @@ spawn(function()
                                 local v1029
                                 v1028, v1029 = v1026(v1027, v1028)
                                 if v1028 == nil then
-                                    break
+                                    end
                                 end
                                 if v1029.Name == "HumanoidRootPart" then
                                     local _mc_v1029 = v1029.CFrame * Pos
@@ -11164,7 +11164,7 @@ spawn(function()
                                         local v1033
                                         v1032, v1033 = v1030(v1031, v1032)
                                         if v1032 == nil then
-                                            break
+                                            end
                                         end
                                         if v1033:IsA("Tool") and v1033.ToolTip == "Melee" then
                                             game.Players.LocalPlayer.Character.Humanoid:EquipTool(v1033)
@@ -11183,7 +11183,7 @@ spawn(function()
                                         local v1037
                                         v1036, v1037 = v1034(v1035, v1036)
                                         if v1036 == nil then
-                                            break
+                                            end
                                         end
                                         if v1037:IsA("Tool") and v1037.ToolTip == "Blox Fruit" then
                                             game.Players.LocalPlayer.Character.Humanoid:EquipTool(v1037)
@@ -11203,7 +11203,7 @@ spawn(function()
                                         local v1041
                                         v1040, v1041 = v1038(v1039, v1040)
                                         if v1040 == nil then
-                                            break
+                                            end
                                         end
                                         if v1041:IsA("Tool") and v1041.ToolTip == "Sword" then
                                             game.Players.LocalPlayer.Character.Humanoid:EquipTool(v1041)
@@ -11223,7 +11223,7 @@ spawn(function()
                                         local v1045
                                         v1044, v1045 = v1042(v1043, v1044)
                                         if v1044 == nil then
-                                            break
+                                            end
                                         end
                                         if v1045:IsA("Tool") and v1045.ToolTip == "Gun" then
                                             game.Players.LocalPlayer.Character.Humanoid:EquipTool(v1045)
@@ -11246,7 +11246,7 @@ spawn(function()
                             local v1049
                             v1048, v1049 = v1046(v1047, v1048)
                             if v1048 == nil then
-                                break
+                                end
                             end
                             if v1049.Name == "snowisland_Cylinder.081" then
                                 BKP(v1049.CFrame * CFrame.new(0, 0, 0))
@@ -11259,7 +11259,7 @@ spawn(function()
                         local vu1053
                         v1052, vu1053 = v1050(v1051, v1052)
                         if v1052 == nil then
-                            break
+                            end
                         end
                         if vu1053:FindFirstChild("Humanoid") and (vu1053:FindFirstChild("HumanoidRootPart") and vu1053.Humanoid.Health > 0) then
                             pcall(function()
@@ -11294,7 +11294,7 @@ spawn(function()
                     local v1058
                     v1057, v1058 = v1055(v1056, v1057)
                     if v1057 == nil then
-                        break
+                        end
                     end
                     if v1058.Name and (v1058.Name ~= game.Players.LocalPlayer.Name and ((v1058.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 100 and v1058.Character.Humanoid.Health > 0)) then
                         repeat
@@ -11751,7 +11751,7 @@ function Hop()
             local v1076
             v1074, v1076 = v1072(v1073, v1074)
             if v1074 == nil then
-                break
+                end
             end
             local v1077 = true
             local vu1078 = tostring(v1076.id)
@@ -11761,7 +11761,7 @@ function Hop()
                     local v1082
                     v1081, v1082 = v1079(v1080, v1081)
                     if v1081 == nil then
-                        break
+                        end
                     end
                     if v1075 == 0 then
                         if tonumber(vu1070) ~= tonumber(v1082) then
@@ -11871,7 +11871,7 @@ Tabs.Misc:AddButton({
             local v1087
             v1086, v1087 = v1084(v1085, v1086)
             if v1086 == nil then
-                break
+                end
             end
             RedeemCode(v1087)
         end
@@ -11963,7 +11963,7 @@ spawn(function()
                 local v1098
                 v1097, v1098 = v1095(v1096, v1097)
                 if v1097 == nil then
-                    break
+                    end
                 end
                 if table.find(vu1094, v1098.UserId) then
                     Hop()
@@ -12097,7 +12097,7 @@ end
                         for _, obj in ipairs(workspace:GetChildren()) do
                             if string.find(string.lower(obj.Name), "heart") and (obj:IsA("Model") or obj:IsA("BasePart")) then
                                 heart = obj
-                                break
+                                end
                             end
                         end
                     end
@@ -12167,7 +12167,7 @@ spawn(function()
                         local v1110
                         v1109, v1110 = v1107(v1108, v1109)
                         if v1109 == nil then
-                            break
+                            end
                         end
                         if (v1110.Name == "Hydra Enforcer" or v1110.Name == "Venomous Assailant") and (v1110:FindFirstChild("Humanoid") and (v1110:FindFirstChild("HumanoidRootPart") and v1110.Humanoid.Health > 0)) then
                             repeat
@@ -12240,7 +12240,7 @@ spawn(function()
                     local v1117
                     v1116, v1117 = v1114(v1115, v1116)
                     if v1116 == nil then
-                        break
+                        end
                     end
                     if v1117 == "Defeat 3 Venomous Assailants on Hydra Island." then
                         vu1112:SetDesc("Defeat 3 Venomous Assailants on Hydra Island.")
@@ -12274,7 +12274,7 @@ local function vu1133(p1122)
         local v1128
         v1127, v1128 = v1125(v1126, v1127)
         if v1127 == nil then
-            break
+            end
         end
         if v1128:IsA("Tool") and v1128.ToolTip == p1122 then
             v1128.Parent = v1123.Character
@@ -12289,7 +12289,7 @@ local function vu1133(p1122)
                 local vu1132
                 v1131, vu1132 = v1129(v1130, v1131)
                 if v1131 == nil then
-                    break
+                    end
                 end
                 wait()
                 pcall(function()
@@ -12298,7 +12298,7 @@ local function vu1133(p1122)
                 end)
             end
             v1128.Parent = v1124
-            break
+            end
         end
     end
 end
@@ -12319,7 +12319,7 @@ spawn(function()
                 local v1138
                 v1137, v1138 = v1135(v1136, v1137)
                 if v1137 == nil or not _G.AutoHydraTree then
-                    break
+                    end
                 end
                 Tween2(v1138)
                 wait()
@@ -12388,7 +12388,7 @@ spawn(function()
                 local v1145
                 v1144, v1145 = v1142(v1143, v1144)
                 if v1144 == nil then
-                    break
+                    end
                 end
                 if v1145:IsA("Model") and v1145.PrimaryPart then
                     local v1146 = v1145.PrimaryPart.Position
@@ -12538,7 +12538,7 @@ local function vu1176()
             local v1166
             v1165, v1166 = v1163(v1164, v1165)
             if v1165 == nil then
-                break
+                end
             end
             if v1166:IsA("Part") and v1166.Name:lower():find("lava") then
                 v1166:Destroy()
@@ -12552,7 +12552,7 @@ local function vu1176()
             local v1171
             v1170, v1171 = v1168(v1169, v1170)
             if v1170 == nil then
-                break
+                end
             end
             if v1171:IsA("Model") then
                 local v1172, v1173, v1174 = pairs(v1171:GetDescendants())
@@ -12560,7 +12560,7 @@ local function vu1176()
                     local v1175
                     v1174, v1175 = v1172(v1173, v1174)
                     if v1174 == nil then
-                        break
+                        end
                     end
                     if v1175:IsA("MeshPart") and v1175.Name:lower():find("lava") then
                         v1175:Destroy()
@@ -12577,7 +12577,7 @@ local function vu1184()
         local v1181
         v1180, v1181 = v1178(v1179, v1180)
         if v1180 == nil then
-            break
+            end
         end
         if v1181:IsA("Model") then
             local v1182 = v1181:FindFirstChild("volcanorock")
@@ -12600,7 +12600,7 @@ local function vu1196(p1185)
         local v1191
         v1190, v1191 = v1188(v1189, v1190)
         if v1190 == nil then
-            break
+            end
         end
         if v1191:IsA("Tool") and v1191.ToolTip == p1185 then
             v1191.Parent = v1186.Character
@@ -12615,7 +12615,7 @@ local function vu1196(p1185)
                 local vu1195
                 v1194, vu1195 = v1192(v1193, v1194)
                 if v1194 == nil then
-                    break
+                    end
                 end
                 wait()
                 pcall(function()
@@ -12624,7 +12624,7 @@ local function vu1196(p1185)
                 end)
             end
             v1191.Parent = v1187
-            break
+            end
         end
     end
 end
@@ -12677,7 +12677,7 @@ spawn(function()
                     local v1204
                     v1203, v1204 = v1201(v1202, v1203)
                     if v1203 == nil then
-                        break
+                        end
                     end
                     if v1204:FindFirstChild("Humanoid") and (v1204:FindFirstChild("HumanoidRootPart") and v1204.Humanoid.Health > 0) then
                         repeat
@@ -12706,7 +12706,7 @@ spawn(function()
                 local v1209
                 v1208, v1209 = v1206(v1207, v1208)
                 if v1208 == nil then
-                    break
+                    end
                 end
                 if v1209:IsA("BasePart") and v1209.Name == "DinoBone" then
                     Tween2(CFrame.new(v1209.Position))
@@ -12785,8 +12785,8 @@ end)
 Tabs.Main:AddSection("Farm Boss Sự Kiện")
 local _bossPainList = {}
 if Sea1 then _bossPainList = {"The Gorilla King","Bobby","Yeti","Mob Leader","Vice Admiral","Warden","Chief Warden","Swan","Magma Admiral","Fishman Lord","Wysper","Thunder God","Cyborg","Saber Expert"}
-elseif Sea2 then _bossPainList = {"Diamond","Jeremy","Fajita","Don Swan","Smoke Admiral","Cursed Captain","Darkbeard","Order","Awakened Ice Admiral","Tide Keeper"}
-elseif Sea3 then _bossPainList = {"Stone","Island Empress","Hydra Leader","Kilo Admiral","Captain Elephant","Beautiful Pirate","rip_indra True Form","Longma","Soul Reaper","Cake Queen","Tyrant of the Skies"}
+if Sea2 then _bossPainList = {"Diamond","Jeremy","Fajita","Don Swan","Smoke Admiral","Cursed Captain","Darkbeard","Order","Awakened Ice Admiral","Tide Keeper"}
+if Sea3 then _bossPainList = {"Stone","Island Empress","Hydra Leader","Kilo Admiral","Captain Elephant","Beautiful Pirate","rip_indra True Form","Longma","Soul Reaper","Cake Queen","Tyrant of the Skies"}
 end
 if #_bossPainList > 0 then
     Tabs.Main:AddDropdown("DropSelectBossPain", {
@@ -12878,7 +12878,7 @@ if Sea3 then
                 if not game.Workspace.Enemies:FindFirstChild("Tyrant of the Skies") then
                     local hasMob = false
                     for _, name in pairs({"Isle Outlaw","Island Boy","Isle Champion","Serpent Hunter","Skull Slayer"}) do
-                        if game.Workspace.Enemies:FindFirstChild(name) then hasMob=true; break end
+                        if game.Workspace.Enemies:FindFirstChild(name) then hasMob=true; end
                     end
                     if hasMob then
                         for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
@@ -12915,7 +12915,7 @@ if Sea3 then
         while task.wait(1) do
             if _G.Farm8Binhs then
                 for _, cf in ipairs(_tyrantPats) do
-                    if not _G.Farm8Binhs then break end
+                    if not _G.Farm8Binhs then end
                     TweenBlock(cf * CFrame.new(0,5,0)); task.wait(0.5)
                     pcall(function()
                         local pl = game.Players.LocalPlayer
