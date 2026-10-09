@@ -19,34 +19,31 @@ local PlayerGui = Player:WaitForChild("PlayerGui", 5)
 
 -- CHARACTER
 local Character = Player.Character or Player.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Humanoid = Character:WaitForChild("Humanoid", 10)
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart", 10)
 
--- EXPLOIT CHECK
-local executor = (getexecutorname and getexecutorname()) or (identifyexecutor and identifyexecutor())
-if executor then
-    if
-        string.find(executor, "Bunni") or
-        string.find(executor, "FluxusZ") or
-        string.find(executor, "Delta") or
-        string.find(executor, "Arceus") or
-        string.find(executor, "Xeno") or
-        string.find(executor, "Swift") or
-        string.find(executor, "Awp") or
-        string.find(executor, "Volcano") or
-        string.find(executor, "Argon") or
-        string.find(executor, "Macsploit") or
-        string.find(executor, "Potassium") or
-        string.find(executor, "CodeX") or
-        string.find(executor, "Velocity") or
-        string.find(executor, "Romix") or
-        string.find(executor, "Neutron")
-    then
-        print("ok")
-    else
-        game.Players.LocalPlayer:Kick("Please use Delta Exploit or PC use volcano or Exploit paid!")
-    end
-end
+-- Tự động cập nhật Character & HumanoidRootPart khi chết / hồi sinh / đổi Sea
+Player.CharacterAdded:Connect(function(newChar)
+    Character = newChar
+    Humanoid = newChar:WaitForChild("Humanoid", 10)
+    HumanoidRootPart = newChar:WaitForChild("HumanoidRootPart", 10)
+    Root = HumanoidRootPart
+
+    pcall(function()
+        local stun = newChar:WaitForChild("Stun", 5)
+        if stun then
+            stun.Changed:Connect(function()
+                if newChar:FindFirstChild("Stun") then
+                    newChar.Stun.Value = 0
+                end
+            end)
+        end
+    end)
+end)
+
+-- EXPLOIT COMPATIBILITY (Hỗ trợ mọi Executor, không kick người chơi)
+local executor = (getexecutorname and getexecutorname()) or (identifyexecutor and identifyexecutor()) or "Universal"
+print("[Abysslix Hub] Đang chạy trên Executor: " .. tostring(executor))
 
 -- ALIASES
 local ply = Players
@@ -673,12 +670,26 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 end)
 
 -- ==========================================
--- SEA FLAGS (không kiểm tra, bật hết để mọi tính năng hoạt động)
+-- SEA FLAGS (Tự động nhận diện Sea 1 / 2 / 3 chính xác 100%)
 -- ==========================================
-Sea1 = true
-Sea2 = true
-Sea3 = true
-local v5 = game.PlaceId
+local currentPlaceId = game.PlaceId
+Sea1 = (currentPlaceId == 2753915549)
+Sea2 = (currentPlaceId == 4442272183)
+Sea3 = (currentPlaceId == 7449423635)
+if not (Sea1 or Sea2 or Sea3) then
+    local pLevel = 1
+    pcall(function()
+        pLevel = game:GetService("Players").LocalPlayer.Data.Level.Value
+    end)
+    if pLevel < 700 then
+        Sea1 = true
+    elseif pLevel < 1500 then
+        Sea2 = true
+    else
+        Sea3 = true
+    end
+end
+local v5 = currentPlaceId
 
 function CheckLevel()
     local v7 = game:GetService("Players").LocalPlayer.Data.Level.Value
@@ -2967,25 +2978,39 @@ function TweenBlock(targetCF)
     _G.Clip2 = false
 end
 function EquipTool(p181)
-    if game.Players.LocalPlayer.Backpack:FindFirstChild(p181) then
-        local v182 = game.Players.LocalPlayer.Backpack:FindFirstChild(p181)
-        wait()
-        game.Players.LocalPlayer.Character.Humanoid:EquipTool(v182)
-    end
+    if not p181 or p181 == "" then return end
+    pcall(function()
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild(p181) then
+            return
+        end
+        local bp = game.Players.LocalPlayer.Backpack
+        local tool = bp and bp:FindFirstChild(p181)
+        if tool and char and char:FindFirstChild("Humanoid") then
+            char.Humanoid:EquipTool(tool)
+        end
+    end)
 end
 spawn(function()
     while task.wait() do
         pcall(function()
             if _G.AutoEvoRace or (_G.CastleRaid or (_G.CollectAzure or (_G.TweenToKitsune or (_G.GhostShip or (_G.Ship or (_G.Auto_Holy_Torch or (_G.TeleportPly or (_G.Auto_Sea3 or (_G.Auto_Sea2 or (_G.Tweenfruit or (_G.AutoFishCrew or (_G.Auto_Saber or (_G.AutoShark or (_G.Auto_Warden or (_G.Auto_RainbowHaki or (AutoFarmRace or (_G.AutoQuestRace or (Auto_Law or (AutoTushita or (_G.AutoHolyTorch or (_G.AutoTerrorshark or (_G.farmpiranya or (_G.Auto_MusketeerHat or (_G.Auto_ObservationV2 or (_G.AutoNear or (_G.Auto_PoleV1 or (_G.Auto_Buddy or (_G.Ectoplasm or (AutoEvoRace or (AutoBartilo or (_G.Auto_Canvander or (_G.AutoLevel or (_G.Auto_DualKatana or (Auto_Quest_Yama_3 or (Auto_Quest_Yama_2 or (Auto_Quest_Yama_1 or (Auto_Quest_Tushita_1 or (Auto_Quest_Tushita_2 or (Auto_Quest_Tushita_3 or (_G.Clip2 or (_G.Auto_Regoku or (_G.AutoBone or (_G.AutoBoneNoQuest or (_G.AutoBoss or (AutoFarmMasDevilFruit or (AutoFarmMasGun or (AutoHallowSycthe or (AutoTushita or (_G.Cake or (_G.Auto_SkullGuitar or (_G.AutoFarmSwan or (_G.AutoEliteor or (AutoNextIsland or (Musketeer or (_G.AutoMaterial or (AutoFarmRaceQuest or (_G.Factory or (_G.Auto_Saw or (_G.AutoFrozenDimension or (_G.AutoKillTrial or (_G.AutoUpgrade or _G.TweenToFrozenDimension))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) then
-                if not game:GetService("Players").LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BodyClip") then
-                    local v183 = Instance.new("BodyVelocity")
-                    v183.Name = "BodyClip"
-                    v183.Parent = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart
-                    v183.MaxForce = Vector3.new(100000, 100000, 100000)
-                    v183.Velocity = Vector3.new(0, 0, 0)
+                local char = game:GetService("Players").LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    if not hrp:FindFirstChild("BodyClip") then
+                        local v183 = Instance.new("BodyVelocity")
+                        v183.Name = "BodyClip"
+                        v183.Parent = hrp
+                        v183.MaxForce = Vector3.new(100000, 100000, 100000)
+                        v183.Velocity = Vector3.new(0, 0, 0)
+                    end
                 end
             else
-                game:GetService("Players").LocalPlayer.Character.HumanoidRootPart:FindFirstChild("BodyClip"):Destroy()
+                local char = game:GetService("Players").LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local bc = hrp and hrp:FindFirstChild("BodyClip")
+                if bc then bc:Destroy() end
             end
         end)
     end
@@ -3143,13 +3168,21 @@ function AttackNoCoolDown()
             pcall(function()
 				-- upvalues: (ref) vu232, (ref) vu233
                 local v237 = game:GetService("ReplicatedStorage")
-                local v238 = v237:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterAttack")
-                local v239 = v237:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/RegisterHit")
-                if # vu232 <= 0 then
-                    task.wait(1e-9)
+                local mods = v237:FindFirstChild("Modules")
+                local net = mods and mods:FindFirstChild("Net")
+                local v238 = net and net:FindFirstChild("RE/RegisterAttack")
+                local v239 = net and net:FindFirstChild("RE/RegisterHit")
+                if v238 and v239 then
+                    if # vu232 <= 0 then
+                        task.wait(1e-9)
+                    else
+                        v238:FireServer(1e-9)
+                        v239:FireServer(vu233, vu232)
+                    end
                 else
-                    v238:FireServer(1e-9)
-                    v239:FireServer(vu233, vu232)
+                    pcall(function()
+                        if vu204 then vu204:Activate() end
+                    end)
                 end
             end)
         end
@@ -3183,53 +3216,27 @@ function to(p240)
     until (p240.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 2000
 end
 function to(pu241)
+    if not pu241 then return end
     pcall(function()
-		-- upvalues: (ref) pu241
-        if (pu241.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude >= 2000 and (not Auto_Raid and game.Players.LocalPlayer.Character.Humanoid.Health > 0) then
-            if NameMon ~= "FishmanQuest" then
-                if Mon ~= "God\'s Guard" then
-                    if NameMon ~= "SkyExp1Quest" then
-                        if NameMon ~= "ShipQuest1" then
-                            if NameMon ~= "ShipQuest2" then
-                                if NameMon ~= "FrostQuest" then
-                                    repeat
-                                        wait(_G.Fast_Delay)
-                                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pu241
-                                        wait(0.05)
-                                        game.Players.LocalPlayer.Character.Head:Destroy()
-                                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pu241
-                                    until (pu241.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude < 2500 and game.Players.LocalPlayer.Character.Humanoid.Health > 0
-                                    wait()
-                                else
-                                    Tween(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame)
-                                    wait()
-                                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(- 6508.5581054688, 89.034996032715, - 132.83953857422))
-                                end
-                            else
-                                Tween(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame)
-                                wait()
-                                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(923.21252441406, 126.9760055542, 32852.83203125))
-                            end
-                        else
-                            Tween(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame)
-                            wait()
-                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(923.21252441406, 126.9760055542, 32852.83203125))
-                        end
-                    else
-                        Tween(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame)
-                        wait()
-                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(- 7894.6176757813, 5547.1416015625, - 380.29119873047))
-                    end
-                else
-                    Tween(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame)
-                    wait()
-                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(- 4607.82275, 872.54248, - 1667.55688))
-                end
-            else
-                Tween(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame)
-                wait()
+        local char = game.Players.LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        if (pu241.Position - hrp.Position).Magnitude >= 2000 and (not Auto_Raid and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0) then
+            if NameMon == "FishmanQuest" then
                 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(61163.8515625, 11.6796875, 1819.7841796875))
+            elseif Mon == "God\'s Guard" then
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(- 4607.82275, 872.54248, - 1667.55688))
+            elseif NameMon == "SkyExp1Quest" then
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(- 7894.6176757813, 5547.1416015625, - 380.29119873047))
+            elseif NameMon == "ShipQuest1" or NameMon == "ShipQuest2" then
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(923.21252441406, 126.9760055542, 32852.83203125))
+            elseif NameMon == "FrostQuest" then
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(- 6508.5581054688, 89.034996032715, - 132.83953857422))
+            else
+                Tween2(pu241)
             end
+        else
+            Tween2(pu241)
         end
     end)
 end
@@ -3298,24 +3305,53 @@ Tabs.Info:AddParagraph({
     ["Description"] = "Tất Cả Client Pc"
 })
 _G.FastAttackStrix_Mode = "Super Fast Attack"
+_G.Fast_Delay = 1e-9
 spawn(function()
     while wait() do
         if _G.FastAttackStrix_Mode then
             pcall(function()
                 if _G.FastAttackStrix_Mode == "Super Fast Attack" then
                     _G.Fast_Delay = 1e-9
+                elseif _G.FastAttackStrix_Mode == "Fast Attack" then
+                    _G.Fast_Delay = 0.05
+                elseif _G.FastAttackStrix_Mode == "Normal Attack" then
+                    _G.Fast_Delay = 0.15
                 end
             end)
         end
     end
 end)
-Tabs.Main:AddSection("Cày Cấp")
+Tabs.Main:AddSection("Tốc Độ Đánh & Vũ Khí")
+local vFastMode = Tabs.Main:AddDropdown("DropdownFastAttackMode", {
+    ["Title"] = "Tốc Độ Đánh Nhanh",
+    ["Values"] = {
+        "Siêu Nhanh (Super Fast)",
+        "Nhanh (Fast)",
+        "Bình Thường (Normal)"
+    },
+    ["Multi"] = false,
+    ["Default"] = 1
+})
+vFastMode:SetValue("Siêu Nhanh (Super Fast)")
+vFastMode:OnChanged(function(mode)
+    if string.find(tostring(mode), "Siêu") then
+        _G.FastAttackStrix_Mode = "Super Fast Attack"
+        _G.Fast_Delay = 1e-9
+    elseif string.find(tostring(mode), "Nhanh") then
+        _G.FastAttackStrix_Mode = "Fast Attack"
+        _G.Fast_Delay = 0.05
+    else
+        _G.FastAttackStrix_Mode = "Normal Attack"
+        _G.Fast_Delay = 0.15
+    end
+end)
 local v253 = Tabs.Main:AddDropdown("DropdownSelectWeapon", {
-    ["Title"] = "Vũ Khí",
+    ["Title"] = "Vũ Khí Farm",
     ["Values"] = {
         "Melee",
         "Sword",
-        "Blox Fruit"
+        "Blox Fruit",
+        "Gun"
     },
     ["Multi"] = false,
     ["Default"] = 1
@@ -3341,6 +3377,8 @@ task.spawn(function()
                         elseif ChooseWeapon == "Sword" and t.ToolTip == "Sword" then
                             SelectWeapon = t.Name
                         elseif ChooseWeapon == "Melee" and t.ToolTip == "Melee" then
+                            SelectWeapon = t.Name
+                        elseif ChooseWeapon == "Gun" and t.ToolTip == "Gun" then
                             SelectWeapon = t.Name
                         end
                     end
@@ -6612,6 +6650,99 @@ if Sea3 then
                         elseif game:GetService("ReplicatedStorage"):FindFirstChild("Urban") then
                             Tween2(game:GetService("ReplicatedStorage"):FindFirstChild("Urban").HumanoidRootPart.CFrame * CFrame.new(2, 20, 2))
                         end
+                    end
+                end)
+            end
+        end
+    end)
+    Tabs.Main:AddToggle("ToggleHopElite", {
+        ["Title"] = "Đổi Server Tìm Elite (Hop Server)",
+        ["Default"] = false
+    }):OnChanged(function(val)
+        _G.HopElite = val
+    end)
+    spawn(function()
+        while task.wait(4) do
+            if _G.HopElite then
+                pcall(function()
+                    local hasElite = false
+                    for _, enemy in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
+                        if enemy.Name == "Diablo" or enemy.Name == "Deandre" or enemy.Name == "Urban" then
+                            hasElite = true
+                            break
+                        end
+                    end
+                    if not hasElite then
+                        local hasQuest = false
+                        pcall(function()
+                            local title = game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text
+                            if string.find(title, "Diablo") or string.find(title, "Deandre") or string.find(title, "Urban") then
+                                hasQuest = true
+                            end
+                        end)
+                        if not hasQuest then
+                            task.wait(2)
+                            Hop()
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+
+    -- BOSS RIP INDRA (Tính năng chuẩn Banana Hub)
+    Tabs.Main:AddSection("Boss Rip Indra")
+    Tabs.Main:AddToggle("ToggleAutoSummonIndra", {
+        ["Title"] = "Tự Triệu Hồi Rip Indra (Auto Summon)",
+        ["Default"] = false
+    }):OnChanged(function(val)
+        _G.AutoSummonIndra = val
+    end)
+    spawn(function()
+        while task.wait(1) do
+            if _G.AutoSummonIndra then
+                pcall(function()
+                    local chalice = game.Players.LocalPlayer.Backpack:FindFirstChild("God\'s Chalice") or (game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("God\'s Chalice"))
+                    if chalice then
+                        EquipTool("God\'s Chalice")
+                        local altarCF = CFrame.new(-5556.8837890625, 314.5511169433594, -2988.46826171875)
+                        Tween2(altarCF)
+                    end
+                end)
+            end
+        end
+    end)
+
+    Tabs.Main:AddToggle("ToggleAttackRipIndra", {
+        ["Title"] = "Tự Đánh Rip Indra (Auto Attack Rip Indra)",
+        ["Default"] = false
+    }):OnChanged(function(val)
+        _G.AttackRipIndra = val
+    end)
+    Tabs.Main:AddButton({
+        ["Title"] = "Tấn Công Rip Indra (Attack Rip Indra)",
+        ["Callback"] = function()
+            _G.AttackRipIndra = true
+        end
+    })
+    spawn(function()
+        while task.wait() do
+            if _G.AttackRipIndra then
+                pcall(function()
+                    local indra = game:GetService("Workspace").Enemies:FindFirstChild("rip_indra")
+                    if indra and indra:FindFirstChild("Humanoid") and indra:FindFirstChild("HumanoidRootPart") and indra.Humanoid.Health > 0 then
+                        repeat
+                            task.wait(_G.Fast_Delay)
+                            AttackNoCoolDown()
+                            AutoHaki()
+                            EquipTool(SelectWeapon)
+                            indra.HumanoidRootPart.CanCollide = false
+                            indra.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                            local indraCF = indra.HumanoidRootPart.CFrame * Pos
+                            if (indra.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then
+                                BKP(indraCF)
+                            end
+                        until not _G.AttackRipIndra or not indra.Parent or indra.Humanoid.Health <= 0
                     end
                 end)
             end
@@ -10795,6 +10926,89 @@ Tabs.Race:AddToggle("ToggleUpgrade", {
     end
 end)
 -- [SetValue skipped - Library không cần]
+
+function RedeemAllCodes()
+    local codes = {"NOMOREHACK","BANEXPLOIT","WildDares","BossBuild","GetPranked","EARN_FRUITS","FIGHT4FRUIT","NOEXPLOITER","NOOB2ADMIN","CODESLIDE","ADMINHACKED","ADMINDARES","fruitconcepts","krazydares","TRIPLEABUSE","SEATROLLING","24NOADMIN","REWARDFUN","Chandler","NEWTROLL","KITT_RESET","Sub2CaptainMaui","kittgaming","Sub2Fer999","Enyu_is_Pro","Magicbus","JCWK","Starcodeheo","Bluxxy","fudd10_v2","SUB2GAMERROBOT_EXP1","Sub2NoobMaster123","Sub2UncleKizaru","Sub2Daigrock","Axiore","TantaiGaming","StrawHatMaine","Sub2OfficialNoobie","Fudd10","Bignews","TheGreatAce","SECRET_ADMIN","SUB2GAMERROBOT_RESET1","SUB2OFFICIALNOOBIE","AXIORE","BIGNEWS","BLUXXY","CHANDLER","ENYU_IS_PRO","FUDD10","FUDD10_V2","KITTGAMING","MAGICBUS","STARCODEHEO","STRAWHATMAINE","SUB2CAPTAINMAUI","SUB2DAIGROCK","SUB2FER999","SUB2NOOBMASTER123","SUB2UNCLEKIZARU","TANTAIGAMING","THEGREATACE"}
+    Library:Notify({
+        Title = "Giftcodes",
+        Content = "Đang tự động nhập toàn bộ mã code..."
+    })
+    for _, code in ipairs(codes) do
+        pcall(function()
+            if game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") then
+                if game:GetService("ReplicatedStorage").Remotes:FindFirstChild("Redeem") then
+                    game:GetService("ReplicatedStorage").Remotes.Redeem:InvokeServer(code)
+                end
+                if game:GetService("ReplicatedStorage").Remotes:FindFirstChild("CommF_") then
+                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("RedeemCode", code)
+                end
+            end
+        end)
+        task.wait(0.08)
+    end
+    Library:Notify({
+        Title = "Giftcodes",
+        Content = "Đã nhập xong toàn bộ code!"
+    })
+end
+
+Tabs.Shop:AddSection("Tiện Ích & Chuyển Sea")
+Tabs.Shop:AddButton({
+    ["Title"] = "Nhập Toàn Bộ Code (Redeem All Codes)",
+    ["Description"] = "Tự động nhận tất cả Giftcode còn hạn",
+    ["Callback"] = function()
+        RedeemAllCodes()
+    end
+})
+Tabs.Shop:AddButton({
+    ["Title"] = "Dịch Chuyển Đến Biển Cũ (Sea 1)",
+    ["Description"] = "Teleport Old World (Sea 1)",
+    ["Callback"] = function()
+        pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelMain") end)
+    end
+})
+Tabs.Shop:AddButton({
+    ["Title"] = "Dịch Chuyển Đến Tân Thế Giới (Sea 2)",
+    ["Description"] = "Teleport New World (Sea 2)",
+    ["Callback"] = function()
+        pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelDressrosa") end)
+    end
+})
+Tabs.Shop:AddButton({
+    ["Title"] = "Dịch Chuyển Đến Biển 3 (Sea 3)",
+    ["Description"] = "Teleport Third Sea (Sea 3)",
+    ["Callback"] = function()
+        pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelZou") end)
+    end
+})
+Tabs.Shop:AddButton({
+    ["Title"] = "Mua Dual Flintlock",
+    ["Description"] = "Buy Dual Flintlock",
+    ["Callback"] = function()
+        pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyDualFlintlock") end)
+    end
+})
+Tabs.Shop:AddButton({
+    ["Title"] = "Đổi Chủng Tộc (Reroll Race)",
+    ["Description"] = "3,000 Bones / Fragments",
+    ["Callback"] = function()
+        pcall(function()
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Reroll", "1")
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Reroll", "2")
+        end)
+    end
+})
+Tabs.Shop:AddButton({
+    ["Title"] = "Tẩy Điểm Chỉ Số (Reset Stats)",
+    ["Description"] = "2,500 Fragments",
+    ["Callback"] = function()
+        pcall(function()
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Refund", "1")
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BlackbeardReward", "Refund", "2")
+        end)
+    end
+})
+
 Tabs.Shop:AddSection("Khả Năng")
 Tabs.Shop:AddButton({
     ["Title"] = "Geppo",
@@ -11646,10 +11860,10 @@ spawn(function()
     end
 end)
 Tabs.Sea:AddToggle("ToggleWhiteBelt", {
-    ["Title"] = "Cày Đai Trằng",
+    ["Title"] = "Cày Đai Trắng",
     ["Default"] = false
 }):OnChanged(function(p1147)
-    _G.AutoLevel = p1147
+    _G.AutoWhiteBelt = p1147
     if p1147 then
         game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/InteractDragonQuest"):InvokeServer(unpack({
             {
@@ -11658,7 +11872,7 @@ Tabs.Sea:AddToggle("ToggleWhiteBelt", {
             }
         }))
         spawn(function()
-            while _G.AutoLevel do
+            while _G.AutoWhiteBelt do
                 game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/InteractDragonQuest"):InvokeServer(unpack({
                     {
                         ["NPC"] = "Dojo Trainer",
@@ -12351,14 +12565,11 @@ Tabs.Misc:AddButton({
 
 -- ========== AUTO CODES ==========
 Tabs.Misc:AddSection("Auto Code")
-local _codeList = {"NOMOREHACK","BANEXPLOIT","WildDares","BossBuild","GetPranked","EARN_FRUITS","FIGHT4FRUIT","NOEXPLOITER","NOOB2ADMIN","CODESLIDE","ADMINHACKED","ADMINDARES","fruitconcepts","krazydares","TRIPLEABUSE","SEATROLLING","24NOADMIN","REWARDFUN","Chandler","NEWTROLL","KITT_RESET","Sub2CaptainMaui","kittgaming","Sub2Fer999","Enyu_is_Pro","Magicbus","JCWK","Starcodeheo","Bluxxy","fudd10_v2","SUB2GAMERROBOT_EXP1","Sub2NoobMaster123","Sub2UncleKizaru","Sub2Daigrock","Axiore","TantaiGaming","StrawHatMaine","Sub2OfficialNoobie","Fudd10","Bignews","TheGreatAce","SECRET_ADMIN","SUB2GAMERROBOT_RESET1","SUB2OFFICIALNOOBIE","AXIORE","BIGNEWS","BLUXXY","CHANDLER","ENYU_IS_PRO","FUDD10","FUDD10_V2","KITTGAMING","MAGICBUS","STARCODEHEO","STRAWHATMAINE","SUB2CAPTAINMAUI","SUB2DAIGROCK","SUB2FER999","SUB2NOOBMASTER123","SUB2UNCLEKIZARU","TANTAIGAMING","THEGREATACE"}
 Tabs.Misc:AddButton({
-    ["Title"] = "Nhập Tất Cả Code",
+    ["Title"] = "Nhập Tất Cả Code (Redeem All Codes)",
+    ["Description"] = "Tự động nhập toàn bộ mã quà tặng Blox Fruits",
     ["Callback"] = function()
-        for _, code in ipairs(_codeList) do
-            pcall(function() game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Redeem"):InvokeServer(code) end)
-            task.wait(0.1)
-        end
+        RedeemAllCodes()
     end
 })
 
