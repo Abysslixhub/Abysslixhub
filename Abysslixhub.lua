@@ -3771,9 +3771,55 @@ local function StopFXLoop()
 end
 
 -- ============================================================
--- ĐÁNH NHANH: HP quái còn 25%, tự động kích hoạt hiệu ứng
+-- ĐÁNH NHANH (One-Hit) — SỬA LẠI
+-- Cơ chế: clamp HP quái về mức thấp (mặc định 25%) RỒI tự động tấn công.
+-- Hook HealthChanged để giữ HP luôn ≤ ngưỡng khi server restore.
 -- ============================================================
 local _oneHitConns = {}
+local _oneHitPercent = 0.25  -- % máu quái còn lại (0.25 = 25%)
+
+Tabs.Main:AddSlider("SliderOneHitPercent", {
+    ["Title"] = "% Máu Quái (Đánh Nhanh)",
+    ["Default"] = 25,
+    ["Min"] = 1,
+    ["Max"] = 100,
+    ["Rounding"] = 0,
+    ["Callback"] = function(val)
+        _oneHitPercent = (tonumber(val) or 25) / 100
+    end
+}):OnChanged(function(val)
+    _oneHitPercent = (tonumber(val) or 25) / 100
+end)
+
+-- Hủy toàn bộ hook HP (dùng khi tắt)
+local function _clearOneHitHooks()
+    for mob, conn in pairs(_oneHitConns) do
+        pcall(function() conn:Disconnect() end)
+    end
+    _oneHitConns = {}
+end
+
+-- Clamp HP 1 mob về ngưỡng + gắn hook giữ máu
+local function _applyOneHitToMob(mob)
+    local hum = mob:FindFirstChild("Humanoid")
+    if not hum then return end
+    pcall(function()
+        sethiddenproperty(game:GetService("Players").LocalPlayer, "SimulationRadius", math.huge)
+        local target = hum.MaxHealth * _oneHitPercent
+        if hum.Health > target then
+            hum.Health = target
+        end
+    end)
+    if not _oneHitConns[mob] then
+        _oneHitConns[mob] = hum.HealthChanged:Connect(function(newHp)
+            if not _G.OneHitKill then return end
+            local target = hum.MaxHealth * _oneHitPercent
+            if newHp > target then
+                pcall(function() hum.Health = target end)
+            end
+        end)
+    end
+end
 
 spawn(function()
     while wait(0.1) do
@@ -3783,49 +3829,42 @@ spawn(function()
                 _fxEnabled = true
                 StartFXLoop()
             end
-            pcall(function()
-                local localPlayer = game:GetService("Players").LocalPlayer
-                for _, mob in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
-                    local hum = mob:FindFirstChild("Humanoid")
-                    if hum and not _oneHitConns[mob] then
-                        -- Clamp HP về 25%
+            local enemies = game:GetService("Workspace"):FindFirstChild("Enemies")
+            if enemies then
+                -- Ưu tiên chỉ áp dụng cho mob đang farm (MonFarm), nếu rỗng thì áp cho mọi mob gần
+                local farmed = MonFarm and MonFarm ~= ""
+                for _, mob in pairs(enemies:GetChildren()) do
+                    local eligible = true
+                    if farmed then
+                        eligible = (mob.Name == MonFarm)
+                    end
+                    if eligible and not _oneHitConns[mob] then
+                        _applyOneHitToMob(mob)
+                    elseif eligible then
+                        -- Vẫn giữ clamp nếu máu bị server hồi
                         pcall(function()
-                            sethiddenproperty(localPlayer, "SimulationRadius", math.huge)
-                            if hum.Health > hum.MaxHealth * 0.25 then
-                                hum.Health = hum.MaxHealth * 0.25
+                            local hum = mob:FindFirstChild("Humanoid")
+                            if hum then
+                                local target = hum.MaxHealth * _oneHitPercent
+                                if hum.Health > target then hum.Health = target end
                             end
                         end)
-                        -- Hook: khi server restore HP → clamp lại 25%
-                        local prevHp = hum.Health
-                        _oneHitConns[mob] = hum.HealthChanged:Connect(function(newHp)
-                            if not _G.OneHitKill then return end
-                            pcall(function()
-                                sethiddenproperty(localPlayer, "SimulationRadius", math.huge)
-                                if newHp > hum.MaxHealth * 0.25 then
-                                    hum.Health = hum.MaxHealth * 0.25
-                                end
-                                prevHp = newHp
-                            end)
-                        end)
                     end
                 end
-                -- Dọn connection mob đã despawn
-                for mob, conn in pairs(_oneHitConns) do
-                    if not mob.Parent then
-                        pcall(function() conn:Disconnect() end)
-                        _oneHitConns[mob] = nil
-                    end
+            end
+            -- Dọn hook của mob đã despawn
+            for mob, conn in pairs(_oneHitConns) do
+                if not mob.Parent then
+                    pcall(function() conn:Disconnect() end)
+                    _oneHitConns[mob] = nil
                 end
-            end)
+            end
         else
-            -- Tắt FX loop khi OneHitKill off
+            -- Tắt: hủy hook + tắt FX nếu không còn tính năng farm nào dùng
+            _clearOneHitHooks()
             if _fxEnabled and not (_G.AutoBone or _G.AutoBoneNoQuest or _G.AutoLevel or _G.AutoNear) then
                 StopFXLoop()
             end
-            for mob, conn in pairs(_oneHitConns) do
-                pcall(function() conn:Disconnect() end)
-            end
-            _oneHitConns = {}
         end
     end
 end)
@@ -9232,46 +9271,52 @@ Tabs.Setting:AddToggle("ToggleBringMob", {
     _G.BringMob = p856
 end)
 _G.BringMob = true
+-- Khoảng cách gom quái (studs). Mặc định 250, đủ để kéo quái quanh trại farm.
+_G.BringMobRange = 250
+Tabs.Setting:AddSlider("SliderBringMobRange", {
+    ["Title"] = "Bán Kính Gom Quái",
+    ["Default"] = 250,
+    ["Min"] = 50,
+    ["Max"] = 1500,
+    ["Rounding"] = 0,
+    ["Callback"] = function(val)
+        _G.BringMobRange = val
+    end
+}):OnChanged(function(val)
+    _G.BringMobRange = val
+end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     while wait() do
         pcall(function()
-            local v857, v858, v859 = pairs(game:GetService("Workspace").Enemies:GetChildren())
-            while true do
-                local v860
-                v859, v860 = v857(v858, v859)
-                if v859 == nil then
-                    break
-                end
-                if _G.BringMob and (bringmob and (v860.Name == MonFarm and (v860:FindFirstChild("Humanoid") and v860.Humanoid.Health > 0))) then
-                    if v860.Name ~= "Factory Staff" then
-                        if v860.Name == MonFarm and (v860.HumanoidRootPart.Position - FarmPos.Position).Magnitude <= 1000000000 then
-                            v860.HumanoidRootPart.CFrame = FarmPos
-                            v860.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                            v860.HumanoidRootPart.Transparency = 1
-                            v860.Humanoid.JumpPower = 0
-                            v860.Humanoid.WalkSpeed = 0
-                            if v860.Humanoid:FindFirstChild("Animator") then
-                                v860.Humanoid.Animator:Destroy()
-                            end
-                            v860.HumanoidRootPart.CanCollide = false
-                            v860.Head.CanCollide = false
-                            v860.Humanoid:ChangeState(11)
-                            v860.Humanoid:ChangeState(14)
-                            sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
-                        end
-                    elseif (v860.HumanoidRootPart.Position - FarmPos.Position).Magnitude <= 1000000000 then
-                        v860.Head.CanCollide = false
-                        v860.HumanoidRootPart.CanCollide = false
-                        v860.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                        v860.HumanoidRootPart.CFrame = FarmPos
-                        if v860.Humanoid:FindFirstChild("Animator") then
-                            v860.Humanoid.Animator:Destroy()
-                        end
-                        sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
+            -- Chỉ gom khi có mục tiêu farm hợp lệ
+            if not (_G.BringMob and bringmob and MonFarm and FarmPos) then return end
+            local range = _G.BringMobRange or 250
+            for _, v860 in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
+                if v860.Name == MonFarm
+                    and v860:FindFirstChild("Humanoid")
+                    and v860:FindFirstChild("HumanoidRootPart")
+                    and v860.Humanoid.Health > 0
+                    and (v860.HumanoidRootPart.Position - FarmPos.Position).Magnitude <= range then
+                    -- Kéo quái về vị trí farm (gom lại một chỗ)
+                    v860.HumanoidRootPart.CFrame = FarmPos
+                    v860.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                    v860.HumanoidRootPart.Transparency = 1
+                    v860.Humanoid.JumpPower = 0
+                    v860.Humanoid.WalkSpeed = 0
+                    v860.HumanoidRootPart.CanCollide = false
+                    pcall(function() v860.Head.CanCollide = false end)
+                    if v860.Humanoid:FindFirstChild("Animator") then
+                        v860.Humanoid.Animator:Destroy()
                     end
+                    v860.Humanoid:ChangeState(11)
+                    v860.Humanoid:ChangeState(14)
                 end
             end
+            -- Tăng bán kính mô phỏng 1 lần cho cả vòng (không gọi mỗi mob)
+            pcall(function()
+                sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", range + 1000)
+            end)
         end)
     end
 end)
