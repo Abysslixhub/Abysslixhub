@@ -113,7 +113,7 @@ end
 -- ==========================================
 local Window = Library:CreateWindow({
     Title = "ABYSSLIX HUB",
-    Desc = "Banana Hub Theme",
+    Desc = "",
     Image = HUB_ICON
 })
 
@@ -6273,6 +6273,337 @@ if Sea3 then
             vu596()
         end
     })
+    -- ============================================================
+    -- HỆ THỐNG SEA EVENT CAO CẤP (BANANA HUB STYLE)
+    -- ============================================================
+    Tabs.Sea:AddSection("Săn Vua Biển & Sự Kiện Biển")
+
+    -- 1. TỰ ĐÁNH VUA BIỂN (SEA BEAST)
+    Tabs.Sea:AddToggle("ToggleAutoSeaBeast", {
+        ["Title"] = "Tự Đánh Vua Biển (Auto Sea Beast)",
+        ["Default"] = false
+    }):OnChanged(function(val)
+        _G.AutoSeaBeast = val
+    end)
+
+    local function FindSeaBeast()
+        if workspace:FindFirstChild("SeaBeasts") then
+            for _, sb in ipairs(workspace.SeaBeasts:GetChildren()) do
+                local hum = sb:FindFirstChild("Humanoid")
+                local hrp = sb:FindFirstChild("HumanoidRootPart") or sb:FindFirstChild("Head") or (sb:IsA("Model") and sb.PrimaryPart)
+                if hum and hrp and hum.Health > 0 then
+                    return sb, hrp, hum
+                end
+            end
+        end
+        if workspace:FindFirstChild("Enemies") then
+            for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
+                if string.find(string.lower(enemy.Name), "seabeast") or string.find(string.lower(enemy.Name), "sea beast") then
+                    local hum = enemy:FindFirstChild("Humanoid")
+                    local hrp = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
+                    if hum and hrp and hum.Health > 0 then
+                        return enemy, hrp, hum
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
+    task.spawn(function()
+        while task.wait() do
+            if _G.AutoSeaBeast then
+                pcall(function()
+                    local sb, hrp, hum = FindSeaBeast()
+                    if sb and hrp and hum and hum.Health > 0 then
+                        local myChar = game.Players.LocalPlayer.Character
+                        if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                            local safePos = hrp.CFrame * CFrame.new(0, 55, 0)
+                            if (hrp.Position - myChar.HumanoidRootPart.Position).Magnitude > 5 then
+                                BKP(safePos)
+                            end
+                            AutoHaki()
+                            EquipTool(SelectWeapon)
+                            AttackNoCoolDown()
+                            hrp.CanCollide = false
+                            hrp.Size = Vector3.new(70, 70, 70)
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+
+    -- 2. TỰ LÁI THUYỀN SĂN BIỂN THEO VÙNG (AUTO SAIL DANGER ZONE 1-6)
+    _G.SelectedDangerZone = "Zone 6"
+    Tabs.Sea:AddDropdown("DropdownDangerZone", {
+        ["Title"] = "Chọn Vùng Biển Săn (Danger Zone)",
+        ["Values"] = {
+            "Zone 1 (Vùng 1)",
+            "Zone 2 (Vùng 2)",
+            "Zone 3 (Vùng 3)",
+            "Zone 4 (Vùng 4)",
+            "Zone 5 (Vùng 5)",
+            "Zone 6 (Leviathan / Vùng 6)"
+        },
+        ["Multi"] = false,
+        ["Default"] = 6
+    }):OnChanged(function(val)
+        if string.find(val, "1") then _G.SelectedDangerZone = "Zone 1"
+        elseif string.find(val, "2") then _G.SelectedDangerZone = "Zone 2"
+        elseif string.find(val, "3") then _G.SelectedDangerZone = "Zone 3"
+        elseif string.find(val, "4") then _G.SelectedDangerZone = "Zone 4"
+        elseif string.find(val, "5") then _G.SelectedDangerZone = "Zone 5"
+        else _G.SelectedDangerZone = "Zone 6" end
+    end)
+
+    Tabs.Sea:AddToggle("ToggleAutoSailZone", {
+        ["Title"] = "Tự Lái Thuyền Săn Biển (Auto Sail & Hunt)",
+        ["Default"] = false
+    }):OnChanged(function(val)
+        _G.AutoSailZone = val
+    end)
+
+    local function CheckAnySeaMob()
+        if FindSeaBeast() then return true end
+        if workspace.Enemies:FindFirstChild("Terrorshark") then return true end
+        if workspace.Enemies:FindFirstChild("Piranha") then return true end
+        if workspace.Enemies:FindFirstChild("Shark") then return true end
+        if workspace.Enemies:FindFirstChild("Fish Crew Member") then return true end
+        if CheckPirateBoat and CheckPirateBoat() then return true end
+        return false
+    end
+
+    local function GetPlayerBoat()
+        local char = game.Players.LocalPlayer.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        if not hum then return nil end
+        for _, boat in ipairs(workspace.Boats:GetChildren()) do
+            local seat = boat:FindFirstChild("VehicleSeat")
+            if seat and seat.Occupant == hum then
+                return boat, seat, true
+            end
+        end
+        for _, boat in ipairs(workspace.Boats:GetChildren()) do
+            local seat = boat:FindFirstChild("VehicleSeat")
+            if seat and not seat.Occupant then
+                local myHrp = char and char:FindFirstChild("HumanoidRootPart")
+                if myHrp and (seat.Position - myHrp.Position).Magnitude < 300 then
+                    return boat, seat, false
+                end
+            end
+        end
+        return nil
+    end
+
+    task.spawn(function()
+        local vim = game:GetService("VirtualInputManager")
+        while task.wait(0.2) do
+            if _G.AutoSailZone then
+                pcall(function()
+                    local hasMob = CheckAnySeaMob()
+                    local boat, seat, isSeated = GetPlayerBoat()
+                    local char = game.Players.LocalPlayer.Character
+                    local hum = char and char:FindFirstChild("Humanoid")
+
+                    if hasMob then
+                        if isSeated and hum then
+                            hum.Sit = false
+                            vim:SendKeyEvent(false, "W", false, game)
+                        end
+                    else
+                        if boat and seat then
+                            if not isSeated then
+                                Tween2(seat.CFrame * CFrame.new(0, 1, 0))
+                            else
+                                seat.MaxSpeed = 350
+                                local tikiOrigin = Vector3.new(-16217, 9, 446)
+                                local deepSeaDir = Vector3.new(-1, 0, 0.15).Unit
+                                local distMulti = 13000
+                                if _G.SelectedDangerZone == "Zone 1" then distMulti = 1500
+                                elseif _G.SelectedDangerZone == "Zone 2" then distMulti = 3000
+                                elseif _G.SelectedDangerZone == "Zone 3" then distMulti = 4800
+                                elseif _G.SelectedDangerZone == "Zone 4" then distMulti = 6500
+                                elseif _G.SelectedDangerZone == "Zone 5" then distMulti = 8500
+                                else distMulti = 13000 end
+
+                                local targetPos = tikiOrigin + (deepSeaDir * distMulti)
+                                local curDist = (seat.Position - targetPos).Magnitude
+
+                                if curDist > 200 then
+                                    local lookTarget = Vector3.new(targetPos.X, seat.Position.Y, targetPos.Z)
+                                    seat.CFrame = CFrame.new(seat.Position, lookTarget)
+                                    vim:SendKeyEvent(true, "W", false, game)
+                                else
+                                    vim:SendKeyEvent(false, "W", false, game)
+                                end
+                            end
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+
+    -- 3. ĐI TRÊN NƯỚC (WALK ON WATER / JESUS WALK)
+    Tabs.Sea:AddToggle("ToggleWalkOnWater", {
+        ["Title"] = "Đi Trên Nước (Walk On Water / Jesus)",
+        ["Default"] = false
+    }):OnChanged(function(val)
+        _G.WalkOnWater = val
+        if not val and _G.WaterPlatform then
+            pcall(function() _G.WaterPlatform:Destroy() end)
+            _G.WaterPlatform = nil
+        end
+    end)
+
+    task.spawn(function()
+        while task.wait(0.05) do
+            if _G.WalkOnWater then
+                pcall(function()
+                    local char = game.Players.LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        if not _G.WaterPlatform or not _G.WaterPlatform.Parent then
+                            local plat = Instance.new("Part")
+                            plat.Name = "AbysslixWaterPlatform"
+                            plat.Size = Vector3.new(25, 1, 25)
+                            plat.Anchored = true
+                            plat.CanCollide = true
+                            plat.Transparency = 0.8
+                            plat.Material = Enum.Material.ForceField
+                            plat.Color = Color3.fromRGB(0, 240, 255)
+                            plat.Parent = workspace
+                            _G.WaterPlatform = plat
+                        end
+                        local targetY = math.min(hrp.Position.Y - 3.2, 0)
+                        _G.WaterPlatform.CFrame = CFrame.new(hrp.Position.X, targetY, hrp.Position.Z)
+                    end
+                end)
+            end
+        end
+    end)
+
+    -- 4. TỰ NHẶT RƯƠNG TRÊN BIỂN (AUTO COLLECT SEA CHESTS)
+    Tabs.Sea:AddToggle("ToggleCollectSeaChests", {
+        ["Title"] = "Tự Nhặt Rương Trên Biển (Auto Sea Chests)",
+        ["Default"] = false
+    }):OnChanged(function(val)
+        _G.CollectSeaChests = val
+    end)
+
+    task.spawn(function()
+        while task.wait(1) do
+            if _G.CollectSeaChests then
+                pcall(function()
+                    for _, chest in ipairs(workspace:GetDescendants()) do
+                        if not _G.CollectSeaChests then break end
+                        if chest:IsA("Part") or chest:IsA("MeshPart") or chest:IsA("Model") then
+                            if string.find(chest.Name, "Chest") then
+                                local touchPart = chest:IsA("Model") and (chest.PrimaryPart or chest:FindFirstChildOfClass("BasePart")) or chest
+                                if touchPart and touchPart:IsA("BasePart") then
+                                    local myHrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                    if myHrp and (touchPart.Position - myHrp.Position).Magnitude < 3500 then
+                                        BKP(touchPart.CFrame)
+                                        task.wait(0.2)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+
+    -- 5. ĐỊNH VỊ SỰ KIỆN BIỂN (ESP SEA EVENTS)
+    Tabs.Sea:AddToggle("ToggleESPSeaEvents", {
+        ["Title"] = "Định Vị Sự Kiện Biển (ESP Sea Events)",
+        ["Default"] = false
+    }):OnChanged(function(val)
+        _G.ESPSeaEvents = val
+        if not val then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj.Name == "SeaEventESP" then
+                    pcall(function() obj:Destroy() end)
+                end
+            end
+        end
+    end)
+
+    local function AddSeaESP(model, name, color)
+        if not model or not model.Parent then return end
+        local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head") or (model:IsA("Model") and model.PrimaryPart) or model:FindFirstChildOfClass("BasePart")
+        if root and not root:FindFirstChild("SeaEventESP") then
+            local bg = Instance.new("BillboardGui")
+            bg.Name = "SeaEventESP"
+            bg.AlwaysOnTop = true
+            bg.Size = UDim2.new(0, 180, 0, 40)
+            bg.StudsOffset = Vector3.new(0, 3, 0)
+            bg.Parent = root
+            
+            local lbl = Instance.new("TextLabel")
+            lbl.Name = "InfoLabel"
+            lbl.Parent = bg
+            lbl.Size = UDim2.new(1, 0, 1, 0)
+            lbl.BackgroundTransparency = 1
+            lbl.Font = Enum.Font.GothamBold
+            lbl.TextSize = 14
+            lbl.TextColor3 = color or Color3.fromRGB(0, 240, 255)
+            lbl.TextStrokeTransparency = 0.5
+            lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            lbl.Text = name
+        elseif root and root:FindFirstChild("SeaEventESP") then
+            local myHrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if myHrp then
+                local dist = math.floor((root.Position - myHrp.Position).Magnitude)
+                local lbl = root.SeaEventESP:FindFirstChild("InfoLabel")
+                if lbl then
+                    lbl.Text = name .. " [" .. dist .. "m]"
+                end
+            end
+        end
+    end
+
+    task.spawn(function()
+        while task.wait(1) do
+            if _G.ESPSeaEvents then
+                pcall(function()
+                    if workspace:FindFirstChild("SeaBeasts") then
+                        for _, sb in ipairs(workspace.SeaBeasts:GetChildren()) do
+                            AddSeaESP(sb, "👑 Vua Biển (Sea Beast)", Color3.fromRGB(0, 240, 255))
+                        end
+                    end
+                    if workspace:FindFirstChild("Enemies") then
+                        for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
+                            if enemy.Name == "Terrorshark" then
+                                AddSeaESP(enemy, "🦈 Cá Mập Khổng Lồ (Terrorshark)", Color3.fromRGB(255, 60, 60))
+                            elseif enemy.Name == "Shark" then
+                                AddSeaESP(enemy, "🐟 Cá Mập (Shark)", Color3.fromRGB(100, 200, 255))
+                            elseif enemy.Name == "Piranha" then
+                                AddSeaESP(enemy, "🐡 Cá Piranha", Color3.fromRGB(255, 160, 40))
+                            elseif enemy.Name == "Fish Crew Member" or enemy.Name == "FishBoat" then
+                                AddSeaESP(enemy, "🚢 Tàu Ma / Cá (Ghost Ship)", Color3.fromRGB(180, 80, 255))
+                            elseif string.find(enemy.Name, "Brigade") then
+                                AddSeaESP(enemy, "⚔️ Tàu Hải Tặc (Pirate Ship)", Color3.fromRGB(255, 200, 50))
+                            elseif string.find(string.lower(enemy.Name), "leviathan") then
+                                AddSeaESP(enemy, "🐉 Leviathan", Color3.fromRGB(0, 255, 180))
+                            end
+                        end
+                    end
+                    if workspace:FindFirstChild("Map") then
+                        local mirage = workspace.Map:FindFirstChild("MysticIsland")
+                        if mirage then AddSeaESP(mirage, "🌕 Đảo Bí Ẩn (Mirage Island)", Color3.fromRGB(255, 255, 100)) end
+                        local kitsune = workspace.Map:FindFirstChild("KitsuneIsland")
+                        if kitsune then AddSeaESP(kitsune, "🦊 Đảo Cáo (Kitsune Island)", Color3.fromRGB(150, 100, 255)) end
+                        local frozen = workspace.Map:FindFirstChild("FrozenDimension")
+                        if frozen then AddSeaESP(frozen, "❄️ Đảo Leviathan (Frozen Dimension)", Color3.fromRGB(100, 220, 255)) end
+                    end
+                end)
+            end
+        end
+    end)
+
     Tabs.Sea:AddToggle("ToggleTerrorshark", {
         ["Title"] = "Đánh Cá Mập",
         ["Default"] = false
@@ -6519,6 +6850,7 @@ if Sea3 then
         ["Default"] = false
     }):OnChanged(function(p629)
         _G.GhostShip = p629
+        _G.bjirFishBoat = p629
     end)
     -- [SetValue skipped - Library không cần]
     function CheckPirateBoat()
@@ -6552,7 +6884,7 @@ if Sea3 then
                         AutoSkill = true
                         Skillaimbot = true
                         AimBotSkillPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, - 5, 0)
-                    until v635.Parent or (v635.Health.Value <= 0 or not CheckPirateBoat())
+                    until not v635.Parent or (v635.Health.Value <= 0 or not CheckPirateBoat())
                     AutoSkill = false
                     Skillaimbot = false
                 end
@@ -11654,7 +11986,121 @@ if Sea3 then
         end)
     end)
 end
-Tabs.Sea:AddSection("Draco")
+    -- ============================================================
+    -- NÂNG CẤP LEVIATHAN (BANANA HUB STYLE)
+    -- ============================================================
+    Tabs.Sea:AddToggle("ToggleAutoAttackLeviathan", {
+        ["Title"] = "Tự Đánh Leviathan (Auto Attack Leviathan)",
+        ["Default"] = false
+    }):OnChanged(function(val)
+        _G.AutoAttackLeviathan = val
+    end)
+
+    local function FindLeviathanTarget()
+        if workspace:FindFirstChild("Enemies") then
+            for _, enemy in ipairs(workspace.Enemies:GetChildren()) do
+                if string.find(string.lower(enemy.Name), "leviathan") then
+                    local hum = enemy:FindFirstChild("Humanoid")
+                    local hrp = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head") or (enemy:IsA("Model") and enemy.PrimaryPart)
+                    if hum and hrp and hum.Health > 0 then
+                        return enemy, hrp, hum
+                    end
+                end
+            end
+        end
+        local fd = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("FrozenDimension")
+        if fd then
+            for _, obj in ipairs(fd:GetDescendants()) do
+                if string.find(string.lower(obj.Name), "leviathan") and obj:IsA("Model") then
+                    local hum = obj:FindFirstChild("Humanoid")
+                    local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj.PrimaryPart
+                    if hum and hrp and hum.Health > 0 then
+                        return obj, hrp, hum
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
+    task.spawn(function()
+        while task.wait() do
+            if _G.AutoAttackLeviathan then
+                pcall(function()
+                    local lev, hrp, hum = FindLeviathanTarget()
+                    if lev and hrp and hum and hum.Health > 0 then
+                        local myChar = game.Players.LocalPlayer.Character
+                        if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                            local safePos = hrp.CFrame * CFrame.new(0, 50, 0)
+                            if (hrp.Position - myChar.HumanoidRootPart.Position).Magnitude > 5 then
+                                BKP(safePos)
+                            end
+                            AutoHaki()
+                            EquipTool(SelectWeapon)
+                            AttackNoCoolDown()
+                            hrp.CanCollide = false
+                            hrp.Size = Vector3.new(80, 80, 80)
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+
+    Tabs.Sea:AddToggle("ToggleAutoHarpoonHeart", {
+        ["Title"] = "Tự Bắn Lao Kéo Tim (Auto Harpoon Heart)",
+        ["Default"] = false
+    }):OnChanged(function(val)
+        _G.AutoHarpoonHeart = val
+    end)
+
+    task.spawn(function()
+        while task.wait(0.5) do
+            if _G.AutoHarpoonHeart then
+                pcall(function()
+                    local heart = workspace:FindFirstChild("LeviathanHeart") or workspace:FindFirstChild("FrozenHeart")
+                    if not heart then
+                        for _, obj in ipairs(workspace:GetChildren()) do
+                            if string.find(string.lower(obj.Name), "heart") and (obj:IsA("Model") or obj:IsA("BasePart")) then
+                                heart = obj
+                                break
+                            end
+                        end
+                    end
+                    if heart then
+                        for _, boat in ipairs(workspace.Boats:GetChildren()) do
+                            local harpoon = boat:FindFirstChild("Harpoon") or boat:FindFirstChild("Cannon")
+                            if harpoon then
+                                local seat = harpoon:FindFirstChildOfClass("VehicleSeat") or harpoon:FindFirstChildOfClass("Seat")
+                                if seat then
+                                    Tween2(seat.CFrame * CFrame.new(0, 1, 0))
+                                    task.wait(0.5)
+                                    game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+                                    task.wait(0.1)
+                                    game:GetService("VirtualUser"):Button1Up(Vector2.new(1280, 672))
+                                end
+                            end
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+
+    Tabs.Sea:AddButton({
+        ["Title"] = "Đút Lót Gián Điệp Tiki (Bribe Spy)",
+        ["Callback"] = function()
+            pcall(function()
+                local res = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Spy", "Clues")
+                Library:Notify({
+                    Title = "Gián Điệp (Spy)",
+                    Content = tostring(res or "Đã nhận manh mối từ Spy!")
+                })
+            end)
+        end
+    })
+
+    Tabs.Sea:AddSection("Draco")
 Tabs.Sea:AddToggle("ToggleBlazeEmber", {
     ["Title"] = "Làm Lứa Đố",
     ["Default"] = false
