@@ -151,7 +151,6 @@ task.spawn(function()
                     bStroke.Parent = btn
                 end
             end
-            end
         end
         task.wait(0.1)
     end
@@ -211,7 +210,6 @@ task.spawn(function()
         local zinerGui = (pGui and pGui:FindFirstChild("Ziner hub GUI")) or (game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui") and game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("Ziner hub GUI"))
         if zinerGui then
             setupGlow(zinerGui)
-            end
         end
         task.wait(0.1)
     end
@@ -956,7 +954,7 @@ function CheckLevel()
         end
     end
     if Sea2 then
-        elseif v7 <= 724 or SelectMonster == "Raider" then
+        if v7 <= 724 or SelectMonster == "Raider" then
             Ms = "Raider"
             NameQuest = "Area1Quest"
             QuestLv = 1
