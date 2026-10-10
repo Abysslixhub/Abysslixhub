@@ -704,10 +704,10 @@ end
 
 Tabs = {
     ["Info"]     = createTab("Thông Tin", "info"),
+    ["Shop"]     = createTab("Cửa Hàng", "shopping-cart"),
     ["Main"]     = createTab("Cày Cấp", "swords"),
     ["Sea"]      = createTab("Sự Kiện", "waves"),
     ["Item"]     = createTab("Lấy & Nâng Cấp Vật Phẩm", "package"),
-    ["Setting"]  = createTab("Cài Đặt", "settings"),
     ["Status"]   = createTab("Webhook", "radio"),
     ["Stats"]    = createTab("Chỉ Số", "bar-chart-2"),
     ["Player"]   = createTab("Người Chơi", "user"),
@@ -716,8 +716,8 @@ Tabs = {
     ["Fruit"]    = createTab("Trái Ác Quỷ", "cherry"),
     ["Raid"]     = createTab("Đột Kích", "flame"),
     ["Race"]     = createTab("Nâng Cấp Chủng Tộc", "zap"),
-    ["Shop"]     = createTab("Cửa Hàng", "shopping-cart"),
     ["Misc"]     = createTab("Khác", "folder"),
+    ["Setting"]  = createTab("Cài Đặt", "settings"),
 }
 
 task.wait(0.5)
