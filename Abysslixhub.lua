@@ -3139,119 +3139,75 @@ function GetWeaponInventory(p193)
     return false
 end
 local vu198 = game.Players.LocalPlayer
+
+local function GetEquippedTool()
+    local char = vu198.Character
+    if not char then return nil end
+    for _, item in ipairs(char:GetChildren()) do
+        if item:IsA("Tool") then
+            return item
+        end
+    end
+    return nil
+end
+
 function AttackNoCoolDown()
-	-- upvalues: (ref) vu198
-    local vu199 = vu198.Character
-    if not vu199 then
-        return
+    local char = vu198.Character
+    if not char then return end
+    
+    local tool = GetEquippedTool()
+    if not tool then return end
+    
+    local myPos = char:GetPivot().Position
+    local hitTargets = {}
+    local primaryPart = nil
+    
+    local enemies = game:GetService("Workspace").Enemies:GetChildren()
+    for _, mob in ipairs(enemies) do
+        if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and not mob:GetAttribute("IsBoat") then
+            local hrp = mob:FindFirstChild("HumanoidRootPart")
+            local head = mob:FindFirstChild("Head") or hrp
+            if hrp and (hrp.Position - myPos).Magnitude <= 65 then
+                table.insert(hitTargets, { mob, head })
+                if not primaryPart then
+                    primaryPart = head
+                end
+            end
+        end
     end
-    local v200, v201, v202 = ipairs(vu199:GetChildren())
-    local v203 = nil
-    while true do
-        local vu204
-        v202, vu204 = v200(v201, v202)
-        if v202 == nil then
-            vu204 = v203
-            break
-        end
-        if vu204:IsA("Tool") then
-            break
-        end
-    end
-    if vu204 then
-        local function vu207(p205)
-            local v206 = p205 and p205:FindFirstChild("Humanoid")
-            if v206 then
-                v206 = p205.Humanoid.Health > 0
-            end
-            return v206
-        end
-        local function v217(p208)
-			-- upvalues: (ref) vu199, (ref) vu207
-            local v209 = game:GetService("Workspace").Enemies:GetChildren()
-            local v210 = vu199:GetPivot().Position
-            local v211, v212, v213 = ipairs(v209)
-            local v214 = {}
-            while true do
-                local v215
-                v213, v215 = v211(v212, v213)
-                if v213 == nil then
-                    break
-                end
-                local v216 = v215:FindFirstChild("HumanoidRootPart")
-                if v216 and (vu207(v215) and (v216.Position - v210).Magnitude <= p208) then
-                    table.insert(v214, v215)
-                end
-            end
-            return v214
-        end
-        if vu204:FindFirstChild("LeftClickRemote") then
-            local v218 = v217(60)
-            local v219, v220, v221 = ipairs(v218)
-            local vu222 = 1
-            while true do
-                local v223
-                v221, v223 = v219(v220, v221)
-                if v221 == nil then
-                    break
-                end
-                local vu224 = (v223.HumanoidRootPart.Position - vu199:GetPivot().Position).Unit
-                pcall(function()
-					-- upvalues: (ref) vu204, (ref) vu224, (ref) vu222
-                    vu204.LeftClickRemote:FireServer(vu224, vu222)
-                end)
-                local v225 = vu222 + 1
-                vu222 = v225 > 1000000000 and 1 or v225
-            end
-        else
-            local v226 = game:GetService("Workspace").Enemies:GetChildren()
-            local v227 = vu199:GetPivot().Position
-            local v228, v229, v230 = ipairs(v226)
-            local v231 = vu207
-            local vu232 = {}
-            local vu233 = nil
-            while true do
-                local v234, v235 = v228(v229, v230)
-                if v234 == nil then
-                    break
-                end
-                v230 = v234
-                if not v235:GetAttribute("IsBoat") and v231(v235) then
-                    local v236 = v235:FindFirstChild("Head")
-                    if v236 and (v227 - v236.Position).Magnitude <= 60 then
-                        table.insert(vu232, {
-                            v235,
-                            v236
-                        })
-                        vu233 = v236
-                    end
-                end
-            end
-            if not vu233 then
-                return
-            end
+    
+    if primaryPart and #hitTargets > 0 then
+        if tool:FindFirstChild("LeftClickRemote") then
             pcall(function()
-				-- upvalues: (ref) vu232, (ref) vu233
-                local v237 = game:GetService("ReplicatedStorage")
-                local mods = v237:FindFirstChild("Modules")
-                local net = mods and mods:FindFirstChild("Net")
-                local v238 = net and net:FindFirstChild("RE/RegisterAttack")
-                local v239 = net and net:FindFirstChild("RE/RegisterHit")
-                if v238 and v239 then
-                    if # vu232 <= 0 then
-                        task.wait(1e-9)
-                    else
-                        v238:FireServer(1e-9)
-                        v239:FireServer(vu233, vu232)
-                    end
-                else
-                    pcall(function()
-                        if vu204 then vu204:Activate() end
-                    end)
-                end
+                local dir = (primaryPart.Position - myPos).Unit
+                tool.LeftClickRemote:FireServer(dir, 1)
             end)
         end
+        
+        pcall(function()
+            local rep = game:GetService("ReplicatedStorage")
+            local mods = rep:FindFirstChild("Modules")
+            local net = mods and mods:FindFirstChild("Net")
+            if net then
+                local regAttack = net:FindFirstChild("RE/RegisterAttack")
+                local regHit = net:FindFirstChild("RE/RegisterHit")
+                if regAttack and regHit then
+                    regAttack:FireServer(1e-9)
+                    regHit:FireServer(primaryPart, hitTargets)
+                end
+            end
+        end)
     end
+    
+    pcall(function()
+        tool:Activate()
+    end)
+    
+    pcall(function()
+        local vu = game:GetService("VirtualUser")
+        vu:CaptureController()
+        vu:ClickButton1(Vector2.new(0, 0))
+    end)
 end
 Type = 1
 spawn(function()
@@ -3559,26 +3515,48 @@ spawn(function()
 end)
 Tabs.Main:AddSection("Chiến Đấu")
 Tabs.Main:AddToggle("ToggleOneHit", {
-    ["Title"] = "Đánh Nhanh",
+    ["Title"] = "Đánh Nhanh (Fast Attack)",
     ["Default"] = false
 }):OnChanged(function(v)
     _G.OneHitKill = v
+    _G.FastAttack = v
     getgenv().AutoClick = v
+    if v then
+        if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
+    else
+        if not _G.AutoLevel and not _G.AutoBone and not _G.AutoBoneQuest and not _G.Cake and not _G.AutoNear then
+            StopFXLoop()
+        end
+    end
 end)
--- AutoClick: dùng Button1Down/Up vào giữa viewport game - KHÔNG click vào UI
-getgenv().AutoClick = false
-getgenv().ClicksPerSecond = 20
-local _vu = game:GetService("VirtualUser")
+
+Tabs.Main:AddToggle("ToggleBringMobMain", {
+    ["Title"] = "Gom Quái (Bring Mob)",
+    ["Default"] = true
+}):OnChanged(function(v)
+    _G.BringMob = v
+end)
+_G.BringMob = true
+
+-- Vòng lặp Đánh Nhanh chuyên dụng: đánh mọi quái trong tầm với tốc độ siêu nhanh
 task.spawn(function()
-    while task.wait(1 / getgenv().ClicksPerSecond) do
-        if getgenv().AutoClick then
+    while true do
+        task.wait(_G.Fast_Delay or 0.01)
+        if _G.FastAttack or _G.OneHitKill then
             pcall(function()
-                local cam = workspace.CurrentCamera
-                local vp = cam.ViewportSize
-                local center = Vector2.new(vp.X / 2, vp.Y / 2)
-                _vu:Button1Down(center, cam.CFrame)
-                task.wait(0.02)
-                _vu:Button1Up(center, cam.CFrame)
+                local player = game.Players.LocalPlayer
+                local char = player and player.Character
+                local hum = char and char:FindFirstChild("Humanoid")
+                if hum and hum.Health > 0 then
+                    local tool = nil
+                    for _, item in ipairs(char:GetChildren()) do
+                        if item:IsA("Tool") then tool = item; break end
+                    end
+                    if not tool and SelectWeapon then
+                        EquipTool(SelectWeapon)
+                    end
+                    AttackNoCoolDown()
+                end
             end)
         end
     end
@@ -9350,49 +9328,83 @@ Tabs.Setting:AddToggle("ToggleBringMob", {
     _G.BringMob = p856
 end)
 _G.BringMob = true
--- [SetValue skipped - Library không cần]
+
+-- Duy trì quyền điều khiển vật lý (SimulationRadius) liên tục
 spawn(function()
-    while wait() do
+    game:GetService("RunService").Stepped:Connect(function()
         pcall(function()
-            local v857, v858, v859 = pairs(game:GetService("Workspace").Enemies:GetChildren())
-            while true do
-                local v860
-                v859, v860 = v857(v858, v859)
-                if v859 == nil then
-                    break
+            sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
+        end)
+    end)
+end)
+
+-- Hệ thống Gom Quái Heartbeat 60FPS: chống văng, mượt mà, gom chuẩn
+spawn(function()
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if not _G.BringMob then return end
+        pcall(function()
+            local player = game.Players.LocalPlayer
+            local char = player and player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+
+            local targetCF = nil
+            local targetName = nil
+
+            if FarmPos and MonFarm and bringmob then
+                targetCF = FarmPos
+                targetName = MonFarm
+            elseif _G.Cake and POSCAKE and bringmob then
+                targetCF = POSCAKE
+            elseif hrp then
+                local nearestMob = nil
+                local nearestDist = 250
+                for _, mob in ipairs(game:GetService("Workspace").Enemies:GetChildren()) do
+                    if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 and not mob:GetAttribute("IsBoat") then
+                        local d = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+                        if d < nearestDist then
+                            nearestDist = d
+                            nearestMob = mob
+                        end
+                    end
                 end
-                if _G.BringMob and (bringmob and (v860.Name == MonFarm and (v860:FindFirstChild("Humanoid") and v860.Humanoid.Health > 0))) then
-                    if v860.Name ~= "Factory Staff" then
-                        if v860.Name == MonFarm and (v860.HumanoidRootPart.Position - FarmPos.Position).Magnitude <= 1000000000 then
-                            v860.HumanoidRootPart.CFrame = FarmPos
-                            v860.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                            v860.HumanoidRootPart.Transparency = 1
-                            v860.Humanoid.JumpPower = 0
-                            v860.Humanoid.WalkSpeed = 0
-                            if v860.Humanoid:FindFirstChild("Animator") then
-                                v860.Humanoid.Animator:Destroy()
+                if nearestMob then
+                    targetCF = nearestMob.HumanoidRootPart.CFrame
+                    targetName = nearestMob.Name
+                end
+            end
+
+            if not targetCF then return end
+
+            for _, mob in ipairs(game:GetService("Workspace").Enemies:GetChildren()) do
+                if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and not mob:GetAttribute("IsBoat") then
+                    if mob.Name ~= "Factory Staff" and (not targetName or mob.Name == targetName) then
+                        local dist = (mob.HumanoidRootPart.Position - targetCF.Position).Magnitude
+                        if dist <= 300 and dist > 1.5 then
+                            mob.HumanoidRootPart.CFrame = targetCF
+                            mob.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+                            mob.HumanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
+                            mob.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                            mob.HumanoidRootPart.Transparency = 1
+                            mob.Humanoid.WalkSpeed = 0
+                            mob.Humanoid.JumpPower = 0
+
+                            for _, part in ipairs(mob:GetChildren()) do
+                                if part:IsA("BasePart") then
+                                    part.CanCollide = false
+                                end
                             end
-                            v860.HumanoidRootPart.CanCollide = false
-                            v860.Head.CanCollide = false
-                            v860.Humanoid:ChangeState(11)
-                            v860.Humanoid:ChangeState(14)
-                            sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
+
+                            mob.Humanoid:ChangeState(11)
+                            mob.Humanoid:ChangeState(14)
                         end
-                    elseif (v860.HumanoidRootPart.Position - FarmPos.Position).Magnitude <= 1000000000 then
-                        v860.Head.CanCollide = false
-                        v860.HumanoidRootPart.CanCollide = false
-                        v860.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                        v860.HumanoidRootPart.CFrame = FarmPos
-                        if v860.Humanoid:FindFirstChild("Animator") then
-                            v860.Humanoid.Animator:Destroy()
-                        end
-                        sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
                     end
                 end
             end
         end)
-    end
+    end)
 end)
+
 Tabs.Setting:AddToggle("ToggleRemoveNotify", {
     ["Title"] = "Xóa Thông Báo",
     ["Default"] = false
