@@ -905,7 +905,7 @@ function CheckLevel()
             if _G.AutoLevel and (CFrameMon.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 3000 then
                 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(61163.8515625, 11.6796875, 1819.7841796875))
             end
-        elseif v7 == 10 or (v7 <= 474 or SelectMonster == "God\'s Guard") then
+        elseif v7 == 450 or (v7 <= 474 or SelectMonster == "God\\'s Guard") then
             Ms = "God\'s Guard"
             NameQuest = "SkyExp1Quest"
             QuestLv = 1
@@ -1331,7 +1331,7 @@ function CheckLevel()
             NameMon = "Sweet Thief"
             CFrameQ = CFrame.new(151.198242, 23.8907146, - 12774.6172, 0.422592998, 0, 0.906319618, 0, 1, 0, - 0.906319618, 0, 0.422592998)
             CFrameMon = CFrame.new(- 140.258301, 25.5824986, - 12652.3115, 0.173624337, 0, - 0.984811902, 0, 1, 0, 0.984811902, 0, 0.173624337)
-        elseif v7 == 2375 or (v7 <= 2400 or SelectMonster == "Candy Rebel") then
+        elseif v7 == 2375 or (v7 <= 2399 or SelectMonster == "Candy Rebel") then
             Ms = "Candy Rebel"
             NameQuest = "ChocQuest2"
             QuestLv = 2
@@ -3213,7 +3213,7 @@ Type = 1
 spawn(function()
     while wait() do
         if Type == 1 then
-            Pos = CFrame.new(0, 30, 0)
+            Pos = CFrame.new(0, 20, 0)
         end
     end
 end)
@@ -3431,15 +3431,39 @@ Tabs.Main:AddToggle("ToggleLevel", {
     end
 end)
 -- [SetValue skipped - Library không cần]
+Tabs.Main:AddToggle("ToggleAutoNextSea", {
+    ["Title"] = "Tự Động Qua Sea Khi Đủ Cấp",
+    ["Default"] = true
+}):OnChanged(function(v)
+    _G.AutoNextSea = v
+end)
+_G.AutoNextSea = true
+
 spawn(function()
     while task.wait() do
         if _G.AutoLevel then
             pcall(function()
+                local myLevel = game:GetService("Players").LocalPlayer.Data.Level.Value
+
+                -- Tự động kích hoạt nhiệm vụ qua Sea nếu đủ cấp
+                if _G.AutoNextSea then
+                    if myLevel >= 700 and Sea1 then
+                        _G.Auto_Sea2 = true
+                    elseif myLevel >= 1500 and Sea2 then
+                        _G.Auto_Sea3 = true
+                        _G.AutoSea3 = true
+                    end
+                end
+
                 CheckLevel()
 
                 if not Ms or not NameMon or not NameQuest or not QuestLv or not CFrameQ or not CFrameMon then
                     return
                 end
+
+                local char = game.Players.LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
 
                 local questVisible = false
                 local QuestTitle = ""
@@ -3454,65 +3478,94 @@ spawn(function()
                 if questVisible and QuestTitle ~= "" and not string.find(QuestTitle, NameMon) then
                     bringmob = false
                     game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AbandonQuest")
+                    task.wait(0.2)
                     return
                 end
 
-                -- Chưa có quest → bay tới NPC nhận quest bằng Tween2 (giống di chuyển đảo)
+                -- Chưa có quest → bay tới NPC nhận quest bằng Tween2
                 if not questVisible then
                     bringmob = false
-                    Tween2(CFrameQ)
-                    repeat task.wait(0.1) until (CFrameQ.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 20 or not _G.AutoLevel
-                    wait(0.2)
-                    if (CFrameQ.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 20 then
+                    if (CFrameQ.Position - hrp.Position).Magnitude > 20 then
+                        Tween2(CFrameQ)
+                    else
                         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", NameQuest, QuestLv)
-                        wait(0.3)
+                        task.wait(0.3)
                     end
                     return
                 end
 
-                -- Đã có quest đúng → farm (dùng BKP để đứng cạnh quái, giống island travel)
+                -- Đã có quest đúng → farm
                 if questVisible and string.find(QuestTitle, NameMon) then
-                    if game:GetService("Workspace").Enemies:FindFirstChild(Ms) then
-                        for _, v in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
-                            if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == Ms then
-                                -- Bật hiệu ứng tia lửa + tiếng spam liên tục
-                                if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
-                                repeat
-                                    task.wait(_G.Fast_Delay)
-                                    AttackNoCoolDown()
-                                    bringmob = true
-                                    AutoHaki()
-                                    EquipTool(SelectWeapon)
-                                    -- Dùng BKP teleport trực tiếp cạnh quái (giống các tính năng khác)
-                                    local _mobCF = v.HumanoidRootPart.CFrame * Pos
-                                    if (_mobCF.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then
-                                        BKP(_mobCF)
-                                    end
-                                    v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                                    v.HumanoidRootPart.Transparency = 1
-                                    v.Humanoid.JumpPower = 0
-                                    v.Humanoid.WalkSpeed = 0
-                                    v.HumanoidRootPart.CanCollide = false
-                                    pcall(function() v.Head.CanCollide = false end)
-                                    FarmPos = v.HumanoidRootPart.CFrame
-                                    MonFarm = v.Name
-                                    local qv = false
-                                    pcall(function() qv = game.Players.LocalPlayer.PlayerGui.Main.Quest.Visible end)
-                                until not _G.AutoLevel or not v.Parent or v.Humanoid.Health <= 0 or not qv
-                                bringmob = false
-                                if not _G.OneHitKill and not _G.AutoBone and not _G.AutoBoneNoQuest and not _G.AutoNear then StopFXLoop() end
+                    local targetMob = nil
+                    for _, v in ipairs(game:GetService("Workspace").Enemies:GetChildren()) do
+                        if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == Ms then
+                            targetMob = v
+                            break
+                        end
+                    end
+
+                    if targetMob then
+                        local v = targetMob
+                        local _mobCF = v.HumanoidRootPart.CFrame * Pos
+                        local dist = (_mobCF.Position - hrp.Position).Magnitude
+
+                        -- Nếu ở xa (> 60 studs): bay mượt trước để không bị giật lùi (anti-cheat rubberband)
+                        if dist > 60 then
+                            Tween2(_mobCF)
+                        end
+
+                        if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
+
+                        repeat
+                            task.wait(_G.Fast_Delay or 0.001)
+                            if not _G.AutoLevel or not v.Parent or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0 then break end
+
+                            AttackNoCoolDown()
+                            bringmob = true
+                            AutoHaki()
+                            EquipTool(SelectWeapon)
+
+                            local curCF = v.HumanoidRootPart.CFrame * Pos
+                            if (curCF.Position - hrp.Position).Magnitude > 5 then
+                                BKP(curCF)
                             end
+
+                            pcall(function()
+                                v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                                v.HumanoidRootPart.Transparency = 1
+                                v.Humanoid.JumpPower = 0
+                                v.Humanoid.WalkSpeed = 0
+                                v.HumanoidRootPart.CanCollide = false
+                                if v:FindFirstChild("Head") then v.Head.CanCollide = false end
+                            end)
+
+                            FarmPos = v.HumanoidRootPart.CFrame
+                            MonFarm = v.Name
+
+                            local qv = false
+                            pcall(function() qv = game.Players.LocalPlayer.PlayerGui.Main.Quest.Visible end)
+                        until not _G.AutoLevel or not v.Parent or v.Humanoid.Health <= 0 or not qv
+
+                        bringmob = false
+                        if not _G.OneHitKill and not _G.AutoBone and not _G.AutoBoneQuest and not _G.AutoNear and not _G.Cake then
+                            StopFXLoop()
                         end
                     else
                         bringmob = false
-                        -- Bay đến vị trí quái spawn bằng Tween2 (giống di chuyển đảo)
-                        Tween2(CFrameMon)
+                        if not _G.OneHitKill and not _G.AutoBone and not _G.AutoBoneQuest and not _G.AutoNear and not _G.Cake then
+                            StopFXLoop()
+                        end
+                        if (CFrameMon.Position - hrp.Position).Magnitude > 30 then
+                            Tween2(CFrameMon)
+                        end
+                        task.wait(0.3)
                     end
                 end
             end)
         end
     end
 end)
+
 Tabs.Main:AddSection("Chiến Đấu")
 Tabs.Main:AddToggle("ToggleOneHit", {
     ["Title"] = "Đánh Nhanh (Fast Attack)",
@@ -9846,7 +9899,7 @@ spawn(function()
     while wait() do
         if _G.Auto_Sea2 then
             pcall(function()
-                if game:GetService("Players").LocalPlayer.Data.Level.Value >= 700 and World1 then
+                if game:GetService("Players").LocalPlayer.Data.Level.Value >= 700 and (Sea1 or World1) then
                     if game:GetService("Workspace").Map.Ice.Door.CanCollide == false and game:GetService("Workspace").Map.Ice.Door.Transparency == 1 then
                         local v918 = CFrame.new(4849.29883, 5.65138149, 719.611877)
                         repeat
@@ -9918,9 +9971,9 @@ end)
 -- [SetValue removed]
 spawn(function()
     while wait() do
-        if _G.AutoSea3 then
+        if _G.AutoSea3 or _G.Auto_Sea3 then
             pcall(function()
-                if game:GetService("Players").LocalPlayer.Data.Level.Value >= 1500 and World2 then
+                if game:GetService("Players").LocalPlayer.Data.Level.Value >= 1500 and (Sea2 or World2) then
                     _G.AutoLevel = false
                     if game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ZQuestProgress", "General") == 0 then
                         Tween2(CFrame.new(- 1926.3221435547, 12.819851875305, 1738.3092041016))
