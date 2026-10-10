@@ -712,7 +712,7 @@ Tabs = {
     ["Stats"]    = createTab("Chỉ Số", "bar-chart-2"),
     ["Player"]   = createTab("Người Chơi", "user"),
     ["Teleport"] = createTab("Dịch Chuyển", "map-pin"),
-    ["Visual"]   = createTab("Giả Mạo", "eye"),
+    ["PVP"]   = createTab("Giả Mạo", "eye"),
     ["Fruit"]    = createTab("Trái Ác Quỷ", "cherry"),
     ["Raid"]     = createTab("Đột Kích", "flame"),
     ["Race"]     = createTab("Nâng Cấp Chủng Tộc", "zap"),
@@ -905,7 +905,7 @@ function CheckLevel()
             if _G.AutoLevel and (CFrameMon.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 3000 then
                 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(61163.8515625, 11.6796875, 1819.7841796875))
             end
-        elseif v7 == 450 or (v7 <= 474 or SelectMonster == "God\\'s Guard") then
+        elseif v7 == 10 or (v7 <= 474 or SelectMonster == "God\'s Guard") then
             Ms = "God\'s Guard"
             NameQuest = "SkyExp1Quest"
             QuestLv = 1
@@ -1331,7 +1331,7 @@ function CheckLevel()
             NameMon = "Sweet Thief"
             CFrameQ = CFrame.new(151.198242, 23.8907146, - 12774.6172, 0.422592998, 0, 0.906319618, 0, 1, 0, - 0.906319618, 0, 0.422592998)
             CFrameMon = CFrame.new(- 140.258301, 25.5824986, - 12652.3115, 0.173624337, 0, - 0.984811902, 0, 1, 0, 0.984811902, 0, 0.173624337)
-        elseif v7 == 2375 or (v7 <= 2399 or SelectMonster == "Candy Rebel") then
+        elseif v7 == 2375 or (v7 <= 2400 or SelectMonster == "Candy Rebel") then
             Ms = "Candy Rebel"
             NameQuest = "ChocQuest2"
             QuestLv = 2
@@ -3139,81 +3139,125 @@ function GetWeaponInventory(p193)
     return false
 end
 local vu198 = game.Players.LocalPlayer
-
-local function GetEquippedTool()
-    local char = vu198.Character
-    if not char then return nil end
-    for _, item in ipairs(char:GetChildren()) do
-        if item:IsA("Tool") then
-            return item
+function AttackNoCoolDown()
+	-- upvalues: (ref) vu198
+    local vu199 = vu198.Character
+    if not vu199 then
+        return
+    end
+    local v200, v201, v202 = ipairs(vu199:GetChildren())
+    local v203 = nil
+    while true do
+        local vu204
+        v202, vu204 = v200(v201, v202)
+        if v202 == nil then
+            vu204 = v203
+            break
+        end
+        if vu204:IsA("Tool") then
+            break
         end
     end
-    return nil
-end
-
-function AttackNoCoolDown()
-    local char = vu198.Character
-    if not char then return end
-    
-    local tool = GetEquippedTool()
-    if not tool then return end
-    
-    local myPos = char:GetPivot().Position
-    local hitTargets = {}
-    local primaryPart = nil
-    
-    local enemies = game:GetService("Workspace").Enemies:GetChildren()
-    for _, mob in ipairs(enemies) do
-        if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and not mob:GetAttribute("IsBoat") then
-            local hrp = mob:FindFirstChild("HumanoidRootPart")
-            local head = mob:FindFirstChild("Head") or hrp
-            if hrp and (hrp.Position - myPos).Magnitude <= 65 then
-                table.insert(hitTargets, { mob, head })
-                if not primaryPart then
-                    primaryPart = head
+    if vu204 then
+        local function vu207(p205)
+            local v206 = p205 and p205:FindFirstChild("Humanoid")
+            if v206 then
+                v206 = p205.Humanoid.Health > 0
+            end
+            return v206
+        end
+        local function v217(p208)
+			-- upvalues: (ref) vu199, (ref) vu207
+            local v209 = game:GetService("Workspace").Enemies:GetChildren()
+            local v210 = vu199:GetPivot().Position
+            local v211, v212, v213 = ipairs(v209)
+            local v214 = {}
+            while true do
+                local v215
+                v213, v215 = v211(v212, v213)
+                if v213 == nil then
+                    break
+                end
+                local v216 = v215:FindFirstChild("HumanoidRootPart")
+                if v216 and (vu207(v215) and (v216.Position - v210).Magnitude <= p208) then
+                    table.insert(v214, v215)
                 end
             end
+            return v214
         end
-    end
-    
-    if primaryPart and #hitTargets > 0 then
-        if tool:FindFirstChild("LeftClickRemote") then
+        if vu204:FindFirstChild("LeftClickRemote") then
+            local v218 = v217(60)
+            local v219, v220, v221 = ipairs(v218)
+            local vu222 = 1
+            while true do
+                local v223
+                v221, v223 = v219(v220, v221)
+                if v221 == nil then
+                    break
+                end
+                local vu224 = (v223.HumanoidRootPart.Position - vu199:GetPivot().Position).Unit
+                pcall(function()
+					-- upvalues: (ref) vu204, (ref) vu224, (ref) vu222
+                    vu204.LeftClickRemote:FireServer(vu224, vu222)
+                end)
+                local v225 = vu222 + 1
+                vu222 = v225 > 1000000000 and 1 or v225
+            end
+        else
+            local v226 = game:GetService("Workspace").Enemies:GetChildren()
+            local v227 = vu199:GetPivot().Position
+            local v228, v229, v230 = ipairs(v226)
+            local v231 = vu207
+            local vu232 = {}
+            local vu233 = nil
+            while true do
+                local v234, v235 = v228(v229, v230)
+                if v234 == nil then
+                    break
+                end
+                v230 = v234
+                if not v235:GetAttribute("IsBoat") and v231(v235) then
+                    local v236 = v235:FindFirstChild("Head")
+                    if v236 and (v227 - v236.Position).Magnitude <= 60 then
+                        table.insert(vu232, {
+                            v235,
+                            v236
+                        })
+                        vu233 = v236
+                    end
+                end
+            end
+            if not vu233 then
+                return
+            end
             pcall(function()
-                local dir = (primaryPart.Position - myPos).Unit
-                tool.LeftClickRemote:FireServer(dir, 1)
+				-- upvalues: (ref) vu232, (ref) vu233
+                local v237 = game:GetService("ReplicatedStorage")
+                local mods = v237:FindFirstChild("Modules")
+                local net = mods and mods:FindFirstChild("Net")
+                local v238 = net and net:FindFirstChild("RE/RegisterAttack")
+                local v239 = net and net:FindFirstChild("RE/RegisterHit")
+                if v238 and v239 then
+                    if # vu232 <= 0 then
+                        task.wait(1e-9)
+                    else
+                        v238:FireServer(1e-9)
+                        v239:FireServer(vu233, vu232)
+                    end
+                else
+                    pcall(function()
+                        if vu204 then vu204:Activate() end
+                    end)
+                end
             end)
         end
-        
-        pcall(function()
-            local rep = game:GetService("ReplicatedStorage")
-            local mods = rep:FindFirstChild("Modules")
-            local net = mods and mods:FindFirstChild("Net")
-            if net then
-                local regAttack = net:FindFirstChild("RE/RegisterAttack")
-                local regHit = net:FindFirstChild("RE/RegisterHit")
-                if regAttack and regHit then
-                    regAttack:FireServer(1e-9)
-                    regHit:FireServer(primaryPart, hitTargets)
-                end
-            end
-        end)
     end
-    
-    pcall(function()
-        tool:Activate()
-    end)
-    
-    pcall(function()
-        local vu = game:GetService("VirtualUser")
-        vu:CaptureController()
-        vu:ClickButton1(Vector2.new(0, 0))
-    end)
 end
 Type = 1
 spawn(function()
     while wait() do
         if Type == 1 then
-            Pos = CFrame.new(0, 20, 0)
+            Pos = CFrame.new(0, 30, 0)
         end
     end
 end)
@@ -3431,39 +3475,15 @@ Tabs.Main:AddToggle("ToggleLevel", {
     end
 end)
 -- [SetValue skipped - Library không cần]
-Tabs.Main:AddToggle("ToggleAutoNextSea", {
-    ["Title"] = "Tự Động Qua Sea Khi Đủ Cấp",
-    ["Default"] = true
-}):OnChanged(function(v)
-    _G.AutoNextSea = v
-end)
-_G.AutoNextSea = true
-
 spawn(function()
     while task.wait() do
         if _G.AutoLevel then
             pcall(function()
-                local myLevel = game:GetService("Players").LocalPlayer.Data.Level.Value
-
-                -- Tự động kích hoạt nhiệm vụ qua Sea nếu đủ cấp
-                if _G.AutoNextSea then
-                    if myLevel >= 700 and Sea1 then
-                        _G.Auto_Sea2 = true
-                    elseif myLevel >= 1500 and Sea2 then
-                        _G.Auto_Sea3 = true
-                        _G.AutoSea3 = true
-                    end
-                end
-
                 CheckLevel()
 
                 if not Ms or not NameMon or not NameQuest or not QuestLv or not CFrameQ or not CFrameMon then
                     return
                 end
-
-                local char = game.Players.LocalPlayer.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
 
                 local questVisible = false
                 local QuestTitle = ""
@@ -3478,138 +3498,87 @@ spawn(function()
                 if questVisible and QuestTitle ~= "" and not string.find(QuestTitle, NameMon) then
                     bringmob = false
                     game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AbandonQuest")
-                    task.wait(0.2)
                     return
                 end
 
-                -- Chưa có quest → bay tới NPC nhận quest bằng Tween2
+                -- Chưa có quest → bay tới NPC nhận quest bằng Tween2 (giống di chuyển đảo)
                 if not questVisible then
                     bringmob = false
-                    if (CFrameQ.Position - hrp.Position).Magnitude > 20 then
-                        Tween2(CFrameQ)
-                    else
+                    Tween2(CFrameQ)
+                    repeat task.wait(0.1) until (CFrameQ.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 20 or not _G.AutoLevel
+                    wait(0.2)
+                    if (CFrameQ.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 20 then
                         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", NameQuest, QuestLv)
-                        task.wait(0.3)
+                        wait(0.3)
                     end
                     return
                 end
 
-                -- Đã có quest đúng → farm
+                -- Đã có quest đúng → farm (dùng BKP để đứng cạnh quái, giống island travel)
                 if questVisible and string.find(QuestTitle, NameMon) then
-                    local targetMob = nil
-                    for _, v in ipairs(game:GetService("Workspace").Enemies:GetChildren()) do
-                        if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == Ms then
-                            targetMob = v
-                            break
-                        end
-                    end
-
-                    if targetMob then
-                        local v = targetMob
-                        local _mobCF = v.HumanoidRootPart.CFrame * Pos
-                        local dist = (_mobCF.Position - hrp.Position).Magnitude
-
-                        -- Nếu ở xa (> 60 studs): bay mượt trước để không bị giật lùi (anti-cheat rubberband)
-                        if dist > 60 then
-                            Tween2(_mobCF)
-                        end
-
-                        if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
-
-                        repeat
-                            task.wait(_G.Fast_Delay or 0.001)
-                            if not _G.AutoLevel or not v.Parent or not v:FindFirstChild("Humanoid") or v.Humanoid.Health <= 0 then break end
-
-                            AttackNoCoolDown()
-                            bringmob = true
-                            AutoHaki()
-                            EquipTool(SelectWeapon)
-
-                            local curCF = v.HumanoidRootPart.CFrame * Pos
-                            if (curCF.Position - hrp.Position).Magnitude > 5 then
-                                BKP(curCF)
+                    if game:GetService("Workspace").Enemies:FindFirstChild(Ms) then
+                        for _, v in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
+                            if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == Ms then
+                                -- Bật hiệu ứng tia lửa + tiếng spam liên tục
+                                if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
+                                repeat
+                                    task.wait(_G.Fast_Delay)
+                                    AttackNoCoolDown()
+                                    bringmob = true
+                                    AutoHaki()
+                                    EquipTool(SelectWeapon)
+                                    -- Dùng BKP teleport trực tiếp cạnh quái (giống các tính năng khác)
+                                    local _mobCF = v.HumanoidRootPart.CFrame * Pos
+                                    if (_mobCF.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then
+                                        BKP(_mobCF)
+                                    end
+                                    v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                                    v.HumanoidRootPart.Transparency = 1
+                                    v.Humanoid.JumpPower = 0
+                                    v.Humanoid.WalkSpeed = 0
+                                    v.HumanoidRootPart.CanCollide = false
+                                    pcall(function() v.Head.CanCollide = false end)
+                                    FarmPos = v.HumanoidRootPart.CFrame
+                                    MonFarm = v.Name
+                                    local qv = false
+                                    pcall(function() qv = game.Players.LocalPlayer.PlayerGui.Main.Quest.Visible end)
+                                until not _G.AutoLevel or not v.Parent or v.Humanoid.Health <= 0 or not qv
+                                bringmob = false
+                                if not _G.OneHitKill and not _G.AutoBone and not _G.AutoBoneNoQuest and not _G.AutoNear then StopFXLoop() end
                             end
-
-                            pcall(function()
-                                v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                                v.HumanoidRootPart.Transparency = 1
-                                v.Humanoid.JumpPower = 0
-                                v.Humanoid.WalkSpeed = 0
-                                v.HumanoidRootPart.CanCollide = false
-                                if v:FindFirstChild("Head") then v.Head.CanCollide = false end
-                            end)
-
-                            FarmPos = v.HumanoidRootPart.CFrame
-                            MonFarm = v.Name
-
-                            local qv = false
-                            pcall(function() qv = game.Players.LocalPlayer.PlayerGui.Main.Quest.Visible end)
-                        until not _G.AutoLevel or not v.Parent or v.Humanoid.Health <= 0 or not qv
-
-                        bringmob = false
-                        if not _G.OneHitKill and not _G.AutoBone and not _G.AutoBoneQuest and not _G.AutoNear and not _G.Cake then
-                            StopFXLoop()
                         end
                     else
                         bringmob = false
-                        if not _G.OneHitKill and not _G.AutoBone and not _G.AutoBoneQuest and not _G.AutoNear and not _G.Cake then
-                            StopFXLoop()
-                        end
-                        if (CFrameMon.Position - hrp.Position).Magnitude > 30 then
-                            Tween2(CFrameMon)
-                        end
-                        task.wait(0.3)
+                        -- Bay đến vị trí quái spawn bằng Tween2 (giống di chuyển đảo)
+                        Tween2(CFrameMon)
                     end
                 end
             end)
         end
     end
 end)
-
 Tabs.Main:AddSection("Chiến Đấu")
 Tabs.Main:AddToggle("ToggleOneHit", {
-    ["Title"] = "Đánh Nhanh (Fast Attack)",
+    ["Title"] = "Đánh Nhanh",
     ["Default"] = false
 }):OnChanged(function(v)
     _G.OneHitKill = v
-    _G.FastAttack = v
     getgenv().AutoClick = v
-    if v then
-        if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
-    else
-        if not _G.AutoLevel and not _G.AutoBone and not _G.AutoBoneQuest and not _G.Cake and not _G.AutoNear then
-            StopFXLoop()
-        end
-    end
 end)
-
-Tabs.Main:AddToggle("ToggleBringMobMain", {
-    ["Title"] = "Gom Quái (Bring Mob)",
-    ["Default"] = true
-}):OnChanged(function(v)
-    _G.BringMob = v
-end)
-_G.BringMob = true
-
--- Vòng lặp Đánh Nhanh chuyên dụng: đánh mọi quái trong tầm với tốc độ siêu nhanh
+-- AutoClick: dùng Button1Down/Up vào giữa viewport game - KHÔNG click vào UI
+getgenv().AutoClick = false
+getgenv().ClicksPerSecond = 20
+local _vu = game:GetService("VirtualUser")
 task.spawn(function()
-    while true do
-        task.wait(_G.Fast_Delay or 0.01)
-        if _G.FastAttack or _G.OneHitKill then
+    while task.wait(1 / getgenv().ClicksPerSecond) do
+        if getgenv().AutoClick then
             pcall(function()
-                local player = game.Players.LocalPlayer
-                local char = player and player.Character
-                local hum = char and char:FindFirstChild("Humanoid")
-                if hum and hum.Health > 0 then
-                    local tool = nil
-                    for _, item in ipairs(char:GetChildren()) do
-                        if item:IsA("Tool") then tool = item; break end
-                    end
-                    if not tool and SelectWeapon then
-                        EquipTool(SelectWeapon)
-                    end
-                    AttackNoCoolDown()
-                end
+                local cam = workspace.CurrentCamera
+                local vp = cam.ViewportSize
+                local center = Vector2.new(vp.X / 2, vp.Y / 2)
+                _vu:Button1Down(center, cam.CFrame)
+                task.wait(0.02)
+                _vu:Button1Up(center, cam.CFrame)
             end)
         end
     end
@@ -5165,524 +5134,417 @@ spawn(function()
     end)
 end)
 if Sea3 then
-    Tabs.Main:AddSection("Xương (Haunted Castle)")
+    Tabs.Main:AddSection("Xương")
     local vu426 = Tabs.Main:AddParagraph({
         ["Title"] = "Trạng Thái Xương",
-        ["Desc"] = "Đang kiểm tra..."
     })
     spawn(function()
-        while task.wait(2) do
-            pcall(function()
+		-- upvalues: (ref) vu426
+        pcall(function()
+			-- upvalues: (ref) vu426
+            while wait() do
                 local v427 = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Bones", "Check")
-                if vu426 and vu426.SetDesc then
-                    vu426:SetDesc("Số Xương Hiện Có: " .. tostring(v427 or 0) .. " 🦴")
-                end
-            end)
-        end
+                vu426:SetDesc("Mày Có: " .. tostring(v427) .. " Xương")
+            end
+        end)
     end)
     Tabs.Main:AddToggle("ToggleBone", {
-        ["Title"] = "Cày Xương (Không Nhận Quest)",
+        ["Title"] = "Cày Xương",
         ["Default"] = false
     }):OnChanged(function(p428)
         _G.AutoBone = p428
-        if not p428 then
-            bringmob = false
-            if not _G.AutoBoneQuest and not _G.OneHitKill and not _G.AutoLevel and not _G.AutoNear and not _G.Cake then
-                StopFXLoop()
-            end
+        if p428 == false then
+            wait()
+            Tween(game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame)
+            wait()
         end
     end)
-    Tabs.Main:AddToggle("ToggleBoneQuest", {
-        ["Title"] = "Cày Xương (Có Nhận Quest)",
-        ["Default"] = false
-    }):OnChanged(function(val)
-        _G.AutoBoneQuest = val
-        if val then
-            _G.AutoBone = true
-        else
-            bringmob = false
-            if not _G.AutoBone and not _G.OneHitKill and not _G.AutoLevel and not _G.AutoNear and not _G.Cake then
-                StopFXLoop()
-            end
-        end
-    end)
-    Tabs.Main:AddToggle("ToggleSoulReaper", {
-        ["Title"] = "Ưu Tiên Đánh Soul Reaper (Boss)",
-        ["Default"] = true
-    }):OnChanged(function(val)
-        _G.AutoSoulReaperBone = val
-    end)
-
+    -- [SetValue skipped - Library không cần]
     local vu429 = CFrame.new(-9515.75, 174.8521728515625, 6079.40625)
-    local boneMobSet = {
-        ["Reborn Skeleton"] = true,
-        ["Living Zombie"] = true,
-        ["Demonic Soul"] = true,
-        ["Posessed Mummy"] = true
-    }
-
-    local function GetTargetBoneMob(filterName)
-        local target = nil
-        local minDist = math.huge
-        local player = game.Players.LocalPlayer
-        local char = player and player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return nil end
-
-        if _G.AutoSoulReaperBone then
-            local sr = game:GetService("Workspace").Enemies:FindFirstChild("Soul Reaper")
-            if sr and sr:FindFirstChild("Humanoid") and sr:FindFirstChild("HumanoidRootPart") and sr.Humanoid.Health > 0 then
-                return sr
-            end
-        end
-
-        for _, mob in ipairs(game:GetService("Workspace").Enemies:GetChildren()) do
-            if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
-                if filterName then
-                    if mob.Name == filterName then
-                        local d = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-                        if d < minDist then
-                            minDist = d
-                            target = mob
-                        end
-                    end
-                else
-                    if boneMobSet[mob.Name] then
-                        local d = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-                        if d < minDist then
-                            minDist = d
-                            target = mob
-                        end
-                    end
-                end
-            end
-        end
-        return target
-    end
-
     spawn(function()
-        while task.wait(0.05) do
-            if _G.AutoBone or _G.AutoBoneQuest then
+        while wait(0.05) do
+            if _G.AutoBone then
                 pcall(function()
-                    local player = game.Players.LocalPlayer
-                    local char = player.Character
-                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                    local hum = char and char:FindFirstChild("Humanoid")
-                    if not hrp or not hum or hum.Health <= 0 then return end
-
-                    local myLevel = player.Data.Level.Value
-                    local targetMobName = nil
-
-                    if _G.AutoBoneQuest and myLevel >= 1975 then
-                        local qName, qLv, qNpcCF, qMob
-                        if myLevel >= 2050 then
-                            qName = "HauntedQuest2"; qLv = 2; qMob = "Posessed Mummy"
-                            qNpcCF = CFrame.new(-9516.99, 178.0, 6078.47)
-                        elseif myLevel >= 2025 then
-                            qName = "HauntedQuest2"; qLv = 1; qMob = "Demonic Soul"
-                            qNpcCF = CFrame.new(-9516.99, 178.0, 6078.47)
-                        elseif myLevel >= 2000 then
-                            qName = "HauntedQuest1"; qLv = 2; qMob = "Living Zombie"
-                            qNpcCF = CFrame.new(-9480.8, 142.1, 5566.4)
-                        else
-                            qName = "HauntedQuest1"; qLv = 1; qMob = "Reborn Skeleton"
-                            qNpcCF = CFrame.new(-9480.8, 142.1, 5566.4)
-                        end
-
-                        local questGui = player.PlayerGui.Main.Quest
-                        local questVisible = questGui and questGui.Visible
-                        local questTitle = ""
-                        pcall(function() questTitle = questGui.Container.QuestTitle.Title.Text end)
-
-                        if questVisible and questTitle ~= "" and not string.find(questTitle, qMob) then
-                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AbandonQuest")
-                            task.wait(0.2)
-                            return
-                        end
-
-                        if not questVisible then
+                    -- Tìm quái xương và đánh
+                    local found = false
+                    for _, v434 in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
+                        if v434:FindFirstChild("HumanoidRootPart") and v434:FindFirstChild("Humanoid")
+                            and v434.Humanoid.Health > 0
+                            and (v434.Name == "Reborn Skeleton" or v434.Name == "Living Zombie"
+                                or v434.Name == "Demonic Soul" or v434.Name == "Posessed Mummy") then
+                            found = true
+                            -- Bay mượt đến quái trước (Tween2 không giật)
+                            local _bCF0 = v434.HumanoidRootPart.CFrame * Pos
+                            local _dist0 = (_bCF0.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                            if _dist0 > 30 then
+                                Tween2(_bCF0)
+                                repeat task.wait(0.05) until
+                                    ((v434.HumanoidRootPart.CFrame * Pos).Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude < 30
+                                    or not _G.AutoBone or not v434.Parent or v434.Humanoid.Health <= 0
+                            end
+                            -- Bật hiệu ứng tia lửa + tiếng spam liên tục
+                            if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
+                            repeat
+                                wait(_G.Fast_Delay)
+                                AttackNoCoolDown()
+                                AutoHaki()
+                                bringmob = true
+                                EquipTool(SelectWeapon)
+                                -- Khi đã gần: BKP snap sát quái
+                                local _bCF = v434.HumanoidRootPart.CFrame * Pos
+                                if (_bCF.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then
+                                    BKP(_bCF)
+                                end
+                                pcall(function()
+                                    v434.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                                    v434.HumanoidRootPart.Transparency = 1
+                                    v434.Humanoid.JumpPower = 0
+                                    v434.Humanoid.WalkSpeed = 0
+                                    v434.HumanoidRootPart.CanCollide = false
+                                    v434.Head.CanCollide = false
+                                    v434.Humanoid:ChangeState(11)
+                                    v434.Humanoid:ChangeState(14)
+                                end)
+                                FarmPos = v434.HumanoidRootPart.CFrame
+                                MonFarm = v434.Name
+                            until not _G.AutoBone or not v434.Parent or v434.Humanoid.Health <= 0
                             bringmob = false
-                            if (qNpcCF.Position - hrp.Position).Magnitude > 25 then
-                                Tween2(qNpcCF)
-                            else
-                                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", qName, qLv)
-                                task.wait(0.3)
-                            end
-                            return
+                            break
                         end
-
-                        targetMobName = qMob
                     end
-
-                    local mob = GetTargetBoneMob(targetMobName)
-                    if mob and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-                        local targetHRP = mob.HumanoidRootPart
-                        local combatCF = targetHRP.CFrame * CFrame.new(0, 20, 0)
-                        local dist = (combatCF.Position - hrp.Position).Magnitude
-
-                        if dist > 60 then
-                            Tween2(combatCF)
-                        end
-
-                        if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
-
-                        repeat
-                            task.wait(_G.Fast_Delay or 0.001)
-                            if not (_G.AutoBone or _G.AutoBoneQuest) then break end
-                            if not mob.Parent or not mob:FindFirstChild("Humanoid") or mob.Humanoid.Health <= 0 then break end
-
-                            AttackNoCoolDown()
-                            AutoHaki()
-                            bringmob = true
-                            EquipTool(SelectWeapon)
-
-                            local curCombatCF = targetHRP.CFrame * CFrame.new(0, 20, 0)
-                            if (curCombatCF.Position - hrp.Position).Magnitude > 5 then
-                                BKP(curCombatCF)
-                            end
-
-                            pcall(function()
-                                targetHRP.Size = Vector3.new(60, 60, 60)
-                                targetHRP.Transparency = 1
-                                targetHRP.CanCollide = false
-                                mob.Humanoid.JumpPower = 0
-                                mob.Humanoid.WalkSpeed = 0
-                                if mob:FindFirstChild("Head") then mob.Head.CanCollide = false end
-                                mob.Humanoid:ChangeState(11)
-                                mob.Humanoid:ChangeState(14)
-                            end)
-
-                            FarmPos = targetHRP.CFrame
-                            MonFarm = mob.Name
-                        until not (_G.AutoBone or _G.AutoBoneQuest) or not mob.Parent or mob.Humanoid.Health <= 0
-                        bringmob = false
-                    else
-                        bringmob = false
-                        if not _G.OneHitKill and not _G.AutoLevel and not _G.AutoNear and not _G.Cake then
-                            StopFXLoop()
-                        end
-                        if (vu429.Position - hrp.Position).Magnitude > 30 then
-                            Tween2(vu429)
-                        end
-                        task.wait(0.3)
+                    if not found then
+                        if not _G.OneHitKill and not _G.AutoBoneNoQuest then StopFXLoop() end
+                        -- Tween2 mượt về điểm spawn, không giật
+                        Tween2(vu429)
                     end
                 end)
             else
-                if not _G.OneHitKill and not _G.AutoLevel and not _G.AutoNear and not _G.Cake then
+                if not _G.OneHitKill and not _G.AutoBoneNoQuest and not _G.AutoLevel and not _G.AutoNear then
                     StopFXLoop()
                 end
             end
         end
     end)
-
-    Tabs.Main:AddToggle("ToggleRandomBone", {
-        ["Title"] = "Tự Động Mở Xương (50 Xương/Lần)",
-        ["Default"] = false
-    }):OnChanged(function(p440)
-        _G.AutoRandomBone = p440
-    end)
+    local vu435 = CFrame.new(-9515.75, 174.8521728515625, 6079.40625)
     spawn(function()
-        while task.wait(1.5) do
-            if _G.AutoRandomBone then
+        while wait(0.05) do
+            if _G.AutoBoneNoQuest then
                 pcall(function()
-                    local bCount = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Bones", "Check")
-                    if type(bCount) == "number" and bCount >= 50 then
-                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Bones", "Buy", 1, 1)
+                    -- Hủy quest nếu đang có
+                    pcall(function()
+                        if game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Visible then
+                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AbandonQuest")
+                        end
+                    end)
+
+                    -- Tìm mob xương gần nhất
+                    local nearestMob = nil
+                    local nearestDist = math.huge
+                    for _, v439 in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
+                        if v439:FindFirstChild("HumanoidRootPart") and v439:FindFirstChild("Humanoid")
+                            and v439.Humanoid.Health > 0
+                            and (v439.Name == "Reborn Skeleton" or v439.Name == "Living Zombie"
+                                or v439.Name == "Demonic Soul" or v439.Name == "Posessed Mummy") then
+                            local d = (v439.HumanoidRootPart.Position - vu435.Position).Magnitude
+                            if d < nearestDist then
+                                nearestDist = d
+                                nearestMob = v439
+                            end
+                        end
+                    end
+
+                    if nearestMob then
+                        local v439 = nearestMob
+                        -- Bay mượt đến quái trước nếu xa (Tween2 không giật)
+                        local _bnDist0 = (v439.HumanoidRootPart.CFrame * Pos).Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+                        if _bnDist0.Magnitude > 30 then
+                            Tween2(v439.HumanoidRootPart.CFrame * Pos)
+                            repeat task.wait(0.05) until
+                                not v439 or not v439.Parent
+                                or ((v439.HumanoidRootPart.CFrame * Pos).Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude < 30
+                                or not _G.AutoBoneNoQuest
+                        end
+                        -- Bật hiệu ứng tia lửa + tiếng spam liên tục
+                        if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
+                        repeat
+                            wait(_G.Fast_Delay)
+                            if not v439 or not v439.Parent or not v439:FindFirstChild("Humanoid") or not v439:FindFirstChild("HumanoidRootPart") then break end
+                            AttackNoCoolDown()
+                            AutoHaki()
+                            bringmob = true
+                            EquipTool(SelectWeapon)
+                            -- BKP snap sát quái khi đã gần
+                            local _bnCF = v439.HumanoidRootPart.CFrame * Pos
+                            if (_bnCF.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then
+                                BKP(_bnCF)
+                            end
+                            pcall(function()
+                                v439.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                                v439.HumanoidRootPart.Transparency = 1
+                                v439.Humanoid.JumpPower = 0
+                                v439.Humanoid.WalkSpeed = 0
+                                v439.HumanoidRootPart.CanCollide = false
+                                v439.Head.CanCollide = false
+                                v439.Humanoid:ChangeState(11)
+                                v439.Humanoid:ChangeState(14)
+                            end)
+                            FarmPos = v439.HumanoidRootPart.CFrame
+                            MonFarm = v439.Name
+                        until not _G.AutoBoneNoQuest or v439.Humanoid.Health <= 0 or not v439.Parent
+                        bringmob = false
+                    else
+                        if not _G.OneHitKill and not _G.AutoBone then StopFXLoop() end
+                        -- Không có mob → Tween2 về điểm spawn chờ
+                        Tween2(vu435)
                     end
                 end)
+            else
+                if not _G.OneHitKill and not _G.AutoBone and not _G.AutoLevel and not _G.AutoNear then
+                    StopFXLoop()
+                end
             end
         end
     end)
     Tabs.Main:AddButton({
-        ["Title"] = "Cầu Nguyện (Bia Mộ)",
+        ["Title"] = "Cầu Nguyện",
         ["Callback"] = function()
-            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("gravestoneEvent", 1)
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({
+                "gravestoneEvent",
+                1
+            }))
         end
     })
     Tabs.Main:AddButton({
-        ["Title"] = "Thử Vận May (Bia Mộ)",
+        ["Title"] = "Thử Vận May",
         ["Callback"] = function()
-            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("gravestoneEvent", 2)
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({
+                "gravestoneEvent",
+                2
+            }))
         end
     })
+    Tabs.Main:AddToggle("ToggleRandomBone", {
+        ["Title"] = "Random Xương",
+        ["Default"] = false
+    }):OnChanged(function(p440)
+        _G.AutoRandomBone = p440
+    end)
+    -- [SetValue skipped - Library không cần]
+    spawn(function()
+        while wait() do
+            if _G.AutoRandomBone then
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({
+                    "Bones",
+                    "Buy",
+                    1,
+                    1
+                }))
+            end
+        end
+    end)
 end
 if Sea3 then
-    Tabs.Main:AddSection("Tư Lệnh Bánh / Katakuri")
+    Tabs.Main:AddSection("Tư Lệnh Bánh")
     local vu441 = Tabs.Main:AddParagraph({
-        ["Title"] = "Trạng Thái Triệu Hồi",
-        ["Desc"] = "Đang kiểm tra..."
+        ["Title"] = "Trạng Thái Nó Ra",
     })
     spawn(function()
-        while task.wait(2.5) do
+		-- upvalues: (ref) vu441
+        while wait() do
             pcall(function()
-                local enemies = game:GetService("Workspace").Enemies
-                local rep = game:GetService("ReplicatedStorage")
-                local dkLive = enemies:FindFirstChild("Dough King")
-                local cpLive = enemies:FindFirstChild("Cake Prince")
-                local dkWating = rep:FindFirstChild("Dough King")
-                local cpWaiting = rep:FindFirstChild("Cake Prince")
-
-                if dkLive then
-                    vu441:SetDesc("Dough King (Katakuri V2): Đang Xuất Hiện! 👑")
-                elseif cpLive then
-                    vu441:SetDesc("Cake Prince (Tư Lệnh Bánh): Đang Xuất Hiện! ⚔️")
-                elseif dkWating or cpWaiting then
-                    vu441:SetDesc("Boss Đang Xuất Hiện... Đang Chuẩn Bị Vào Cổng! ⏳")
-                else
-                    local res = rep.Remotes.CommF_:InvokeServer("CakePrinceSpawner")
-                    if type(res) == "string" then
-                        local num = string.match(res, "(%d+)")
-                        if num then
-                            vu441:SetDesc("Còn Lại: " .. num .. " / 500 Quái 🧁")
-                        elseif string.find(string.lower(res), "open") or string.find(string.lower(res), "portal") or string.find(string.lower(res), "await") then
-                            vu441:SetDesc("Cổng Đã Mở! Sẵn Sàng Triệu Hồi! ✅")
+				-- upvalues: (ref) vu441
+                if string.len(game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CakePrinceSpawner")) ~= 88 then
+                    if string.len(game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CakePrinceSpawner")) ~= 87 then
+                        if string.len(game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CakePrinceSpawner")) ~= 86 then
+                            vu441:SetDesc("Tư Lệnh Bánh : \226\156\133\239\184\143")
                         else
-                            vu441:SetDesc(tostring(res))
+                            vu441:SetDesc("C\195\178n: " .. string.sub(game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CakePrinceSpawner"), 39, 39) .. " ")
                         end
                     else
-                        vu441:SetDesc("Chưa Kiểm Tra Được")
+                        vu441:SetDesc("C\195\178n: " .. string.sub(game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CakePrinceSpawner"), 39, 40) .. "")
                     end
+                else
+                    vu441:SetDesc("C\195\178n: " .. string.sub(game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CakePrinceSpawner"), 39, 41) .. "")
                 end
             end)
         end
     end)
     Tabs.Main:AddToggle("ToggleCake", {
-        ["Title"] = "Cày Quái Mở Cổng & Đánh Boss",
+        ["Title"] = "Cày Tư Lệnh Bánh",
         ["Default"] = false
     }):OnChanged(function(p442)
         _G.Cake = p442
-        if not p442 then
-            bringmob = false
-            if not _G.AutoBone and not _G.AutoBoneQuest and not _G.OneHitKill and not _G.AutoLevel and not _G.AutoNear then
-                StopFXLoop()
-            end
+        if p442 == false then
+            wait()
+            Tween(game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame)
+            wait()
         end
     end)
-    Tabs.Main:AddToggle("ToggleSpawnCake", {
-        ["Title"] = "Tự Triệu Hồi Boss (Mở Cổng)",
-        ["Default"] = true
-    }):OnChanged(function(p463)
-        _G.SpawnCakePrince = p463
-    end)
-    Tabs.Main:AddToggle("ToggleCraftSweetChalice", {
-        ["Title"] = "Tự Đổi Chén Thánh Ngọt (Dough King)",
-        ["Default"] = false
-    }):OnChanged(function(val)
-        _G.AutoCraftSweetChalice = val
-    end)
-
+    -- [SetValue skipped - Library không cần]
     spawn(function()
-        while task.wait(3) do
-            if _G.AutoCraftSweetChalice then
-                pcall(function()
-                    local bp = game.Players.LocalPlayer:FindFirstChild("Backpack")
-                    local char = game.Players.LocalPlayer.Character
-                    local hasGod = (bp and bp:FindFirstChild("God's Chalice")) or (char and char:FindFirstChild("God's Chalice"))
-                    if hasGod then
-                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SweetCrafter", 1)
-                    end
-                end)
-            end
-        end
-    end)
-
-    spawn(function()
-        while task.wait(2) do
-            if _G.SpawnCakePrince then
-                pcall(function()
-                    local bp = game.Players.LocalPlayer:FindFirstChild("Backpack")
-                    local char = game.Players.LocalPlayer.Character
-                    if bp and bp:FindFirstChild("Sweet Chalice") and char and char:FindFirstChild("Humanoid") then
-                        char.Humanoid:EquipTool(bp["Sweet Chalice"])
-                    end
-                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CakePrinceSpawner", true)
-                end)
-            end
-        end
-    end)
-
-    local cakeIslandSpawnCF = CFrame.new(-1579.9111328125, 329.7358703613281, -12310.365234375)
-    local mirrorDimensionCF = CFrame.new(-2009.2802734375, 4532.97216796875, -14937.3076171875)
-    local cakeOutsideCF = CFrame.new(-2151.75, 70.0, -12392.75)
-
-    Tabs.Main:AddButton({
-        ["Title"] = "Vào / Ra Phòng Gương",
-        ["Callback"] = function()
-            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                if hrp.Position.Y > 3000 then
-                    Tween2(cakeOutsideCF)
-                else
-                    Tween2(mirrorDimensionCF)
-                end
-            end
-        end
-    })
-
-    local cakeMobNames = {
-        ["Cookie Crafter"] = true,
-        ["Cake Guard"] = true,
-        ["Baking Staff"] = true,
-        ["Head Baker"] = true
-    }
-
-    local function GetNearestCakeMob()
-        local nearest = nil
-        local minDist = math.huge
-        local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return nil end
-        for _, m in ipairs(game:GetService("Workspace").Enemies:GetChildren()) do
-            if m:FindFirstChild("Humanoid") and m:FindFirstChild("HumanoidRootPart") and m.Humanoid.Health > 0 then
-                if cakeMobNames[m.Name] then
-                    local d = (m.HumanoidRootPart.Position - hrp.Position).Magnitude
-                    if d < minDist then
-                        minDist = d
-                        nearest = m
-                    end
-                end
-            end
-        end
-        return nearest
-    end
-
-    spawn(function()
-        while task.wait(0.05) do
+        while wait() do
             if _G.Cake then
                 pcall(function()
-                    local player = game.Players.LocalPlayer
-                    local char = player.Character
-                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                    local hum = char and char:FindFirstChild("Humanoid")
-                    if not hrp or not hum or hum.Health <= 0 then return end
-
-                    local enemies = game:GetService("Workspace").Enemies
-                    local rep = game:GetService("ReplicatedStorage")
-
-                    local boss = enemies:FindFirstChild("Dough King") or enemies:FindFirstChild("Cake Prince")
-                    local bossWaiting = rep:FindFirstChild("Dough King") or rep:FindFirstChild("Cake Prince")
-
-                    if boss and boss:FindFirstChild("Humanoid") and boss:FindFirstChild("HumanoidRootPart") and boss.Humanoid.Health > 0 then
-                        bringmob = false
-                        local bHRP = boss.HumanoidRootPart
-                        local bCombatCF = bHRP.CFrame * CFrame.new(0, 22, 0)
-
-                        if (bCombatCF.Position - hrp.Position).Magnitude > 60 then
-                            Tween2(bCombatCF)
-                        end
-
-                        if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
-
-                        repeat
-                            task.wait(_G.Fast_Delay or 0.001)
-                            if not _G.Cake or not boss.Parent or not boss:FindFirstChild("Humanoid") or boss.Humanoid.Health <= 0 then break end
-
-                            AttackNoCoolDown()
-                            AutoHaki()
-                            EquipTool(SelectWeapon)
-
-                            local curCombat = bHRP.CFrame * CFrame.new(0, 22, 0)
-                            if (curCombat.Position - hrp.Position).Magnitude > 5 then
-                                BKP(curCombat)
-                            end
-
-                            pcall(function()
-                                bHRP.Size = Vector3.new(60, 60, 60)
-                                bHRP.CanCollide = false
-                                boss.Humanoid.WalkSpeed = 0
-                            end)
-                        until not _G.Cake or not boss.Parent or boss.Humanoid.Health <= 0
-                    elseif bossWaiting then
-                        bringmob = false
-                        if (mirrorDimensionCF.Position - hrp.Position).Magnitude > 30 then
-                            Tween2(mirrorDimensionCF)
-                        end
-                        task.wait(0.5)
-                    else
-                        local cakeMob = GetNearestCakeMob()
-                        if cakeMob and cakeMob:FindFirstChild("HumanoidRootPart") and cakeMob:FindFirstChild("Humanoid") and cakeMob.Humanoid.Health > 0 then
-                            local mHRP = cakeMob.HumanoidRootPart
-                            local mCombatCF = mHRP.CFrame * CFrame.new(0, 20, 0)
-
-                            if (mCombatCF.Position - hrp.Position).Magnitude > 60 then
-                                Tween2(mCombatCF)
-                            end
-
-                            if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
-
-                            repeat
-                                task.wait(_G.Fast_Delay or 0.001)
-                                if not _G.Cake or not cakeMob.Parent or not cakeMob:FindFirstChild("Humanoid") or cakeMob.Humanoid.Health <= 0 then break end
-                                if enemies:FindFirstChild("Dough King") or enemies:FindFirstChild("Cake Prince") or rep:FindFirstChild("Dough King") or rep:FindFirstChild("Cake Prince") then break end
-
-                                AttackNoCoolDown()
-                                AutoHaki()
-                                EquipTool(SelectWeapon)
-                                bringmob = true
-                                POSCAKE = mHRP.CFrame
-                                FarmPos = mHRP.CFrame
-                                MonFarm = cakeMob.Name
-
-                                local curCF = mHRP.CFrame * CFrame.new(0, 20, 0)
-                                if (curCF.Position - hrp.Position).Magnitude > 5 then
-                                    BKP(curCF)
+                    if game.ReplicatedStorage:FindFirstChild("Cake Prince") or (game:GetService("Workspace").Enemies:FindFirstChild("Cake Prince") or (game.ReplicatedStorage:FindFirstChild("Dough King") or game:GetService("Workspace").Enemies:FindFirstChild("Dough King"))) then
+                        if game:GetService("Workspace").Enemies:FindFirstChild("Cake Prince") or game:GetService("Workspace").Enemies:FindFirstChild("Dough King") then
+                            local v443, v444, v445 = pairs(game:GetService("Workspace").Enemies:GetChildren())
+                            while true do
+                                local v446
+                                v445, v446 = v443(v444, v445)
+                                if v445 == nil then
+                                    break
                                 end
-
-                                pcall(function()
-                                    mHRP.Size = Vector3.new(60, 60, 60)
-                                    mHRP.CanCollide = false
-                                    mHRP.Transparency = 1
-                                    cakeMob.Humanoid.WalkSpeed = 0
-                                    cakeMob.Humanoid.JumpPower = 0
-                                    if cakeMob:FindFirstChild("Head") then cakeMob.Head.CanCollide = false end
-                                    cakeMob.Humanoid:ChangeState(11)
-                                    cakeMob.Humanoid:ChangeState(14)
-                                end)
-                            until not _G.Cake or not cakeMob.Parent or cakeMob.Humanoid.Health <= 0
-                            bringmob = false
+                                if v446.Name == "Cake Prince" or v446.Name == "Dough King" then
+                                    repeat
+                                        wait(_G.Fast_Delay)
+                                        AutoHaki()
+                                        EquipTool(SelectWeapon)
+                                        v446.HumanoidRootPart.CanCollide = false
+                                        v446.Humanoid.WalkSpeed = 0
+                                        v446.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                                        local _mc40 = v446.HumanoidRootPart.CFrame * Pos
+                                        if (v446.HumanoidRootPart.CFrame.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc40) end
+                                        AttackNoCoolDown()
+                                    until _G.Cake == false or (not v446.Parent or v446.Humanoid.Health <= 0)
+                                end
+                            end
                         else
-                            bringmob = false
-                            if not _G.OneHitKill and not _G.AutoLevel and not _G.AutoNear and not _G.AutoBone and not _G.AutoBoneQuest then
-                                StopFXLoop()
-                            end
-                            if (cakeIslandSpawnCF.Position - hrp.Position).Magnitude > 30 then
-                                Tween2(cakeIslandSpawnCF)
-                            end
-                            task.wait(0.3)
+                            Tween2(CFrame.new(- 2009.2802734375, 4532.97216796875, - 14937.3076171875))
                         end
+                    elseif game.Workspace.Enemies:FindFirstChild("Baking Staff") or (game.Workspace.Enemies:FindFirstChild("Head Baker") or (game.Workspace.Enemies:FindFirstChild("Cake Guard") or game.Workspace.Enemies:FindFirstChild("Cookie Crafter"))) then
+                        local v447, v448, v449 = pairs(game:GetService("Workspace").Enemies:GetChildren())
+                        while true do
+                            local v450
+                            v449, v450 = v447(v448, v449)
+                            if v449 == nil then
+                                break
+                            end
+                            if (v450.Name == "Baking Staff" or (v450.Name == "Head Baker" or (v450.Name == "Cake Guard" or v450.Name == "Cookie Crafter"))) and v450.Humanoid.Health > 0 then
+                                repeat
+                                    wait(_G.Fast_Delay)
+                                    AutoHaki()
+                                    EquipTool(SelectWeapon)
+                                    bringmob = true
+                                    v450.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                                    POSCAKE = v450.HumanoidRootPart.CFrame
+                                    local _mc41 = v450.HumanoidRootPart.CFrame * Pos
+                                    if (v450.HumanoidRootPart.CFrame.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc41) end
+                                    AttackNoCoolDown()
+                                until _G.Cake == false or (game:GetService("ReplicatedStorage"):FindFirstChild("Cake Prince") or (game:GetService("ReplicatedStorage"):FindFirstChild("Dough King") or (not v450.Parent or v450.Humanoid.Health <= 0)))
+                            end
+                        end
+                    else
+                        bringmob = false
+                        Tween2(CFrame.new(- 1579.9111328125, 329.7358703613281, - 12310.365234375))
                     end
                 end)
-            else
-                if not _G.OneHitKill and not _G.AutoLevel and not _G.AutoNear and not _G.AutoBone and not _G.AutoBoneQuest then
-                    StopFXLoop()
-                end
             end
         end
     end)
-
     spawn(function()
         game:GetService("RunService").Heartbeat:Connect(function()
             pcall(function()
-                if _G.Cake and bringmob and POSCAKE then
-                    for _, v in ipairs(game:GetService("Workspace").Enemies:GetChildren()) do
-                        if (v.Name == "Cookie Crafter" or v.Name == "Cake Guard" or v.Name == "Baking Staff" or v.Name == "Head Baker")
-                           and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                            if (v.HumanoidRootPart.Position - POSCAKE.Position).Magnitude <= 350 then
-                                v.HumanoidRootPart.CFrame = POSCAKE
-                                v.HumanoidRootPart.CanCollide = false
-                                v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                                if v.Humanoid:FindFirstChild("Animator") then
-                                    v.Humanoid.Animator:Destroy()
-                                end
-                                sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
-                            end
+                local v451, v452, v453 = pairs(game:GetService("Workspace").Enemies:GetChildren())
+                while true do
+                    local v454
+                    v453, v454 = v451(v452, v453)
+                    if v453 == nil then
+                        break
+                    end
+                    if _G.Cake and (bringmob and (v454.Name == "Cookie Crafter" or (v454.Name == "Cake Guard" or (v454.Name == "Baking Staff" or v454.Name == "Head Baker")))) and (v454.HumanoidRootPart.Position - POSCAKE.Position).magnitude <= 350 then
+                        v454.HumanoidRootPart.CFrame = POSCAKE
+                        v454.HumanoidRootPart.CanCollide = false
+                        v454.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                        if v454.Humanoid:FindFirstChild("Animator") then
+                            v454.Humanoid.Animator:Destroy()
                         end
+                        sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
                     end
                 end
             end)
         end)
     end)
+    spawn(function()
+        while wait() do
+            if _G.Cake then
+                pcall(function()
+                    if game.ReplicatedStorage:FindFirstChild("Cake Prince") or (game:GetService("Workspace").Enemies:FindFirstChild("Cake Prince") or (game.ReplicatedStorage:FindFirstChild("Dough King") or game:GetService("Workspace").Enemies:FindFirstChild("Dough King"))) then
+                        if game:GetService("Workspace").Enemies:FindFirstChild("Cake Prince") or game:GetService("Workspace").Enemies:FindFirstChild("Dough King") then
+                            local v455, v456, v457 = pairs(game:GetService("Workspace").Enemies:GetChildren())
+                            while true do
+                                local v458
+                                v457, v458 = v455(v456, v457)
+                                if v457 == nil then
+                                    break
+                                end
+                                if v458.Name == "Cake Prince" or v458.Name == "Dough King" then
+                                    repeat
+                                        wait(_G.Fast_Delay)
+                                        AutoHaki()
+                                        EquipTool(SelectWeapon)
+                                        v458.HumanoidRootPart.CanCollide = false
+                                        v458.Humanoid.WalkSpeed = 0
+                                        v458.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                                        local _mc42 = v458.HumanoidRootPart.CFrame * Pos
+                                        if (v458.HumanoidRootPart.CFrame.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc42) end
+                                        AttackNoCoolDown()
+                                    until _G.Cake == false or (not v458.Parent or v458.Humanoid.Health <= 0)
+                                end
+                            end
+                        else
+                            Tween2(CFrame.new(- 2009.2802734375, 4532.97216796875, - 14937.3076171875))
+                        end
+                    elseif game.Workspace.Enemies:FindFirstChild("Baking Staff") or (game.Workspace.Enemies:FindFirstChild("Head Baker") or (game.Workspace.Enemies:FindFirstChild("Cake Guard") or game.Workspace.Enemies:FindFirstChild("Cookie Crafter"))) then
+                        local v459, v460, v461 = pairs(game:GetService("Workspace").Enemies:GetChildren())
+                        while true do
+                            local v462
+                            v461, v462 = v459(v460, v461)
+                            if v461 == nil then
+                                break
+                            end
+                            if (v462.Name == "Baking Staff" or (v462.Name == "Head Baker" or (v462.Name == "Cake Guard" or v462.Name == "Cookie Crafter"))) and v462.Humanoid.Health > 0 then
+                                repeat
+                                    wait(_G.Fast_Delay)
+                                    AutoHaki()
+                                    EquipTool(SelectWeapon)
+                                    bringmob = true
+                                    v462.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                                    POSCAKE = v462.HumanoidRootPart.CFrame
+                                    local _mc43 = v462.HumanoidRootPart.CFrame * Pos
+                                    if (v462.HumanoidRootPart.CFrame.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc43) end
+                                    AttackNoCoolDown()
+                                until _G.Cake == false or (game:GetService("ReplicatedStorage"):FindFirstChild("Cake Prince") or (game:GetService("ReplicatedStorage"):FindFirstChild("Dough King") or (not v462.Parent or v462.Humanoid.Health <= 0)))
+                            end
+                        end
+                    else
+                        bringmob = false
+                        Tween2(CFrame.new(- 1579.9111328125, 329.7358703613281, - 12310.365234375))
+                    end
+                end)
+            end
+        end
+    end)
+    Tabs.Main:AddToggle("ToggleSpawnCake", {
+        ["Title"] = "Triệu Hồi Tư Lệnh Bánh",
+        ["Default"] = true
+    }):OnChanged(function(p463)
+        _G.SpawnCakePrince = p463
+    end)
+    -- [SetValue skipped - Library không cần]
 end
-
+spawn(function()
+    while wait() do
+        if _G.SpawnCakePrince then
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({
+                "CakePrinceSpawner",
+                true
+            }))
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack({
+                "CakePrinceSpawner"
+            }))
+        end
+    end
+end)
 if Sea2 then
     Tabs.Main:AddSection("Ectoplasm Farm")
     Tabs.Main:AddToggle("ToggleVatChatKiDi", {
@@ -9381,83 +9243,49 @@ Tabs.Setting:AddToggle("ToggleBringMob", {
     _G.BringMob = p856
 end)
 _G.BringMob = true
-
--- Duy trì quyền điều khiển vật lý (SimulationRadius) liên tục
+-- [SetValue skipped - Library không cần]
 spawn(function()
-    game:GetService("RunService").Stepped:Connect(function()
+    while wait() do
         pcall(function()
-            sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
-        end)
-    end)
-end)
-
--- Hệ thống Gom Quái Heartbeat 60FPS: chống văng, mượt mà, gom chuẩn
-spawn(function()
-    game:GetService("RunService").Heartbeat:Connect(function()
-        if not _G.BringMob then return end
-        pcall(function()
-            local player = game.Players.LocalPlayer
-            local char = player and player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if not hrp then return end
-
-            local targetCF = nil
-            local targetName = nil
-
-            if FarmPos and MonFarm and bringmob then
-                targetCF = FarmPos
-                targetName = MonFarm
-            elseif _G.Cake and POSCAKE and bringmob then
-                targetCF = POSCAKE
-            elseif hrp then
-                local nearestMob = nil
-                local nearestDist = 250
-                for _, mob in ipairs(game:GetService("Workspace").Enemies:GetChildren()) do
-                    if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 and not mob:GetAttribute("IsBoat") then
-                        local d = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-                        if d < nearestDist then
-                            nearestDist = d
-                            nearestMob = mob
-                        end
-                    end
+            local v857, v858, v859 = pairs(game:GetService("Workspace").Enemies:GetChildren())
+            while true do
+                local v860
+                v859, v860 = v857(v858, v859)
+                if v859 == nil then
+                    break
                 end
-                if nearestMob then
-                    targetCF = nearestMob.HumanoidRootPart.CFrame
-                    targetName = nearestMob.Name
-                end
-            end
-
-            if not targetCF then return end
-
-            for _, mob in ipairs(game:GetService("Workspace").Enemies:GetChildren()) do
-                if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and not mob:GetAttribute("IsBoat") then
-                    if mob.Name ~= "Factory Staff" and (not targetName or mob.Name == targetName) then
-                        local dist = (mob.HumanoidRootPart.Position - targetCF.Position).Magnitude
-                        if dist <= 300 and dist > 1.5 then
-                            mob.HumanoidRootPart.CFrame = targetCF
-                            mob.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
-                            mob.HumanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
-                            mob.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                            mob.HumanoidRootPart.Transparency = 1
-                            mob.Humanoid.WalkSpeed = 0
-                            mob.Humanoid.JumpPower = 0
-
-                            for _, part in ipairs(mob:GetChildren()) do
-                                if part:IsA("BasePart") then
-                                    part.CanCollide = false
-                                end
+                if _G.BringMob and (bringmob and (v860.Name == MonFarm and (v860:FindFirstChild("Humanoid") and v860.Humanoid.Health > 0))) then
+                    if v860.Name ~= "Factory Staff" then
+                        if v860.Name == MonFarm and (v860.HumanoidRootPart.Position - FarmPos.Position).Magnitude <= 1000000000 then
+                            v860.HumanoidRootPart.CFrame = FarmPos
+                            v860.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                            v860.HumanoidRootPart.Transparency = 1
+                            v860.Humanoid.JumpPower = 0
+                            v860.Humanoid.WalkSpeed = 0
+                            if v860.Humanoid:FindFirstChild("Animator") then
+                                v860.Humanoid.Animator:Destroy()
                             end
-
-                            mob.Humanoid:ChangeState(11)
-                            mob.Humanoid:ChangeState(14)
+                            v860.HumanoidRootPart.CanCollide = false
+                            v860.Head.CanCollide = false
+                            v860.Humanoid:ChangeState(11)
+                            v860.Humanoid:ChangeState(14)
+                            sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
                         end
+                    elseif (v860.HumanoidRootPart.Position - FarmPos.Position).Magnitude <= 1000000000 then
+                        v860.Head.CanCollide = false
+                        v860.HumanoidRootPart.CanCollide = false
+                        v860.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                        v860.HumanoidRootPart.CFrame = FarmPos
+                        if v860.Humanoid:FindFirstChild("Animator") then
+                            v860.Humanoid.Animator:Destroy()
+                        end
+                        sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
                     end
                 end
             end
         end)
-    end)
+    end
 end)
-
 Tabs.Setting:AddToggle("ToggleRemoveNotify", {
     ["Title"] = "Xóa Thông Báo",
     ["Default"] = false
@@ -9899,7 +9727,7 @@ spawn(function()
     while wait() do
         if _G.Auto_Sea2 then
             pcall(function()
-                if game:GetService("Players").LocalPlayer.Data.Level.Value >= 700 and (Sea1 or World1) then
+                if game:GetService("Players").LocalPlayer.Data.Level.Value >= 700 and World1 then
                     if game:GetService("Workspace").Map.Ice.Door.CanCollide == false and game:GetService("Workspace").Map.Ice.Door.Transparency == 1 then
                         local v918 = CFrame.new(4849.29883, 5.65138149, 719.611877)
                         repeat
@@ -9971,9 +9799,9 @@ end)
 -- [SetValue removed]
 spawn(function()
     while wait() do
-        if _G.AutoSea3 or _G.Auto_Sea3 then
+        if _G.AutoSea3 then
             pcall(function()
-                if game:GetService("Players").LocalPlayer.Data.Level.Value >= 1500 and (Sea2 or World2) then
+                if game:GetService("Players").LocalPlayer.Data.Level.Value >= 1500 and World2 then
                     _G.AutoLevel = false
                     if game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ZQuestProgress", "General") == 0 then
                         Tween2(CFrame.new(- 1926.3221435547, 12.819851875305, 1738.3092041016))
