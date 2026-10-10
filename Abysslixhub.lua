@@ -724,7 +724,7 @@ task.wait(0.5)
 
 Library:Notify({
     Title = "ABYSSLIX HUB",
-    Content = "Khởi chạy thành công Banana Hub Native!\nBấm logo nổi hoặc phím Ctrl để đóng/mở menu."
+    Content = "Khởi chạy thành công Banana Hub! Cảm ơn bạn đã sử dụng script."
 })
 
 -- Anti AFK
