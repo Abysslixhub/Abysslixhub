@@ -3050,15 +3050,40 @@ pcall(function()
     old = hookmetamethod(game, "__namecall", newcclosure and newcclosure(hook) or hook)
 end)
 
+-- ===== CLICK THẬT (giống bạn đánh tay) =====
+function _realClick()
+    local cam = __WS.CurrentCamera
+    if not cam then return end
+    local vp = cam.ViewportSize
+    local x, y = vp.X / 2, vp.Y / 2
+    local okVim = pcall(function()
+        __VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+        task.delay(0.04, function()
+            pcall(function() __VIM:SendMouseButtonEvent(x, y, 0, false, game, 0) end)
+        end)
+    end)
+    if not okVim then
+        pcall(function()
+            VirtualUser:CaptureController()
+            VirtualUser:Button1Down(Vector2.new(x, y), cam.CFrame)
+            task.delay(0.04, function()
+                pcall(function() VirtualUser:Button1Up(Vector2.new(x, y), cam.CFrame) end)
+            end)
+        end)
+    end
+end
+
 local function _buildArgs(tmpl, part, hits, fallback)
     if not tmpl then return fallback end
     local out = table.pack(table.unpack(tmpl, 1, tmpl.n))
+    local usedHits = false
     for i = 1, out.n do
         local a = out[i]
         if typeof(a) == "Instance" and a:IsA("BasePart") then
             out[i] = part
-        elseif type(a) == "table" then
+        elseif type(a) == "table" and not usedHits and #a > 0 then
             out[i] = hits
+            usedHits = true
         end
     end
     return out
@@ -3113,7 +3138,7 @@ function AttackNoCoolDown()
         if not firstPart then return end
 
         local fired = {}
-        local only = _G.AttackOnly   -- nil = dùng tất cả; hoặc "LeftClickRemote" / "RegisterMau" / "RegisterMacDinh" / "Click"
+        local only = _G.AttackOnly or "Click"   -- mặc định: click thật. Muốn thử cách khác: _G.AttackOnly = "RegisterMau" / "LeftClickRemote" / "RegisterMacDinh"
 
         -- Cách 1: LeftClickRemote (kiểu cũ)
         local lc = tool:FindFirstChild("LeftClickRemote")
@@ -3137,28 +3162,21 @@ function AttackNoCoolDown()
                 local tA = (only ~= "RegisterMacDinh") and _tmpl["RE/RegisterAttack"] or nil
                 local tH = (only ~= "RegisterMacDinh") and _tmpl["RE/RegisterHit"] or nil
                 _fire(reAtk, _buildArgs(tA, firstPart, hits, table.pack(0)))
-                _fire(reHit, _buildArgs(tH, firstPart, hits, table.pack(firstPart, hits)))
+                _fire(reHit, _buildArgs(tH, firstPart, hits, table.pack(firstPart, hits, {}, string.sub(tostring(__LP.UserId), 2, 4) .. string.sub(tostring(coroutine.running()), 11, 15))))
                 fired[#fired + 1] = tH and "RegisterHit(khuôn học)" or "RegisterHit(mặc định)"
             end
         end
 
-        -- Cách 3: click thật
-        if (not only or only == "Click") and os.clock() - _lastClick >= 0.08 then
+        -- Cách 3: click thật (quay mặt + camera về phía quái rồi click như người chơi)
+        if (not only or only == "Click") and os.clock() - _lastClick >= 0.1 then
             _lastClick = os.clock()
             pcall(function()
-                -- quay camera về phía quái rồi click vào giữa màn hình như người chơi thật
+                local fp = firstPart.Position
+                myRoot.CFrame = CFrame.new(myPos, Vector3.new(fp.X, myPos.Y, fp.Z))
                 local cam = __WS.CurrentCamera
-                if cam and firstPart then
-                    if only == "Click" then cam.CFrame = CFrame.new(cam.CFrame.Position, firstPart.Position) end
-                    local vp = cam.ViewportSize
-                    local center = Vector2.new(vp.X / 2, vp.Y / 2)
-                    VirtualUser:Button1Down(center, cam.CFrame)
-                    task.delay(0.03, function()
-                        pcall(function() VirtualUser:Button1Up(center, cam.CFrame) end)
-                    end)
-                end
+                if cam then cam.CFrame = CFrame.new(cam.CFrame.Position, fp) end
             end)
-            pcall(function() tool:Activate() end)
+            _realClick()
             fired[#fired + 1] = "Click"
         end
 
@@ -3216,7 +3234,7 @@ end
 
 -- [OPT] Type/Pos là hằng số: gán 1 lần thay vì 2 vòng lặp wait() chạy mãi
 Type = 1
-Pos = CFrame.new(0, 30, 0)
+Pos = CFrame.new(0, 10, 0)
 function AutoHaki()
     if not __LP.Character:FindFirstChild("HasBuso") then
         __RS.Remotes.CommF_:InvokeServer("Buso")
@@ -3256,7 +3274,7 @@ task.defer(function()
         end
         if hookfunction then
             hookfunction(v250, function(...)
-                return ...
+                return
             end)
         end
     end
@@ -3326,7 +3344,7 @@ end)
 -- ==========================================
 Tabs.Main:AddSection("Độ Cao Khi Farm")
 local _FARM_H_MIN, _FARM_H_MAX = 10, 100
-local _farmH = 30
+local _farmH = 10
 local _farmHSync = false
 local vFarmHeightSlider, vFarmHeightInput
 
@@ -3345,7 +3363,7 @@ end
 
 vFarmHeightSlider = Tabs.Main:AddSlider("SliderFarmHeight", {
     ["Title"] = "Độ Cao Khi Farm",
-    ["Default"] = 30,
+    ["Default"] = 10,
     ["Min"] = _FARM_H_MIN,
     ["Max"] = _FARM_H_MAX,
     ["Rounding"] = 0,
@@ -3353,7 +3371,7 @@ vFarmHeightSlider = Tabs.Main:AddSlider("SliderFarmHeight", {
 })
 vFarmHeightInput = Tabs.Main:AddInput("InputFarmHeight", {
     ["Title"] = "Nhập Độ Cao (10 - 100)",
-    ["Default"] = "30",
+    ["Default"] = "10",
     ["Placeholder"] = "10 - 100",
     ["Callback"] = function(v) _setFarmHeight(v, "input") end
 })
@@ -3578,12 +3596,7 @@ getgenv().ClicksPerSecond = 20
 local _vu = game:GetService("VirtualUser")
 -- [OPT] hàm click tạo 1 lần (trước: tạo closure mới mỗi lần click, 20 lần/giây)
 local function _clickOnce()
-    local cam = workspace.CurrentCamera
-    local vp = cam.ViewportSize
-    local center = Vector2.new(vp.X / 2, vp.Y / 2)
-    _vu:Button1Down(center, cam.CFrame)
-    task.wait(0.02)
-    _vu:Button1Up(center, cam.CFrame)
+    _realClick()
 end
 task.spawn(function()
     while task.wait(1 / getgenv().ClicksPerSecond) do
@@ -3639,6 +3652,7 @@ _sparkTemplate.Rotation    = NumberRange.new(0, 360)
 
 local FX_NODES = 6 -- số điểm phát đóm trên mỗi quái
 local function SpawnSparkFX(mob)
+    do return end -- [ĐÃ TẮT] hiệu ứng pháo hoa
     pcall(function()
         if not mob or not mob.Parent then return end
         local cf, size = mob:GetBoundingBox()
@@ -3670,6 +3684,7 @@ end
 
 -- Phát tiếng đánh ngẫu nhiên tại vị trí
 local function PlayHitSound(pos)
+    do return end -- [ĐÃ TẮT] tiếng đánh
     pcall(function()
         local sid = _hitSounds[math.random(1, #_hitSounds)]
         local snd = Instance.new("Sound")
@@ -3692,7 +3707,9 @@ local function ApplyHitEffect(mob)
 end
 
 -- Vòng lặp hiệu ứng chính: spam đóm + tiếng mỗi 0.06s (~17 lần/giây)
+local _fxLastHp = setmetatable({}, {__mode = "k"})
 function StartFXLoop()
+    do return end -- [ĐÃ TẮT] vòng lặp hiệu ứng
     if _fxThread then pcall(function() task.cancel(_fxThread) end) end
     _fxThread = task.spawn(function()
         while _fxEnabled do
@@ -3704,8 +3721,12 @@ function StartFXLoop()
                             and mob:FindFirstChild("Humanoid")
                             and mob.Humanoid.Health > 0 then
                             local pos = mob.HumanoidRootPart.Position
-                            SpawnSparkFX(mob)
-                            PlayHitSound(pos)
+                            local hp = mob.Humanoid.Health
+                            if _fxLastHp[mob] and hp < _fxLastHp[mob] then
+                                SpawnSparkFX(mob)
+                                PlayHitSound(pos)
+                            end
+                            _fxLastHp[mob] = hp
                             break
                         end
                     end
@@ -6582,7 +6603,7 @@ if Sea3 then
                     if CheckFishBoat() then
                         AutoHaki()
                         game:GetService("VirtualUser"):CaptureController()
-                        game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+                        game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672), workspace.CurrentCamera.CFrame)
                         for v638, v639 in pairs(__LP.Backpack:GetChildren()) do
                             if v639:IsA("Tool") and v639.ToolTip == "Melee" then
                                 __LP.Character.Humanoid:EquipTool(v639)
@@ -7871,7 +7892,7 @@ spawn(function()
                                     v760.HumanoidRootPart.CFrame = __LP.Character.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
                                     Tween2(CFrame.new(- 10160.787109375, 138.6616973876953, 5955.03076171875))
                                     game:GetService("VirtualUser"):CaptureController()
-                                    game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+                                    game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672), workspace.CurrentCamera.CFrame)
                                 end
                             end
                         else
@@ -11733,7 +11754,7 @@ end
                                 if seat then
                                     Tween2(seat.CFrame * CFrame.new(0, 1, 0))
                                     task.wait(0.5)
-                                    game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+                                    game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672), workspace.CurrentCamera.CFrame)
                                     task.wait(0.1)
                                     game:GetService("VirtualUser"):Button1Up(Vector2.new(1280, 672))
                                 end
