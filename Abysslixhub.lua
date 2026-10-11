@@ -3016,6 +3016,12 @@ end
 -- BẠN TỰ ĐÁNH TAY, rồi dùng lại đúng khuôn đó cho quái khác. Cách dùng ở cuối câu trả lời.
 _G.AttackDebug = _G.AttackDebug or false
 _G.AttackLog = _G.AttackLog or false
+-- Mặc định chỉ dùng đòn đánh THẬT (click như người chơi) vì đây là đường duy nhất game chắc chắn
+-- tính damage, thanh damage và kill nhiệm vụ. Muốn bật lại các cách gửi remote: _G.AttackOnly = nil
+if _G.AttackOnly == nil and not _G.AttackOnlyInit then
+    _G.AttackOnly = "Click"
+    _G.AttackOnlyInit = true
+end
 local _tmpl = {}              -- khuôn gói tin theo tên remote
 local _inOurCall = false      -- để không học nhầm gói do chính script gửi
 local function _desc(v)
@@ -3111,10 +3117,11 @@ function AttackNoCoolDown()
         if not firstPart then return end
 
         local fired = {}
+        local only = _G.AttackOnly   -- nil = dùng tất cả; hoặc "LeftClickRemote" / "RegisterMau" / "RegisterMacDinh" / "Click"
 
         -- Cách 1: LeftClickRemote (kiểu cũ)
         local lc = tool:FindFirstChild("LeftClickRemote")
-        if lc then
+        if lc and (not only or only == "LeftClickRemote") then
             for i, dir in ipairs(dirs) do
                 _inOurCall = true
                 pcall(function() lc:FireServer(dir, i) end)
@@ -3129,16 +3136,33 @@ function AttackNoCoolDown()
         local reAtk = net and net:FindFirstChild("RE/RegisterAttack")
         local reHit = net and net:FindFirstChild("RE/RegisterHit")
         if reAtk and reHit then
-            _fire(reAtk, _buildArgs(_tmpl["RE/RegisterAttack"], firstPart, hits, table.pack(0)))
-            _fire(reHit, _buildArgs(_tmpl["RE/RegisterHit"], firstPart, hits, table.pack(firstPart, hits)))
-            fired[#fired + 1] = _tmpl["RE/RegisterHit"] and "RegisterHit(khuôn học)" or "RegisterHit(mặc định)"
+            local useTmpl = _tmpl["RE/RegisterHit"] ~= nil
+            if (not only) or (only == "RegisterMau" and useTmpl) or (only == "RegisterMacDinh") then
+                local tA = (only ~= "RegisterMacDinh") and _tmpl["RE/RegisterAttack"] or nil
+                local tH = (only ~= "RegisterMacDinh") and _tmpl["RE/RegisterHit"] or nil
+                _fire(reAtk, _buildArgs(tA, firstPart, hits, table.pack(0)))
+                _fire(reHit, _buildArgs(tH, firstPart, hits, table.pack(firstPart, hits)))
+                fired[#fired + 1] = tH and "RegisterHit(khuôn học)" or "RegisterHit(mặc định)"
+            end
         end
 
         -- Cách 3: click thật
-        if os.clock() - _lastClick >= 0.1 then
+        if (not only or only == "Click") and os.clock() - _lastClick >= 0.08 then
             _lastClick = os.clock()
+            pcall(function()
+                -- quay camera về phía quái rồi click vào giữa màn hình như người chơi thật
+                local cam = __WS.CurrentCamera
+                if cam and firstPart then
+                    cam.CFrame = CFrame.new(cam.CFrame.Position, firstPart.Position)
+                    local vp = cam.ViewportSize
+                    local center = Vector2.new(vp.X / 2, vp.Y / 2)
+                    VirtualUser:Button1Down(center, cam.CFrame)
+                    task.delay(0.03, function()
+                        pcall(function() VirtualUser:Button1Up(center, cam.CFrame) end)
+                    end)
+                end
+            end)
             pcall(function() tool:Activate() end)
-            pcall(function() VirtualUser:ClickButton1(Vector2.new(900, 500)) end)
             fired[#fired + 1] = "Click"
         end
 
@@ -3152,6 +3176,48 @@ function AttackNoCoolDown()
     end)
     if not ok then warn("[AttackNoCoolDown] " .. tostring(err)) end
 end
+-- ===== TỰ KIỂM TRA: cách đánh nào thật sự làm quái mất máu =====
+-- Cách dùng: đứng cạnh 1 con quái (đang cầm vũ khí), gõ trong executor:  _G.AttackTest()
+-- Script thử từng cách 2 giây, in ra lượng máu quái mất, rồi tự chọn cách mạnh nhất.
+function _G.AttackTest(autoPick)
+    task.spawn(function()
+        local char = __LP.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        local en = __WS:FindFirstChild("Enemies")
+        if not root or not en then print("[AttackTest] chưa có nhân vật/quái") return end
+        local target
+        for _, m in ipairs(en:GetChildren()) do
+            local h, r = m:FindFirstChildOfClass("Humanoid"), m:FindFirstChild("HumanoidRootPart")
+            if h and r and h.Health > 0 and (r.Position - root.Position).Magnitude <= 50 then target = m break end
+        end
+        if not target then print("[AttackTest] không có quái nào trong 50 studs, hãy đứng gần quái hơn") return end
+        local hum = target:FindFirstChildOfClass("Humanoid")
+        local keepOnly = _G.AttackOnly
+        local best, bestDrop = nil, 0
+        for _, mode in ipairs({ "LeftClickRemote", "RegisterMau", "RegisterMacDinh", "Click" }) do
+            if not target.Parent or hum.Health <= 0 then print("[AttackTest] quái đã chết, dừng") break end
+            _G.AttackOnly = mode
+            local before = hum.Health
+            local t0 = os.clock()
+            while os.clock() - t0 < 2 and hum.Health > 0 do
+                AttackNoCoolDown()
+                task.wait(0.05)
+            end
+            local drop = before - hum.Health
+            print(("[AttackTest] %-16s -> quái mất %d máu trong 2 giây"):format(mode, math.floor(drop)))
+            if drop > bestDrop then best, bestDrop = mode, drop end
+            task.wait(0.5)
+        end
+        _G.AttackOnly = keepOnly
+        if best and autoPick ~= false then
+            _G.AttackOnly = best
+            print("[AttackTest] Đã tự chọn cách mạnh nhất: " .. best .. "  (muốn dùng lại tất cả: _G.AttackOnly = nil)")
+        elseif not best then
+            print("[AttackTest] Không cách nào làm quái mất máu, gửi mình các dòng này để mình xem tiếp")
+        end
+    end)
+end
+
 -- [OPT] Type/Pos là hằng số: gán 1 lần thay vì 2 vòng lặp wait() chạy mãi
 Type = 1
 Pos = CFrame.new(0, 30, 0)
@@ -9331,6 +9397,7 @@ do
     -- ---------- CHẠY NHANH / NHẢY CAO (10 - 500) ----------
     Tabs.Player:AddSection("Tốc Độ & Nhảy")
     _G.SpeedValue = 50
+    _G.SwimSpeedValue = 50
     _G.JumpValue = 50
     local origWalk, origJump
 
@@ -9357,6 +9424,17 @@ do
         ["Max"] = 500,
         ["Callback"] = function(v)
             _G.SpeedValue = math.clamp(math.floor((tonumber(v) or 50) + 0.5), 10, 500)
+        end
+    })
+
+    Tabs.Player:AddSlider("SliderSwimSpeed", {
+        ["Title"] = "Tốc Độ Bơi",
+        ["Description"] = "10 - 500 (chỉnh riêng khi đang ở dưới nước)",
+        ["Default"] = 50,
+        ["Min"] = 10,
+        ["Max"] = 500,
+        ["Callback"] = function(v)
+            _G.SwimSpeedValue = math.clamp(math.floor((tonumber(v) or 50) + 0.5), 10, 500)
         end
     })
 
@@ -9388,14 +9466,26 @@ do
         end
     })
 
-    -- Game hay ghi đè WalkSpeed/JumpPower nên ép lại mỗi frame (chỉ ghi khi giá trị khác)
-    RunService.Heartbeat:Connect(function()
+    -- Game hay ghi đè WalkSpeed/JumpPower. Trên mặt đất game ghi đè NGAY TRƯỚC bước vật lý nên
+    -- chỉ ép ở Heartbeat (sau vật lý) thì tốc độ trên đất bị về bình thường, còn dưới nước game
+    -- không ghi đè nên chạy đúng giá trị -> trông như bơi nhanh hơn đi bộ.
+    -- Cách sửa: ép ở nhiều thời điểm (RenderStepped cuối cùng, Stepped, Heartbeat, và ngay khi game vừa ghi đè)
+    -- và dùng tốc độ riêng cho trạng thái bơi.
+    local function _targetWalk(hum)
+        if hum:GetState() == Enum.HumanoidStateType.Swimming then
+            return _G.SwimSpeedValue
+        end
+        return _G.SpeedValue
+    end
+
+    local function _applyMove()
         if not (_G.CustomSpeed or _G.CustomJump) then return end
         local ch = __LP.Character
         local hum = ch and ch:FindFirstChildOfClass("Humanoid")
         if not hum then return end
-        if _G.CustomSpeed and hum.WalkSpeed ~= _G.SpeedValue then
-            hum.WalkSpeed = _G.SpeedValue
+        if _G.CustomSpeed then
+            local want = _targetWalk(hum)
+            if hum.WalkSpeed ~= want then hum.WalkSpeed = want end
         end
         if _G.CustomJump then
             if hum.UseJumpPower then
@@ -9405,7 +9495,26 @@ do
                 if math.abs(hum.JumpHeight - h) > 0.01 then hum.JumpHeight = h end
             end
         end
-    end)
+    end
+
+    pcall(function() RunService:UnbindFromRenderStep("AbyCustomMove") end)
+    RunService:BindToRenderStep("AbyCustomMove", Enum.RenderPriority.Last.Value + 1, _applyMove)
+    RunService.Stepped:Connect(_applyMove)
+    RunService.Heartbeat:Connect(_applyMove)
+
+    -- Ép lại ngay khi game vừa ghi đè WalkSpeed (kể cả khi nhân vật hồi sinh)
+    local function _watchHumanoid(char)
+        local hum = char:WaitForChild("Humanoid", 10)
+        if not hum then return end
+        hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+            if _G.CustomSpeed then
+                local want = _targetWalk(hum)
+                if hum.WalkSpeed ~= want then hum.WalkSpeed = want end
+            end
+        end)
+    end
+    if __LP.Character then task.spawn(_watchHumanoid, __LP.Character) end
+    __LP.CharacterAdded:Connect(function(c) task.spawn(_watchHumanoid, c) end)
 end
 local vu916 = Tabs.Teleport:AddSection("Thế Giới")
 Tabs.Teleport:AddToggle("ToggleAutoSea2", {
