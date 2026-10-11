@@ -20,6 +20,50 @@ local VirtualUser = game:GetService("VirtualUser")
 local Lighting = game:GetService("Lighting")
 local CollectionService = game:GetService("CollectionService")
 
+-- ==========================================
+-- [TỰ CHỌN PHE] Chạy NGAY từ đầu, trước khi chờ nhân vật.
+-- Ở màn hình chọn phe nhân vật chưa tồn tại, nên nếu chưa chọn phe thì phần dưới sẽ bị kẹt.
+-- Mặc định chọn Hải Quân; đổi trong tab Cài Đặt (mục "Chọn Phe").
+-- ==========================================
+_G.AutoTeam = true
+_G.TeamChoice = "Marines"
+pcall(function()   -- đọc lựa chọn đã lưu từ lần trước (nếu có)
+    if isfile and readfile and isfile("Abysslix_Config.json") then
+        local d = game:GetService("HttpService"):JSONDecode(readfile("Abysslix_Config.json"))
+        local at = d["Cài Đặt|AutoTeamToggle|Tự Chọn Phe Khi Chưa Chọn"]
+        if type(at) == "boolean" then _G.AutoTeam = at end
+        local tc = d["Cài Đặt|AutoTeamDropdown|Phe Tự Chọn"]
+        if tc == "Hải Tặc" then _G.TeamChoice = "Pirates" elseif tc == "Hải Quân" then _G.TeamChoice = "Marines" end
+    end
+end)
+task.spawn(function()
+    local tries = 0
+    while true do
+        task.wait(1)
+        if _G.AutoTeam then
+            local t = __LP.Team
+            if t and (t.Name == "Marines" or t.Name == "Pirates") then
+                tries = 0
+            else
+                tries = tries + 1
+                pcall(function()
+                    local remotes = __RS:WaitForChild("Remotes", 10)
+                    local commF = remotes and remotes:WaitForChild("CommF_", 10)
+                    if commF then commF:InvokeServer("SetTeam", _G.TeamChoice) end
+                end)
+                if tries % 3 == 0 then   -- dự phòng: bấm thẳng nút trên màn hình chọn phe
+                    pcall(function()
+                        local btn = __LP.PlayerGui.Main.ChooseTeam.Container[_G.TeamChoice].Frame.TextButton
+                        if getconnections then
+                            for _, c in ipairs(getconnections(btn.Activated)) do c.Function() end
+                        end
+                    end)
+                end
+            end
+        end
+    end
+end)
+
 -- PLAYER
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui", 5)
@@ -4939,6 +4983,8 @@ Tabs = {
     ["ESP"]      = createTab("ESP", "eye"),
     ["Fruit"]    = createTab("Fruit", "cherry", "Kiểm Tra Stock Trái"),
     ["Race"]     = createTab("Race", "zap"),
+    ["Draco"]    = createTab("Draco", "flame"),
+    ["Boss"]     = createTab("Raid Boss", "swords"),
     ["Misc"]     = createTab("Khác", "folder"),
     ["Setting"]  = createTab("Cài Đặt", "settings"),
 }
@@ -10317,6 +10363,134 @@ spawn(function()
         end
     end
 end)
+-- ==========================================
+-- [TAB RAID BOSS] Trạng thái boss, thông báo, bay tới boss, tự đánh boss đã chọn, đổi server tìm boss
+-- ==========================================
+do
+    local BOSSES = {
+        { "rip_indra", "Rip Indra" }, { "Dough King", "Dough King" }, { "Cake Prince", "Cake Prince" },
+        { "Cake Queen", "Cake Queen" }, { "Darkbeard", "Darkbeard" }, { "Order", "Order" },
+        { "Soul Reaper", "Soul Reaper" }, { "Tyrant of the Skies", "Tyrant of the Skies" },
+        { "Cursed Captain", "Cursed Captain" }, { "Greybeard", "Greybeard" }, { "Don Swan", "Don Swan" },
+        { "Smoke Admiral", "Smoke Admiral" }, { "Diamond", "Diamond" }, { "Fajita", "Fajita" },
+        { "Thunder God", "Thunder God" }, { "Mob Leader", "Mob Leader" }, { "Chief Warden", "Chief Warden" },
+        { "Longma", "Longma" }, { "Beautiful Pirate", "Beautiful Pirate" }, { "Captain Elephant", "Captain Elephant" },
+        { "Stone", "Stone" }, { "Kilo Admiral", "Kilo Admiral" }, { "Diablo", "Diablo" },
+        { "Deandre", "Deandre" }, { "Urban", "Urban" },
+    }
+    local LABELS, NAME_OF = {}, {}
+    for _, b in ipairs(BOSSES) do table.insert(LABELS, b[2]); NAME_OF[b[2]] = b[1] end
+    local selected = BOSSES[1][1]
+
+    local function findBoss(name)
+        local en = __WS:FindFirstChild("Enemies")
+        local b = en and en:FindFirstChild(name)
+        if b and b:FindFirstChild("Humanoid") and b:FindFirstChild("HumanoidRootPart") and b.Humanoid.Health > 0 then
+            return b
+        end
+    end
+    local function notify(msg)
+        pcall(function() Library:Notify({["Title"] = "Raid Boss", ["Content"] = msg}) end)
+    end
+
+    Tabs.Boss:AddSection("Trạng Thái Raid Boss")
+    local statusP = Tabs.Boss:AddParagraph({["Title"] = "Boss Đang Có Trên Server", ["Description"] = "Đang quét..."})
+    _G.BossNotify = false
+    local lastAlive = {}
+    spawn(function()
+        while task.wait(2) do
+            pcall(function()
+                local alive, now = {}, {}
+                for _, b in ipairs(BOSSES) do
+                    local on = findBoss(b[1]) ~= nil
+                    now[b[1]] = on
+                    if on then table.insert(alive, b[2]) end
+                end
+                statusP:SetDesc(#alive > 0 and ("✅ " .. table.concat(alive, ", ")) or "Hiện không có boss nào")
+                if _G.BossNotify then
+                    for _, b in ipairs(BOSSES) do
+                        if now[b[1]] and lastAlive[b[1]] == false then notify("Boss vừa xuất hiện: " .. b[2]) end
+                    end
+                end
+                for k, v in pairs(now) do lastAlive[k] = v end
+            end)
+        end
+    end)
+    Tabs.Boss:AddToggle("BossNotifyToggle", {
+        ["Title"] = "Thông Báo Khi Có Boss Mới",
+        ["Description"] = "Hiện thông báo khi bất kỳ boss trong danh sách vừa xuất hiện",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.BossNotify = v end)
+
+    Tabs.Boss:AddSection("Boss Đã Chọn")
+    Tabs.Boss:AddDropdown("BossSelectDropdown", {
+        ["Title"] = "Chọn Boss",
+        ["Values"] = LABELS,
+        ["Multi"] = false,
+        ["Default"] = 1
+    }):OnChanged(function(v) selected = NAME_OF[v] or selected end)
+    Tabs.Boss:AddButton({["Title"] = "Bay Đến Boss Đã Chọn", ["Description"] = "Chỉ bay được khi boss đang xuất hiện", ["Callback"] = function()
+        local b = findBoss(selected)
+        if b then Tween2(b.HumanoidRootPart.CFrame * CFrame.new(0, 40, 0)) else notify("Boss này hiện chưa xuất hiện") end
+    end})
+    _G.BossKill = false
+    Tabs.Boss:AddToggle("BossKillToggle", {
+        ["Title"] = "Tự Đánh Boss Đã Chọn",
+        ["Description"] = "Boss xuất hiện thì tự bay tới và đánh đến khi chết",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.BossKill = v end)
+    spawn(function()
+        while task.wait(0.2) do
+            if _G.BossKill then
+                pcall(function()
+                    local boss = findBoss(selected)
+                    if not boss then return end
+                    local hrp, hum = boss.HumanoidRootPart, boss.Humanoid
+                    repeat
+                        task.wait(_G.Fast_Delay or 0.05)
+                        AttackNoCoolDown()
+                        AutoHaki()
+                        EquipTool(SelectWeapon)
+                        hrp.CanCollide = false
+                        Tween2(hrp.CFrame * (Pos or CFrame.new(0, 30, 0)))
+                    until not _G.BossKill or not boss.Parent or hum.Health <= 0
+                end)
+            end
+        end
+    end)
+
+    Tabs.Boss:AddSection("Đổi Server Tìm Boss")
+    _G.BossHopFind = false
+    Tabs.Boss:AddToggle("BossHopFindToggle", {
+        ["Title"] = "Tự Đổi Server Đến Khi Có Boss Đã Chọn",
+        ["Description"] = "Gặp boss thì dừng đổi server. Để script trong autoexec để tự chạy lại sau mỗi lần đổi server.",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.BossHopFind = v end)
+    spawn(function()
+        local startAt, lastHop = tick(), 0
+        while task.wait(3) do
+            if _G.BossHopFind and _G.AbyLoaded and tick() - startAt > 20 then
+                pcall(function()
+                    if findBoss(selected) then
+                        if tick() - lastHop > 30 then lastHop = tick(); notify("Đã thấy boss - dừng đổi server") end
+                        return
+                    end
+                    if tick() - lastHop < 25 then return end
+                    lastHop = tick()
+                    local data = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"))
+                    local list = {}
+                    for _, v in ipairs(data.data or {}) do
+                        if v.id ~= game.JobId and v.playing < v.maxPlayers then table.insert(list, v) end
+                    end
+                    if #list > 0 then
+                        TeleportService:TeleportToPlaceInstance(game.PlaceId, list[math.random(1, #list)].id, __LP)
+                    end
+                end)
+            end
+        end
+    end)
+end
+
 if Sea3 then
     Tabs.Sea:AddSection("Đảo Cáo")
     local vu487 = Tabs.Sea:AddParagraph({
@@ -11523,8 +11697,8 @@ if Sea3 then
     end)
 
     -- BOSS RIP INDRA (Tính năng chuẩn Banana Hub)
-    Tabs.Main:AddSection("Boss Rip Indra")
-    Tabs.Main:AddToggle("ToggleAutoSummonIndra", {
+    Tabs.Boss:AddSection("Boss Rip Indra")
+    Tabs.Boss:AddToggle("ToggleAutoSummonIndra", {
         ["Title"] = "Tự Triệu Hồi Rip Indra (Auto Summon)",
         ["Default"] = false
     }):OnChanged(function(val)
@@ -11545,13 +11719,13 @@ if Sea3 then
         end
     end)
 
-    Tabs.Main:AddToggle("ToggleAttackRipIndra", {
+    Tabs.Boss:AddToggle("ToggleAttackRipIndra", {
         ["Title"] = "Tự Đánh Rip Indra (Auto Attack Rip Indra)",
         ["Default"] = false
     }):OnChanged(function(val)
         _G.AttackRipIndra = val
     end)
-    Tabs.Main:AddButton({
+    Tabs.Boss:AddButton({
         ["Title"] = "Tấn Công Rip Indra (Attack Rip Indra)",
         ["Callback"] = function()
             _G.AttackRipIndra = true
@@ -13934,6 +14108,34 @@ do
 end
 end
 
+Tabs.Setting:AddSection("Chọn Phe")
+Tabs.Setting:AddToggle("AutoTeamToggle", {
+    ["Title"] = "Tự Chọn Phe Khi Chưa Chọn",
+    ["Description"] = "Ở màn hình chọn phe sẽ tự vào phe đã chọn bên dưới (mặc định: Hải Quân)",
+    ["Default"] = true,
+    ["Callback"] = function(v) _G.AutoTeam = v end
+})
+Tabs.Setting:AddDropdown("AutoTeamDropdown", {
+    ["Title"] = "Phe Tự Chọn",
+    ["Values"] = {"Hải Quân", "Hải Tặc"},
+    ["Multi"] = false,
+    ["Default"] = ((_G.TeamChoice == "Pirates") and 2 or 1),
+    ["Callback"] = function(v) _G.TeamChoice = (v == "Hải Tặc") and "Pirates" or "Marines" end
+})
+Tabs.Setting:AddButton({
+    ["Title"] = "Vào Phe Hải Quân (Marines)",
+    ["Description"] = "Bấm 1 lần là vào phe ngay",
+    ["Callback"] = function()
+        task.spawn(function() pcall(function() __RS.Remotes.CommF_:InvokeServer("SetTeam", "Marines") end) end)
+    end
+})
+Tabs.Setting:AddButton({
+    ["Title"] = "Vào Phe Hải Tặc (Pirates)",
+    ["Description"] = "Bấm 1 lần là vào phe ngay",
+    ["Callback"] = function()
+        task.spawn(function() pcall(function() __RS.Remotes.CommF_:InvokeServer("SetTeam", "Pirates") end) end)
+    end
+})
 Tabs.Setting:AddSection("Haki Tự Động")
 _G.AutoBuso, _G.AutoKen = true, true
 Tabs.Setting:AddToggle("AutoBusoToggle", {
@@ -16923,8 +17125,50 @@ end
         end
     })
 
-    Tabs.Sea:AddSection("Draco")
-Tabs.Sea:AddToggle("ToggleBlazeEmber", {
+-- ==========================================
+-- [TAB DRACO] Bảng thông tin tộc + nhiệm vụ Dragon Hunter, nút nhận nhiệm vụ, bay nhanh tới đảo Hydra
+-- ==========================================
+do
+    Tabs.Draco:AddSection("Thông Tin Draco")
+    local dInfo = Tabs.Draco:AddParagraph({["Title"] = "Tộc & Nhiệm Vụ Dragon Hunter", ["Description"] = "Đang tải..."})
+    local questText, verText = "Chưa có nhiệm vụ", "?"
+    spawn(function()
+        while task.wait(3) do
+            pcall(function()
+                local net = __RS.Modules.Net:FindFirstChild("RF/DragonHunter")
+                local res = net and net:InvokeServer({ ["Context"] = "Check" })
+                local t
+                if typeof(res) == "table" then
+                    t = res.Text
+                    if type(t) ~= "string" then
+                        for _, v in pairs(res) do
+                            if type(v) == "string" then t = v break end
+                        end
+                    end
+                end
+                questText = (type(t) == "string" and t ~= "") and t or "Chưa có nhiệm vụ"
+                if CheckRace then verText = CheckRace() end
+            end)
+        end
+    end)
+    spawn(function()
+        while task.wait(1) do
+            pcall(function()
+                dInfo:SetDesc(string.format("Tộc: %s\nPhiên bản: %s\nNhiệm vụ: %s",
+                    tostring(__LP.Data.Race.Value), tostring(verText), tostring(questText)))
+            end)
+        end
+    end)
+    Tabs.Draco:AddButton({["Title"] = "Nhận Nhiệm Vụ Dragon Hunter (1 lần)", ["Description"] = "Hỏi NPC nhận nhiệm vụ mới", ["Callback"] = function()
+        task.spawn(function()
+            pcall(function()
+                __RS.Modules.Net:FindFirstChild("RF/DragonHunter"):InvokeServer({ ["Context"] = "RequestQuest" })
+            end)
+        end)
+    end})
+end
+    Tabs.Draco:AddSection("Draco")
+Tabs.Draco:AddToggle("ToggleBlazeEmber", {
     ["Title"] = "Làm Lứa Đố",
     ["Default"] = false
 }):OnChanged(function(p1104)
@@ -16939,7 +17183,7 @@ spawn(function()
         end
     end
 end)
-Tabs.Sea:AddToggle("ToggleBlazeEmberFarm", {
+Tabs.Draco:AddToggle("ToggleBlazeEmberFarm", {
     ["Title"] = "Đánh Hydra Enforcer + Venomous Assailant",
     ["Default"] = false
 }):OnChanged(function(p1105)
@@ -16977,7 +17221,7 @@ spawn(function()
         end
     end
 end)
-Tabs.Sea:AddToggle("ToggleReceiveQuest", {
+Tabs.Draco:AddToggle("ToggleReceiveQuest", {
     ["Title"] = "Nhắn Nhiậm V\225\187\165 Lứa Đố",
     ["Description"] = "Bắt Lên 1 Lần Là Nhắn 1 Nhắn Nửa Thì Tằt Bắt Lại",
     ["Default"] = false
@@ -17004,7 +17248,7 @@ Tabs.Sea:AddToggle("ToggleReceiveQuest", {
         end)
     end
 end)
-local vu1112 = Tabs.Sea:AddParagraph({
+local vu1112 = Tabs.Draco:AddParagraph({
     ["Title"] = "Trạng Thái Nhiệm V\225\187\165 Lứa Đố",
 })
 spawn(function()
@@ -17029,7 +17273,7 @@ spawn(function()
         end
     end)
 end)
-Tabs.Sea:AddToggle("ToggleHydraTree", {
+Tabs.Draco:AddToggle("ToggleHydraTree", {
     ["Title"] = "Phá Cây \225\187\158 Đảo Hydra",
     ["Default"] = false
 }):OnChanged(function(p1118)
@@ -17099,14 +17343,14 @@ spawn(function()
         end
     end
 end)
-Tabs.Sea:AddButton({
+Tabs.Draco:AddButton({
     ["Title"] = "Bay Đến Khu Vữc Dragon Dojo",
     ["Callback"] = function()
         __RS.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(5661.5322265625, 1013.0907592773438, - 334.9649963378906))
         Tween2(CFrame.new(5814.42724609375, 1208.3267822265625, 884.5785522460938))
     end
 })
-Tabs.Sea:AddButton({
+Tabs.Draco:AddButton({
     ["Title"] = "Chế Tạo Volcanic Magnet",
     ["Description"] = "Cần 15 Lứa Đố+10 Sằt",
     ["Callback"] = function()
@@ -17117,7 +17361,7 @@ Tabs.Sea:AddButton({
         }))
     end
 })
-Tabs.Sea:AddButton({
+Tabs.Draco:AddButton({
     ["Title"] = "Chế Tạo Dino Hood",
     ["Description"] = "Cần 25 Xương Kh\225\187\167ng Long + 10 Sừng Tê Giác",
     ["Callback"] = function()
@@ -17128,7 +17372,7 @@ Tabs.Sea:AddButton({
         }))
     end
 })
-Tabs.Sea:AddButton({
+Tabs.Draco:AddButton({
     ["Title"] = "Chế Tạo T-Rex Skull",
     ["Description"] = "Cần 8 Xương Kh\225\187\167ng Long + 5 Vảy Rỗng",
     ["Callback"] = function()
@@ -17139,7 +17383,7 @@ Tabs.Sea:AddButton({
         }))
     end
 })
-Tabs.Sea:AddToggle("ToggleCollectFireFlowers", {
+Tabs.Draco:AddToggle("ToggleCollectFireFlowers", {
     ["Title"] = "Làm Hoa Đố",
     ["Default"] = false
 }):OnChanged(function(p1140)
@@ -17164,7 +17408,7 @@ spawn(function()
         end
     end
 end)
-Tabs.Sea:AddToggle("ToggleWhiteBelt", {
+Tabs.Draco:AddToggle("ToggleWhiteBelt", {
     ["Title"] = "Cày Đai Trắng",
     ["Default"] = false
 }):OnChanged(function(p1147)
@@ -17189,10 +17433,10 @@ Tabs.Sea:AddToggle("ToggleWhiteBelt", {
         end)
     end
 end)
-Tabs.Sea:AddParagraph({
+Tabs.Draco:AddParagraph({
     ["Title"] = "Hoàn Thành \225\186\162i Draco V4 (S\225\187\155m Ra)",
 })
-Tabs.Sea:AddToggle("ToggleTrialTeleport", {
+Tabs.Draco:AddToggle("ToggleTrialTeleport", {
     ["Title"] = "Bay Đến Cứa Trial Tộc Draco",
     ["Default"] = false
 }):OnChanged(function(p1148)
@@ -17211,6 +17455,13 @@ spawn(function()
         end
     end
 end)
+Tabs.Draco:AddSection("Dịch Chuyển")
+Tabs.Draco:AddButton({["Title"] = "Bay Đến Đảo Hydra", ["Callback"] = function()
+    Tween2(CFrame.new(4612.078125, 1002.283447265625, 498.2188720703125))
+end})
+Tabs.Draco:AddButton({["Title"] = "Bay Đến Khu Cây Hydra", ["Description"] = "Nơi phá cây của nhiệm vụ Dragon Hunter", ["Callback"] = function()
+    Tween2(CFrame.new(5288.61962890625, 1005.4000244140625, 392.43011474609375))
+end})
 Tabs.Sea:AddSection("Đảo Dung Nham")
 local vu1150 = Tabs.Sea:AddParagraph({
     ["Title"] = "Trạng Thái Đảo Dung Nham",
@@ -17575,12 +17826,12 @@ end)
 
 -- ========== TYRANT OF THE SKIES (Sea3) ==========
 if Sea3 then
-    Tabs.Main:AddSection("Tyrant of the Skies")
-    Tabs.Main:AddToggle("ToggleFarmDaiBan", {
+    Tabs.Boss:AddSection("Tyrant of the Skies")
+    Tabs.Boss:AddToggle("ToggleFarmDaiBan", {
         ["Title"] = "Auto Farm Tyrant",
         ["Default"] = false
     }):OnChanged(function(v) _G.FarmDaiBan = v end)
-    Tabs.Main:AddToggle("ToggleFarm8Binhs", {
+    Tabs.Boss:AddToggle("ToggleFarm8Binhs", {
         ["Title"] = "Summon Tyrant (Triệu Hồi Boss)",
         ["Default"] = false
     }):OnChanged(function(v) _G.Farm8Binhs = v end)
@@ -17909,10 +18160,7 @@ local Plr = Players.LocalPlayer
 
 
 local function JoinTeam()
-    local targetTeam = "Marines"
-    if Settings.JoinTeam == "Pirates" then
-        targetTeam = "Pirates"
-    end
+    local targetTeam = _G.TeamChoice or ((Settings.JoinTeam == "Pirates") and "Pirates" or "Marines")
 
     if not Plr.Team or (Plr.Team.Name ~= "Marines" and Plr.Team.Name ~= "Pirates") then
         pcall(function()
@@ -28585,11 +28833,12 @@ v496:AddToggle({
         local ROUTES = {
             ["Farm"] = {
                 default = { "Main", "Farm Level" },
-                { "Main", "Tyrant of the Skies", { "Tyrant" } },
-                { "Main", "Xương (Bones)", { "Bones", "Soul Reaper", "Auto Pray", "Try Luck" } },
-                { "Main", "Katakuri", { "Katakuri" } },
+                { "Boss", "Tyrant of the Skies", { "Tyrant" } },
+                { "Boss", "Soul Reaper", { "Soul Reaper" } },
+                { "Main", "Xương (Bones)", { "Bones", "Auto Pray", "Try Luck" } },
+                { "Boss", "Katakuri / Cake Prince", { "Katakuri", "Cake Prince" } },
                 { "Main", "Rương & Berry", { "Berry", "Chest" } },
-                { "Main", "Boss", { "Boss" } },
+                { "Boss", "Boss", { "Boss" } },
                 { "Main", "Nguyên Liệu", { "Material" } },
             },
             ["Auto Fishing"] = {
@@ -28597,13 +28846,14 @@ v496:AddToggle({
             },
             ["Quest | Items"] = {
                 default = { "Main", "Nhiệm Vụ & Boss" },
+                { "Boss", "Boss Sea 2 / Sea 3", { "Greybeard", "Cursed Captain", "Rip Indra", "Rip_Indra", "Dough King", "Darkbeard", "Elite" } },
                 { "Item", "Kiếm & Vật Phẩm", { "Sword", "Saber", "Longsword", "Yama", "Tushita", "Cdk", "Skull Guitar", "Haki Colors" } },
                 { "Race", "Trial Tộc V4", { "Trial", "Race Door", "Acient", "Ancient", "GreatTree", "Temple Of Time", "Lever Pull", "The Clock", "Auto Skill" } },
             },
             ["Sea Event"] = {
                 default = { "Sea", "Prehistoric Island" },
                 { "Sea", "Thuyền & Quái Biển", { "Boats", "Terror", "Shark", "Piranha", "Fish Crew" } },
-                { "Sea", "Dragon Dojo", { "Dojo", "Dragon Hunter" } },
+                { "Draco", "Dragon Dojo", { "Dojo", "Dragon Hunter" } },
                 { "Sea", "Kitsune", { "Kitsune", "Azuer" } },
                 { "Sea", "Mirage", { "Mirage", "Moon", "Gear" } },
             },
