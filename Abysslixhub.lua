@@ -3124,7 +3124,7 @@ function AttackNoCoolDown()
         local enemiesFolder = __WS:FindFirstChild("Enemies")
         if not enemiesFolder then return end
 
-        -- gom quái trong tầm 60 studs
+        -- gom quái trong tầm _G.AttackRange studs (chỉnh bằng thanh "Tầm Đánh")
         local hits, firstPart, dirs, firstMob = {}, nil, {}, nil
         for _, mob in ipairs(enemiesFolder:GetChildren()) do
             if not mob:GetAttribute("IsBoat") and _alive(mob) then
@@ -3132,7 +3132,7 @@ function AttackNoCoolDown()
                 local part = mob:FindFirstChild("Head") or mhrp
                 if mhrp and part then
                     local diff = mhrp.Position - myPos
-                    if diff.Magnitude <= 60 then
+                    if diff.Magnitude <= (_G.AttackRange or 60) then
                         table.insert(hits, { mob, part })
                         table.insert(dirs, diff.Magnitude > 0 and diff.Unit or Vector3.new(0, 0, 1))
                         firstPart = firstPart or part
@@ -3173,23 +3173,7 @@ function AttackNoCoolDown()
             end
         end
 
-        -- Cách 3: click thật (quay mặt + camera về phía quái rồi click như người chơi)
-        if (not only or only == "Click") and os.clock() - _lastClick >= 0.1 then
-            _lastClick = os.clock()
-            pcall(function()
-                local fp = firstPart.Position
-                if myPos.Y - fp.Y > 3 then
-                    -- đứng cao hơn quái: nhìn thẳng xuống quái (cả root lẫn camera) để đòn đánh hướng xuống trúng
-                    myRoot.CFrame = CFrame.new(myPos, fp)
-                    local cam = __WS.CurrentCamera
-                    if cam then cam.CFrame = CFrame.new(cam.CFrame.Position, fp) end
-                else
-                    myRoot.CFrame = CFrame.new(myPos, Vector3.new(fp.X, myPos.Y, fp.Z))
-                end
-            end)
-            _realClick()
-            fired[#fired + 1] = "Click"
-        end
+        -- [ĐÃ XÓA] Cách 3: click thật (gây vung tay). Chỉ còn đánh bằng remote.
 
         if _G.AttackDebug and os.clock() - _lastLog > 1 then
             _lastLog = os.clock()
@@ -3219,7 +3203,7 @@ function _G.AttackTest(autoPick)
         local hum = target:FindFirstChildOfClass("Humanoid")
         local keepOnly = _G.AttackOnly
         local best, bestDrop = nil, 0
-        for _, mode in ipairs({ "LeftClickRemote", "RegisterMau", "RegisterMacDinh", "Click" }) do
+        for _, mode in ipairs({ "LeftClickRemote", "RegisterMau", "RegisterMacDinh" }) do
             if not target.Parent or hum.Health <= 0 then print("[AttackTest] quái đã chết, dừng") break end
             _G.AttackOnly = mode
             local before = hum.Health
@@ -3473,6 +3457,15 @@ Tabs.Main:AddSlider("SliderFarmDist", {
         Pos = CFrame.new(0, _farmH, _farmD)
     end
 })
+_G.AttackRange = 100
+Tabs.Main:AddSlider("SliderAttackRange", {
+    ["Title"] = "Tầm Đánh (studs) - đứng cao/xa vẫn đánh trúng quái",
+    ["Default"] = 100,
+    ["Min"] = 20,
+    ["Max"] = 300,
+    ["Rounding"] = 0,
+    ["Callback"] = function(v) _G.AttackRange = tonumber(v) or 60 end
+})
 Tabs.Main:AddSection("Tốc Độ Đánh & Vũ Khí")
 local vFastMode = Tabs.Main:AddDropdown("DropdownFastAttackMode", {
     ["Title"] = "Tốc Độ Đánh Nhanh",
@@ -3698,7 +3691,6 @@ Tabs.Main:AddToggle("ToggleOneHit", {
     ["Default"] = false
 }):OnChanged(function(v)
     _G.OneHitKill = v
-    getgenv().AutoClick = v
 end)
 Tabs.Main:AddToggle("ToggleHideSwing", {
     ["Title"] = "Ẩn Động Tác Tay Khi Đánh",
@@ -3728,27 +3720,72 @@ task.spawn(function()
         end
     end
 end)
--- AutoClick: dùng Button1Down/Up vào giữa viewport game - KHÔNG click vào UI
-getgenv().AutoClick = false
-getgenv().ClicksPerSecond = 20
-local _vu = game:GetService("VirtualUser")
--- [OPT] hàm click tạo 1 lần (trước: tạo closure mới mỗi lần click, 20 lần/giây)
-local function _clickOnce()
-    _realClick()
-end
-task.spawn(function()
-    while task.wait(1 / getgenv().ClicksPerSecond) do
-        if getgenv().AutoClick then
-            pcall(_clickOnce)
-        else
-            -- đang farm (Cày Cấp / Xương / Đánh Quái Gần) -> tự click, không cần bật "Đánh Nhanh"
-            local okF, farming = pcall(function()
-                return _G.AutoLevel or _G.AutoBone or _G.AutoNear or BoneNoQuestOn()
-            end)
-            if okF and farming then pcall(_clickOnce) end
-        end
+-- ===== [MỚI] FARM BẰNG SKILL (giống video: dùng chiêu Z/X/C/V, có số damage, quest tính kill) =====
+-- Skill do server tính sát thương thật nên quái mất máu, hiện số damage và tính vào quest.
+-- Dùng cùng lúc với Tự Động Cày Cấp / Cày Xương / Đánh Quái Gần. Cần có đủ Energy cho chiêu.
+do
+    _G.FarmSkill = false
+    _G.SkillKeys = { Z = true, X = true, C = true, V = true, F = false }
+    _G.SkillDelay = 0.3          -- giây nghỉ giữa các lượt dùng chiêu
+    _G.SkillRange = 60           -- chỉ dùng chiêu khi có quái trong tầm này (studs)
+
+    Tabs.Main:AddSection("Farm Bằng Skill")
+    Tabs.Main:AddToggle("ToggleFarmSkill", {
+        ["Title"] = "Farm Bằng Skill (Z X C V)",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.FarmSkill = v end)
+    for _, k in ipairs({ "Z", "X", "C", "V", "F" }) do
+        Tabs.Main:AddToggle("ToggleSkillKey" .. k, {
+            ["Title"] = "Dùng chiêu " .. k,
+            ["Default"] = _G.SkillKeys[k]
+        }):OnChanged(function(v) _G.SkillKeys[k] = v end)
     end
-end)
+    Tabs.Main:AddSlider("SliderSkillDelay", {
+        ["Title"] = "Nghỉ Giữa Các Lượt Chiêu (x0.1 giây)",
+        ["Default"] = 3,
+        ["Min"] = 1,
+        ["Max"] = 20,
+        ["Rounding"] = 0,
+        ["Callback"] = function(v) _G.SkillDelay = (tonumber(v) or 3) / 10 end
+    })
+
+    local function _mobNear()
+        local ch = __LP.Character
+        local root = ch and ch:FindFirstChild("HumanoidRootPart")
+        local en = __WS:FindFirstChild("Enemies")
+        if not root or not en then return false end
+        for _, m in ipairs(en:GetChildren()) do
+            local h, r = m:FindFirstChildOfClass("Humanoid"), m:FindFirstChild("HumanoidRootPart")
+            if h and r and h.Health > 0 and (r.Position - root.Position).Magnitude <= _G.SkillRange then
+                return true
+            end
+        end
+        return false
+    end
+
+    task.spawn(function()
+        while task.wait(0.1) do
+            local farming = false
+            pcall(function()
+                farming = _G.AutoLevel or _G.AutoBone or _G.AutoNear or BoneNoQuestOn()
+            end)
+            if _G.FarmSkill and farming and _mobNear() then
+                for _, k in ipairs({ "Z", "X", "C", "V", "F" }) do
+                    if not (_G.FarmSkill and _G.SkillKeys[k]) then continue end
+                    pcall(function()
+                        __VIM:SendKeyEvent(true, k, false, game)
+                        task.wait(0.1)   -- giữ phím một chút để chiêu kích hoạt
+                        __VIM:SendKeyEvent(false, k, false, game)
+                    end)
+                    task.wait(0.15)
+                end
+                task.wait(_G.SkillDelay)
+            end
+        end
+    end)
+end
+
+-- [ĐÃ XÓA] Vòng lặp AutoClick (click 20 lần/giây)
 -- ============================================================
 -- HỆ THỐNG HIỆU ỨNG ĐÁNH: Tia lửa đóm đóm CỰC NHIỀU phủ toàn thân quái
 -- ============================================================
