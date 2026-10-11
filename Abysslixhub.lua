@@ -686,7 +686,6 @@ local LucideToAsset = {
     ["settings"]      = "rbxassetid://10734950309",
     ["radio"]         = "rbxassetid://10709789310",
     ["bar-chart-2"]   = "rbxassetid://10709752317",
-    ["bar-chart-2"]   = "rbxassetid://10709752317",
     ["user"]          = "rbxassetid://10747373176",
     ["map-pin"]       = "rbxassetid://10734914109",
     ["eye"]           = "rbxassetid://10723346959",
@@ -700,6 +699,8 @@ local LucideToAsset = {
 local function createTab(tabTitle, lucideIcon)
     local iconId = LucideToAsset[lucideIcon] or (string.find(tostring(lucideIcon or ""), "rbxassetid://") and lucideIcon) or HUB_ICON
     local raw = Window:AddTab(tabTitle, iconId)
+    return wrapTab(raw, tabTitle)
+end
 
 Tabs = {
     ["Info"]     = createTab("Thông Tin", "info"),
