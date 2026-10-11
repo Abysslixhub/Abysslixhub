@@ -2821,6 +2821,12 @@ function Tween2(p170)
         if os.clock() > deadline then break end   -- chốt an toàn, không bao giờ treo vô hạn
         RunService.Heartbeat:Wait()
     end
+    -- [FIX] hết giờ mà chưa tới: hủy hẳn chuyến bay (trước đây _moveTarget bị treo, Heartbeat cứ kéo nhân vật
+    -- về đích cũ, đánh nhau với BKP lúc farm => nhân vật giật / đứng im / không bám quái)
+    if _moveToken == token and _moveTarget ~= nil then
+        StopMovement()
+        return false
+    end
     return _moveToken == token
 end
 
@@ -3138,7 +3144,7 @@ function AttackNoCoolDown()
         if not firstPart then return end
 
         local fired = {}
-        local only = _G.AttackOnly or "Click"   -- mặc định: click thật. Muốn thử cách khác: _G.AttackOnly = "RegisterMau" / "LeftClickRemote" / "RegisterMacDinh"
+        local only = _G.AttackOnly   -- [FIX] mặc định nil = dùng TẤT CẢ cách đánh (trước đây "or Click" ép chỉ click thật nên không trúng quái). Muốn ép 1 cách: _G.AttackOnly = "Click" / "RegisterMau" / "LeftClickRemote" / "RegisterMacDinh"
 
         -- Cách 1: LeftClickRemote (kiểu cũ)
         local lc = tool:FindFirstChild("LeftClickRemote")
@@ -3233,6 +3239,59 @@ function _G.AttackTest(autoPick)
             print("[AttackTest] Đã tự chọn cách mạnh nhất: " .. best .. "  (muốn dùng lại tất cả: _G.AttackOnly = nil)")
         elseif not best then
             print("[AttackTest] Không cách nào làm quái mất máu, gửi mình các dòng này để mình xem tiếp")
+        end
+    end)
+end
+
+-- ===== [THÊM THEO YÊU CẦU] Quét Hitbox 100 studs (bật/tắt bằng nút "Đánh Nhanh") =====
+-- Bọc trong do...end để không tạo thêm biến local ở cấp file (Lua giới hạn 200 local mỗi chunk)
+do
+    local Workspace = game:GetService("Workspace")
+    local Players = game:GetService("Players")
+    local localPlayer = Players.LocalPlayer
+
+    local function CheckMaxRangeHitbox()
+        local character = localPlayer.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+
+        local rootPart = character.HumanoidRootPart
+
+        -- Đặt kích thước Hitbox tối đa 100 studs (Rộng: 10, Cao/Dài: 100)
+        local maxRange = 100
+        local boxSize = Vector3.new(10, maxRange, 10)
+
+        -- Tâm hộp cách nhân vật maxRange / 2 để vùng quét vươn lên tới 100 studs
+        local boxCFrame = rootPart.CFrame * CFrame.new(0, maxRange / 2, 0)
+
+        -- Loại trừ chính nhân vật ra khỏi vùng quét
+        local overlapParams = OverlapParams.new()
+        overlapParams.FilterDescendantsInstances = {character}
+        overlapParams.FilterType = Enum.RaycastFilterType.Exclude
+
+        local partsInBox = Workspace:GetPartBoundsInBox(boxCFrame, boxSize, overlapParams)
+
+        local hitEnemies = {}
+
+        for _, part in ipairs(partsInBox) do
+            local model = part.Parent
+            local humanoid = model and model:FindFirstChildOfClass("Humanoid")
+
+            if humanoid and humanoid.Health > 0 and not hitEnemies[model] then
+                hitEnemies[model] = true
+
+                -- Lưu ý: TakeDamage chạy phía client nên server không ghi nhận sát thương thật
+                humanoid:TakeDamage(30)
+                print("Đã đánh trúng mục tiêu trong tầm 100 studs: " .. model.Name)
+            end
+        end
+    end
+
+    -- Chỉ chạy khi bật nút "Đánh Nhanh" (_G.OneHitKill)
+    task.spawn(function()
+        while task.wait(0.2) do
+            if _G.OneHitKill then
+                pcall(CheckMaxRangeHitbox)
+            end
         end
     end)
 end
@@ -3506,6 +3565,7 @@ end)
 -- [SetValue skipped - Library không cần]
 -- [FIX ĐỨNG IM SAU KHI NHẬN QUEST] theo dõi số lần đã nhận quest, phòng khi UI Quest không báo Visible
 local _qKey, _qTries, _qStart = nil, 0, 0
+local _lastAbandon = 0
 spawn(function()
     while task.wait() do
         if _G.AutoLevel then
@@ -3545,10 +3605,20 @@ spawn(function()
                         tostring(NameQuest), tostring(QuestLv), tostring(questVisible), tostring(titleOK), _qTries, tostring(Ms)))
                 end
 
-                -- Nếu đang có quest KHÁC thì bỏ quest
+                -- [FIX] quest do chính script vừa nhận (trong 90s) => tin là đúng, tránh vòng lặp Abandon -> Start -> Abandon
+                if questVisible and _qTries >= 1 and os.clock() - _qStart < 90 then
+                    titleOK = true
+                end
+
+                -- Nếu đang có quest KHÁC thì bỏ quest (có cooldown, không spam remote)
                 if questVisible and not titleOK then
                     bringmob = false
-                    __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
+                    if os.clock() - _lastAbandon > 3 then
+                        _lastAbandon = os.clock()
+                        __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
+                        _qTries = 0
+                        task.wait(0.5)
+                    end
                     return
                 end
 
@@ -3556,7 +3626,8 @@ spawn(function()
                 if not questVisible then
                     bringmob = false
                     Tween2(CFrameQ)
-                    repeat task.wait(0.1) until (CFrameQ.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 or not _G.AutoLevel or not MoverBusy()
+                    local _t0 = os.clock()
+                    repeat task.wait(0.1) until (CFrameQ.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 or not _G.AutoLevel or not MoverBusy() or os.clock() - _t0 > 10
                     wait(0.2)
                     if (CFrameQ.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 then
                         __RS.Remotes.CommF_:InvokeServer("StartQuest", NameQuest, QuestLv)
@@ -3583,6 +3654,7 @@ spawn(function()
                                     AutoHaki()
                                     EquipTool(SelectWeapon)
                                     -- Dùng BKP teleport trực tiếp cạnh quái (giống các tính năng khác)
+                                    if MoverBusy() then StopMovement() end   -- [FIX] mover cũ không được kéo ngược khi đang bám quái
                                     local _mobCF = v.HumanoidRootPart.CFrame * Pos
                                     if (_mobCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then
                                         BKP(_mobCF)
