@@ -4802,14 +4802,14 @@ local LucideToAsset = {
 }
 
 _G.AbysslixTabTitles = _G.AbysslixTabTitles or {}
-local function createTab(tabTitle, lucideIcon)
+local function createTab(tabTitle, lucideIcon, firstSectionTitle)
     -- Bỏ icon cạnh tên tab: truyền icon rỗng, nếu UI không chịu thì dùng lại icon mặc định (và sẽ bị ẩn ở bước dọn UI)
     table.insert(_G.AbysslixTabTitles, tabTitle)
     local okTab, raw = pcall(function() return Window:AddTab(tabTitle, "") end)
     if not okTab or not raw then
         raw = Window:AddTab(tabTitle, HUB_ICON)
     end
-    return wrapTab(raw, tabTitle)
+    return wrapTab(raw, firstSectionTitle or tabTitle)
 end
 
 Tabs = {
@@ -4823,7 +4823,7 @@ Tabs = {
     ["Teleport"] = createTab("Dịch Chuyển", "map-pin"),
     ["ESP"]      = createTab("ESP", "eye"),
     ["Visual"]   = createTab("Giả Mạo", "eye"),
-    ["Fruit"]    = createTab("Fruit", "cherry"),
+    ["Fruit"]    = createTab("Fruit", "cherry", "Kiểm Tra Stock Trái"),
     ["Race"]     = createTab("Nâng Cấp Chủng Tộc", "zap"),
     ["Misc"]     = createTab("Khác", "folder"),
     ["Setting"]  = createTab("Cài Đặt", "settings"),
@@ -14642,450 +14642,323 @@ Tabs.Visual:AddInput("Input_Fragments", {
         __LP.Data.Fragments.Value = tonumber(p942)
     end
 })
-local v943 = __RS:FindFirstChild("Remotes").CommF_:InvokeServer("GetFruits")
-Table_DevilFruitSniper = {}
-ShopDevilSell = {}
-local v944 = next
-local v945 = nil
-while true do
-    local v946
-    v945, v946 = v944(v943, v945)
-    if v945 == nil then
-        break
-    end
-    table.insert(Table_DevilFruitSniper, v946.Name)
-    if v946.OnSale then
-        table.insert(ShopDevilSell, v946.Name)
-    end
-end
-_G.SelectFruit = nil
-_G.PermanentFruit = nil
-_G.AutoBuyFruitSniper = false
-_G.AutoSwitchPermanentFruit = false
-Tabs.Fruit:AddSection("Trái Ác Quỷ")
-local v947 = Tabs.Fruit:AddDropdown("DropdownFruit", {
-    ["Title"] = "Chọn Trái",
-    ["Values"] = Table_DevilFruitSniper,
-    ["Multi"] = false,
-    ["Default"] = 1
-})
-v947:SetValue(_G.SelectFruit)
-v947:OnChanged(function(p948)
-    _G.SelectFruit = p948
-end)
-Tabs.Fruit:AddToggle("ToggleFruit", {
-    ["Title"] = "Mua Trái Chọn",
-    ["Default"] = false
-}):OnChanged(function(p949)
-    if p949 then
-        _G.AutoBuyFruitSniper = true
-        pcall(function()
-            __RS.Remotes.CommF_:InvokeServer("GetFruits")
-            __RS.Remotes.CommF_:InvokeServer("PurchaseRawFruit", _G.SelectFruit, false)
+-- ==========================================
+-- [TAB FRUIT] ĐÃ GỘP GỌN
+--  • Kiểm tra stock: Shop thường + Đảo Bí Ẩn (Advanced Fruit Dealer), có làm mới tay + tự làm mới
+--  • Quay trái (Random) chạy ổn định, không spam
+--  • Lưu trái / Nhặt trái gộp thành 1 mục mỗi loại (trước đây bị lặp 2-3 bản)
+--  • Mua trái / Đổi trái vĩnh viễn là NÚT bấm (trước là công tắc bật 1 lần rồi tự tắt biến)
+--  • Phần ESP đã chuyển hẳn sang tab ESP
+-- ==========================================
+do
+    local Tab = Tabs.Fruit
+    local CommF = __RS:WaitForChild("Remotes"):WaitForChild("CommF_")
+    local unpack_ = table.unpack or unpack
+
+    local function invoke(...)
+        local args = table.pack(...)
+        local ok, res = pcall(function()
+            return CommF:InvokeServer(unpack_(args, 1, args.n))
         end)
-        _G.AutoBuyFruitSniper = false
+        if ok then return res end
+        return nil
     end
-end)
--- [SetValue skipped - Library không cần]
-local v950 = Tabs.Fruit:AddDropdown("DropdownPermanentFruit", {
-    ["Title"] = "Chọn Trái V\196\169nh Viễn",
-    ["Values"] = Table_DevilFruitSniper,
-    ["Multi"] = false,
-    ["Default"] = 1
-})
-v950:SetValue(_G.PermanentFruit)
-v950:OnChanged(function(p951)
-    _G.PermanentFruit = p951
-end)
-Tabs.Fruit:AddToggle("TogglePermanentFruit", {
-    ["Title"] = "\239\191\189\225\187\149i Trái V\196\169nh Viễn",
-    ["Default"] = false
-}):OnChanged(function(p952)
-    if p952 then
-        _G.AutoSwitchPermanentFruit = true
+
+    local function notify(content)
         pcall(function()
-            local v953 = {
-                "SwitchFruit",
-                _G.PermanentFruit
-            }
-            __RS.Remotes.CommF_:InvokeServer(unpack(v953))
+            Library:Notify({ Title = "Trái Ác Quỷ", Content = content })
         end)
-        _G.AutoSwitchPermanentFruit = false
     end
-end)
--- [SetValue skipped - Library không cần]
-Tabs.Fruit:AddToggle("ToggleStore", {
-    ["Title"] = "Lưu Trái",
-    ["Default"] = false
-}):OnChanged(function(p954)
-    _G.AutoStoreFruit = p954
-end)
--- [SetValue skipped - Library không cần]
-spawn(function()
-    while task.wait() do
-        if _G.AutoStoreFruit then
-            pcall(function()
-                if _G.AutoStoreFruit then
-                    if __LP.Character:FindFirstChild("Bomb Fruit") or __LP.Backpack:FindFirstChild("Bomb Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Bomb-Bomb", __LP.Backpack:FindFirstChild("Bomb Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Spike Fruit") or __LP.Backpack:FindFirstChild("Spike Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Spike-Spike", __LP.Backpack:FindFirstChild("Spike Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Chop Fruit") or __LP.Backpack:FindFirstChild("Chop Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Chop-Chop", __LP.Backpack:FindFirstChild("Chop Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Spring Fruit") or __LP.Backpack:FindFirstChild("Spring Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Spring-Spring", __LP.Backpack:FindFirstChild("Spring Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Rocket Fruit") or __LP.Backpack:FindFirstChild("Kilo Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Rocket-Rocket", __LP.Backpack:FindFirstChild("Kilo Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Smoke Fruit") or __LP.Backpack:FindFirstChild("Smoke Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Smoke-Smoke", __LP.Backpack:FindFirstChild("Smoke Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Spin Fruit") or __LP.Backpack:FindFirstChild("Spin Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Spin-Spin", __LP.Backpack:FindFirstChild("Spin Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Flame Fruit") or __LP.Backpack:FindFirstChild("Flame Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Flame-Flame", __LP.Backpack:FindFirstChild("Flame Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Falcon Fruit") or __LP.Backpack:FindFirstChild("Falcon Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Falcon", __LP.Backpack:FindFirstChild("alcon Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Ice Fruit") or __LP.Backpack:FindFirstChild("Ice Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Ice-Ice", __LP.Backpack:FindFirstChild("Ice Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Sand Fruit") or __LP.Backpack:FindFirstChild("Sand Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Sand-Sand", __LP.Backpack:FindFirstChild("Sand Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Dark Fruit") or __LP.Backpack:FindFirstChild("Dark Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Dark-Dark", __LP.Backpack:FindFirstChild("Dark Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Ghost Fruit") or __LP.Backpack:FindFirstChild("Revive Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Ghost-Ghost", __LP.Backpack:FindFirstChild("Revive Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Diamond Fruit") or __LP.Backpack:FindFirstChild("Diamond Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Diamond-Diamond", __LP.Backpack:FindFirstChild("Diamond Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Light Fruit") or __LP.Backpack:FindFirstChild("Light Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Light-Light", __LP.Backpack:FindFirstChild("Light Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Love Fruit") or __LP.Backpack:FindFirstChild("Love Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Love-Love", __LP.Backpack:FindFirstChild("Love Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Rubber Fruit") or __LP.Backpack:FindFirstChild("Rubber Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Rubber-Rubber", __LP.Backpack:FindFirstChild("Rubber Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Barrier Fruit") or __LP.Backpack:FindFirstChild("Barrier Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Barrier-Barrier", __LP.Backpack:FindFirstChild("Barrier Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Magma Fruit") or __LP.Backpack:FindFirstChild("Magma Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Magma-Magma", __LP.Backpack:FindFirstChild("Magma Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Portal Fruit") or __LP.Backpack:FindFirstChild("Portal Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Door-Door", __LP.Backpack:FindFirstChild("Portal Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Quake Fruit") or __LP.Backpack:FindFirstChild("Quake Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Quake-Quake", __LP.Backpack:FindFirstChild("Quake Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Buddha Fruit") or __LP.Backpack:FindFirstChild("Buddha Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("Buddha", __LP.Backpack:FindFirstChild("Buddha Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Spider Fruit") or __LP.Backpack:FindFirstChild("Spider Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Spider-Spider", __LP.Backpack:FindFirstChild("Spider Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Bird: Phoenix Fruit") or __LP.Backpack:FindFirstChild("Phoenix Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Phoenix", __LP.Backpack:FindFirstChild("Phoenix Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Rumble Fruit") or __LP.Backpack:FindFirstChild("Rumble Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Rumble-Rumble", __LP.Backpack:FindFirstChild("Rumble Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Pain Fruit") or __LP.Backpack:FindFirstChild("Pain Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Pain-Pain", __LP.Backpack:FindFirstChild("Pain Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Gravity Fruit") or __LP.Backpack:FindFirstChild("Gravity Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Gravity-Gravity", __LP.Backpack:FindFirstChild("Gravity Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Dough Fruit") or __LP.Backpack:FindFirstChild("Dough Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Dough-Dough", __LP.Backpack:FindFirstChild("Dough Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Shadow Fruit") or __LP.Backpack:FindFirstChild("Shadow Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Shadow-Shadow", __LP.Backpack:FindFirstChild("Shadow Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Venom Fruit") or __LP.Backpack:FindFirstChild("Venom Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Venom-Venom", __LP.Backpack:FindFirstChild("Venom Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Control Fruit") or __LP.Backpack:FindFirstChild("Control Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Control-Control", __LP.Backpack:FindFirstChild("Control Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Spirit Fruit") or __LP.Backpack:FindFirstChild("Spirit Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Soul-Soul", __LP.Backpack:FindFirstChild("Spirit Fruit"))
-                    end
-                    if __LP.Character:FindFirstChild("Dragon Fruit") or __LP.Backpack:FindFirstChild("Dragon Fruit") then
-                        __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Dragon-Dragon", __LP.Backpack:FindFirstChild("Dragon Fruit"))
-                        if __LP.Character:FindFirstChild("Leopard Fruit") or __LP.Backpack:FindFirstChild("Leopard Fruit") then
-                            __RS.Remotes.CommF_:InvokeServer("StoreFruit", "Leopard-Leopard", __LP.Backpack:FindFirstChild("Leopard Fruit"))
-                        end
-                    end
+
+    local function fmt(n)
+        local s = tostring(math.floor(tonumber(n) or 0))
+        local r = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
+        return (r:gsub("^,", ""))
+    end
+
+    -- Đọc danh sách trái ĐANG BÁN. Shop thường: GetFruits | Đảo Bí Ẩn: GetFruits, true
+    local function readStock(isMirage)
+        local data
+        if isMirage then
+            data = invoke("GetFruits", true)
+        else
+            data = invoke("GetFruits")
+        end
+        if type(data) ~= "table" then return nil, nil end
+        local onSale, all = {}, {}
+        for _, f in pairs(data) do
+            if type(f) == "table" and f.Name then
+                table.insert(all, f.Name)
+                if f.OnSale then
+                    table.insert(onSale, { Name = f.Name, Price = tonumber(f.Price) or 0 })
                 end
+            end
+        end
+        table.sort(onSale, function(a, b) return a.Price < b.Price end)
+        table.sort(all)
+        return onSale, all
+    end
+
+    local function stockText(title, list)
+        local t = title .. "\n"
+        if list == nil then
+            return t .. "  • Không lấy được dữ liệu\n"
+        end
+        if #list == 0 then
+            return t .. "  • Hiện không có trái nào\n"
+        end
+        for _, f in ipairs(list) do
+            t = t .. "  • " .. f.Name .. " — $" .. fmt(f.Price) .. "\n"
+        end
+        return t
+    end
+
+    local normalOnSale = {}
+    local selectedNormal = nil
+    local selectedPerm = nil
+    local permDD = nil -- tạo ở mục "Trái Ác Quỷ" bên dưới
+    local NONE_TEXT = "(Bấm Làm Mới Stock)"
+
+    -- ---------- STOCK (section đầu tiên của tab, tên đặt ở createTab) ----------
+    local stockLabel = Tab:AddParagraph({
+        ["Title"] = "Stock",
+        ["Description"] = "Đang lấy dữ liệu..."
+    })
+
+    local normalDD = nil -- tạo bên dưới nút Làm Mới
+    local refreshing = false
+    local function refreshStock(silent)
+        if refreshing then return end
+        refreshing = true
+        local normal, allNames = readStock(false)
+        local mirage = readStock(true)
+
+        local text = stockText("🛒 Shop Thường (đổi mỗi 4 giờ)", normal)
+            .. "\n" .. stockText("🌕 Đảo Bí Ẩn - Advanced Fruit Dealer (đổi mỗi 2 giờ)", mirage)
+        pcall(function() stockLabel:Set(text) end)
+
+        normalOnSale = normal or {}
+        local names = {}
+        for _, f in ipairs(normalOnSale) do table.insert(names, f.Name) end
+        if #names == 0 then names = { "(Shop không có trái)" } end
+        selectedNormal = names[1]
+        if normalDD then
+            pcall(function() normalDD:Refresh(names) end)
+            pcall(function() normalDD:SetValue(names[1]) end)
+        end
+
+        if allNames and #allNames > 0 and permDD then
+            pcall(function() permDD:Refresh(allNames) end)
+            if not selectedPerm or selectedPerm == "(Đang tải...)" then
+                selectedPerm = allNames[1]
+                pcall(function() permDD:SetValue(allNames[1]) end)
+            end
+        end
+        refreshing = false
+        if not silent then notify("Đã cập nhật stock trái.") end
+    end
+
+    Tab:AddButton({
+        ["Title"] = "Làm Mới Stock",
+        ["Description"] = "Kiểm tra lại trái đang bán ở Shop thường và Đảo Bí Ẩn",
+        ["Callback"] = function()
+            task.spawn(function() refreshStock(false) end)
+        end
+    })
+    normalDD = Tab:AddDropdown("DropdownFruitShopNormal", {
+        ["Title"] = "Trái Đang Bán (Shop Thường)",
+        ["Values"] = { NONE_TEXT },
+        ["Multi"] = false,
+        ["Default"] = 1
+    })
+    normalDD:OnChanged(function(v)
+        selectedNormal = v
+    end)
+
+    Tab:AddButton({
+        ["Title"] = "Mua Trái Đã Chọn (Shop Thường)",
+        ["Description"] = "Chỉ mua được trái đang có trong stock shop thường",
+        ["Callback"] = function()
+            task.spawn(function()
+                local name = selectedNormal
+                local valid = false
+                for _, f in ipairs(normalOnSale) do
+                    if f.Name == name then valid = true break end
+                end
+                if not valid then
+                    notify("Chưa chọn trái hợp lệ. Bấm Làm Mới Stock rồi chọn lại.")
+                    return
+                end
+                invoke("GetFruits")
+                invoke("PurchaseRawFruit", name, false)
+                notify("Đã gửi yêu cầu mua: " .. tostring(name))
             end)
         end
-        wait()
-    end
-end)
-Tabs.Fruit:AddToggle("ToggleRandomFruit", {
-    ["Title"] = "Random Trái",
-    ["Default"] = false
-}):OnChanged(function(p955)
-    _G.Random_Auto = p955
-end)
--- [SetValue skipped - Library không cần]
-spawn(function()
-    pcall(function()
-        while task.wait(0.1) do
+    })
+
+    task.spawn(function()
+        pcall(function() refreshStock(true) end)
+        while task.wait(60) do
+            pcall(function() refreshStock(true) end)
+        end
+    end)
+
+    -- ---------- QUAY TRÁI ----------
+    Tab:AddSection("Quay Trái")
+    Tab:AddToggle("ToggleRandomFruit", {
+        ["Title"] = "Quay Trái (Random)",
+        ["Description"] = "Tự mua trái ngẫu nhiên từ Cousin, mỗi 1 giây",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.Random_Auto = v
+    end)
+    task.spawn(function()
+        while task.wait(1) do
             if _G.Random_Auto then
-                __RS.Remotes.CommF_:InvokeServer("Cousin", "Buy")
+                pcall(function() CommF:InvokeServer("Cousin", "Buy") end)
             end
         end
     end)
-end)
-Tabs.Fruit:AddToggle("ToggleCollectTP", {
-    ["Title"] = "Bay Đến Trái",
-    ["Default"] = false
-}):OnChanged(function(p956)
-    _G.CollectFruitTP = p956
-end)
--- [SetValue skipped - Library không cần]
-spawn(function()
-    while task.wait(0.1) do
-        if _G.CollectFruitTP then
-            for v959, v960 in pairs(__WS:GetChildren()) do
-                if string.find(v960.Name, "Fruit") then
-                    __LP.Character.HumanoidRootPart.CFrame = v960.Handle.CFrame
-                end
+
+    -- ---------- LƯU / NHẶT TRÁI ----------
+    Tab:AddSection("Trái Ác Quỷ")
+
+    local StoreList = {
+        { "Rocket Fruit", "Rocket-Rocket" }, { "Kilo Fruit", "Rocket-Rocket" },
+        { "Spin Fruit", "Spin-Spin" }, { "Blade Fruit", "Blade-Blade" },
+        { "Spring Fruit", "Spring-Spring" }, { "Bomb Fruit", "Bomb-Bomb" },
+        { "Smoke Fruit", "Smoke-Smoke" }, { "Spike Fruit", "Spike-Spike" },
+        { "Chop Fruit", "Chop-Chop" }, { "Flame Fruit", "Flame-Flame" },
+        { "Eagle Fruit", "Eagle-Eagle" }, { "Ice Fruit", "Ice-Ice" },
+        { "Sand Fruit", "Sand-Sand" }, { "Dark Fruit", "Dark-Dark" },
+        { "Diamond Fruit", "Diamond-Diamond" }, { "Light Fruit", "Light-Light" },
+        { "Rubber Fruit", "Rubber-Rubber" }, { "Creation Fruit", "Creation-Creation" },
+        { "Ghost Fruit", "Ghost-Ghost" }, { "Revive Fruit", "Ghost-Ghost" },
+        { "Magma Fruit", "Magma-Magma" }, { "Quake Fruit", "Quake-Quake" },
+        { "Buddha Fruit", "Buddha-Buddha" }, { "Love Fruit", "Love-Love" },
+        { "Spider Fruit", "Spider-Spider" }, { "Sound Fruit", "Sound-Sound" },
+        { "Phoenix Fruit", "Phoenix-Phoenix" }, { "Portal Fruit", "Portal-Portal" },
+        { "Lightning Fruit", "Lightning-Lightning" }, { "Pain Fruit", "Pain-Pain" },
+        { "Blizzard Fruit", "Blizzard-Blizzard" }, { "Gravity Fruit", "Gravity-Gravity" },
+        { "Mammoth Fruit", "Mammoth-Mammoth" }, { "T-Rex Fruit", "T-Rex-T-Rex" },
+        { "Dough Fruit", "Dough-Dough" }, { "Shadow Fruit", "Shadow-Shadow" },
+        { "Venom Fruit", "Venom-Venom" }, { "Gas Fruit", "Gas-Gas" },
+        { "Control Fruit", "Control-Control" }, { "Spirit Fruit", "Spirit-Spirit" },
+        { "Leopard Fruit", "Leopard-Leopard" }, { "Yeti Fruit", "Yeti-Yeti" },
+        { "Kitsune Fruit", "Kitsune-Kitsune" }, { "Dragon Fruit", "Dragon-Dragon" },
+    }
+
+    Tab:AddToggle("ToggleStore", {
+        ["Title"] = "Tự Lưu Trái",
+        ["Description"] = "Cất trái vào kho ngay khi nhặt được",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.AutoStoreFruit = v
+    end)
+    task.spawn(function()
+        while task.wait(0.5) do
+            if _G.AutoStoreFruit then
+                pcall(function()
+                    local char = __LP.Character
+                    local bag = __LP:FindFirstChild("Backpack")
+                    for _, pair in ipairs(StoreList) do
+                        local tool = (bag and bag:FindFirstChild(pair[1])) or (char and char:FindFirstChild(pair[1]))
+                        if tool then
+                            CommF:InvokeServer("StoreFruit", pair[2], tool)
+                        end
+                    end
+                end)
             end
         end
+    end)
+
+    local MODE_TWEEN = "Dịch chuyển (an toàn)"
+    local MODE_TP = "Bay tức thời"
+    local collectOn = false
+    local collectMode = MODE_TWEEN
+    local function syncCollectFlags()
+        -- giữ nguyên tên biến cũ vì chỗ khác trong hub còn đọc _G.Tweenfruit
+        _G.Tweenfruit = collectOn and collectMode == MODE_TWEEN
+        _G.CollectFruitTP = collectOn and collectMode == MODE_TP
     end
-end)
-Tabs.Fruit:AddToggle("ToggleCollect", {
-    ["Title"] = "D\225\187\139ch Chuyển Đến Trái",
-    ["Default"] = false
-}):OnChanged(function(p961)
-    _G.Tweenfruit = p961
-end)
--- [SetValue skipped - Library không cần]
-spawn(function()
-    while task.wait(0.1) do
-        if _G.Tweenfruit then
-            for v964, v965 in pairs(__WS:GetChildren()) do
-                if string.find(v965.Name, "Fruit") then
-                    Tween2(v965.Handle.CFrame)
-                end
-            end
-        end
-    end
-end)
-Tabs.Fruit:AddSection("Định Vị")
-Tabs.Fruit:AddToggle("ToggleEspPlayer", {
-    ["Title"] = "Người Chơi",
-    ["Default"] = false
-}):OnChanged(function(p966)
-    ESPPlayer = p966
-    UpdatePlayerChams()
-end)
--- [SetValue skipped - Library không cần]
-Tabs.Fruit:AddToggle("ToggleEspFruit", {
-    ["Title"] = "Trái",
-    ["Default"] = false
-}):OnChanged(function(p967)
-    DevilFruitESP = p967
-    UpdateDevilChams() -- chạy 1 lần để dọn/hiện ngay; vòng lặp chung bên dưới lo phần cập nhật
-end)
--- [SetValue skipped - Library không cần]
-Tabs.Fruit:AddToggle("ToggleEspIsland", {
-    ["Title"] = "Đảo",
-    ["Default"] = false
-}):OnChanged(function(p968)
-    IslandESP = p968
-    UpdateIslandESP()
-end)
--- [SetValue skipped - Library không cần]
-Tabs.Fruit:AddToggle("ToggleEspFlower", {
-    ["Title"] = "Hoa",
-    ["Default"] = false
-}):OnChanged(function(p969)
-    FlowerESP = p969
-    UpdateFlowerChams()
-end)
--- [SetValue skipped - Library không cần]
-spawn(function()
-    while wait(0.25) do -- [OPT] ESP chỉ cần ~4 lần/giây (trước: mỗi frame, có chỗ chạy trùng 2 vòng)
-        if IslandESP then
-            UpdateIslandESP()
-        end
-        if FlowerESP then
-            UpdateFlowerChams()
-        end
-        if DevilFruitESP then
-            UpdateDevilChams()
-        end
-        if ChestESP then
-            UpdateChestChams()
-        end
-        if ESPPlayer then
-            UpdatePlayerChams()
-        end
-        if RealFruitESP then
-            UpdateRealFruitChams()
-        end
-    end
-end)
-Tabs.Fruit:AddToggle("ToggleEspRealFruit", {
-    ["Title"] = "Trái Dủa Kh\225\187\155m Táo",
-    ["Default"] = false
-}):OnChanged(function(p970)
-    RealFruitEsp = p970
-    while RealFruitEsp do
-        wait()
-        UpdateRealFruitEsp()
-    end
-end)
--- [SetValue skipped - Library không cần]
-function UpdateRealFruitEsp()
-    for v973, v974 in pairs(__WS.AppleSpawner:GetChildren()) do
-        if v974:IsA("Tool") then
-            if RealFruitEsp then
-                if v974.Handle:FindFirstChild("NameEsp" .. Number) then
-                    v974.Handle["NameEsp" .. Number].TextLabel.Text = v974.Name .. " " .. vu896((__LP.Character.Head.Position - v974.Handle.Position).Magnitude / 3) .. " Distance"
-                else
-                    local v975 = Instance.new("BillboardGui", v974.Handle)
-                    v975.Name = "NameEsp" .. Number
-                    v975.ExtentsOffset = Vector3.new(0, 1, 0)
-                    v975.Size = UDim2.new(1, 200, 1, 30)
-                    v975.Adornee = v974.Handle
-                    v975.AlwaysOnTop = true
-                    local v976 = Instance.new("TextLabel", v975)
-                    v976.Font = Enum.Font.GothamSemibold
-                    v976.FontSize = "Size14"
-                    v976.TextWrapped = true
-                    v976.Size = UDim2.new(1, 0, 1, 0)
-                    v976.TextYAlignment = "Top"
-                    v976.BackgroundTransparency = 1
-                    v976.TextStrokeTransparency = 0.5
-                    v976.TextColor3 = Color3.fromRGB(255, 0, 0)
-                    v976.Text = v974.Name .. " \n" .. vu896((__LP.Character.Head.Position - v974.Handle.Position).Magnitude / 3) .. " Distance"
-                end
-            elseif v974.Handle:FindFirstChild("NameEsp" .. Number) then
-                v974.Handle:FindFirstChild("NameEsp" .. Number):Destroy()
-            end
-        end
-    end
-    for v979, v980 in pairs(__WS.PineappleSpawner:GetChildren()) do
-        if v980:IsA("Tool") then
-            if RealFruitEsp then
-                if v980.Handle:FindFirstChild("NameEsp" .. Number) then
-                    v980.Handle["NameEsp" .. Number].TextLabel.Text = v980.Name .. " " .. vu896((__LP.Character.Head.Position - v980.Handle.Position).Magnitude / 3) .. " Distance"
-                else
-                    local v981 = Instance.new("BillboardGui", v980.Handle)
-                    v981.Name = "NameEsp" .. Number
-                    v981.ExtentsOffset = Vector3.new(0, 1, 0)
-                    v981.Size = UDim2.new(1, 200, 1, 30)
-                    v981.Adornee = v980.Handle
-                    v981.AlwaysOnTop = true
-                    local v982 = Instance.new("TextLabel", v981)
-                    v982.Font = Enum.Font.GothamSemibold
-                    v982.FontSize = "Size14"
-                    v982.TextWrapped = true
-                    v982.Size = UDim2.new(1, 0, 1, 0)
-                    v982.TextYAlignment = "Top"
-                    v982.BackgroundTransparency = 1
-                    v982.TextStrokeTransparency = 0.5
-                    v982.TextColor3 = Color3.fromRGB(255, 174, 0)
-                    v982.Text = v980.Name .. " \n" .. vu896((__LP.Character.Head.Position - v980.Handle.Position).Magnitude / 3) .. " Distance"
-                end
-            elseif v980.Handle:FindFirstChild("NameEsp" .. Number) then
-                v980.Handle:FindFirstChild("NameEsp" .. Number):Destroy()
-            end
-        end
-    end
-    for v985, v986 in pairs(__WS.BananaSpawner:GetChildren()) do
-        if v986:IsA("Tool") then
-            if RealFruitEsp then
-                if v986.Handle:FindFirstChild("NameEsp" .. Number) then
-                    v986.Handle["NameEsp" .. Number].TextLabel.Text = v986.Name .. " " .. vu896((__LP.Character.Head.Position - v986.Handle.Position).Magnitude / 3) .. " Distance"
-                else
-                    local v987 = Instance.new("BillboardGui", v986.Handle)
-                    v987.Name = "NameEsp" .. Number
-                    v987.ExtentsOffset = Vector3.new(0, 1, 0)
-                    v987.Size = UDim2.new(1, 200, 1, 30)
-                    v987.Adornee = v986.Handle
-                    v987.AlwaysOnTop = true
-                    local v988 = Instance.new("TextLabel", v987)
-                    v988.Font = Enum.Font.GothamSemibold
-                    v988.FontSize = "Size14"
-                    v988.TextWrapped = true
-                    v988.Size = UDim2.new(1, 0, 1, 0)
-                    v988.TextYAlignment = "Top"
-                    v988.BackgroundTransparency = 1
-                    v988.TextStrokeTransparency = 0.5
-                    v988.TextColor3 = Color3.fromRGB(251, 255, 0)
-                    v988.Text = v986.Name .. " \n" .. vu896((__LP.Character.Head.Position - v986.Handle.Position).Magnitude / 3) .. " Distance"
-                end
-            elseif v986.Handle:FindFirstChild("NameEsp" .. Number) then
-                v986.Handle:FindFirstChild("NameEsp" .. Number):Destroy()
-            end
-        end
-    end
-end
-Tabs.Fruit:AddToggle("ToggleIslandMirageEsp", {
-    ["Title"] = "Đảo Bí \225\186\168n",
-    ["Default"] = false
-}):OnChanged(function(p989)
-    IslandMirageEsp = p989
-    while IslandMirageEsp do
-        wait()
-        UpdateIslandMirageEsp()
-    end
-end)
--- [SetValue skipped - Library không cần]
-function isnil(p990)
-    return p990 == nil
-end
-local function vu992(p991)
-    return math.floor(tonumber(p991) + 0.5)
-end
-Number = math.random(1, 1000000)
-function UpdateIslandMirageEsp()
-    for v995, vu996 in pairs(__WS._WorldOrigin.Locations:GetChildren()) do
-        pcall(function()
-            if MirageIslandESP then
-                if vu996.Name == "Mirage Island" then
-                    if vu996:FindFirstChild("NameEsp") then
-                        vu996.NameEsp.TextLabel.Text = vu996.Name .. "   \n" .. vu992((__LP.Character.Head.Position - vu996.Position).Magnitude / 3) .. " M"
-                    else
-                        local v997 = Instance.new("BillboardGui", vu996)
-                        v997.Name = "NameEsp"
-                        v997.ExtentsOffset = Vector3.new(0, 1, 0)
-                        v997.Size = UDim2.new(1, 200, 1, 30)
-                        v997.Adornee = vu996
-                        v997.AlwaysOnTop = true
-                        local v998 = Instance.new("TextLabel", v997)
-                        v998.Font = Enum.Font.Code
-                        v998.FontSize = Enum.FontSize.Size14
-                        v998.TextWrapped = true
-                        v998.Size = UDim2.new(1, 0, 1, 0)
-                        v998.TextYAlignment = Enum.TextYAlignment.Top
-                        v998.BackgroundTransparency = 1
-                        v998.TextStrokeTransparency = 0.5
-                        v998.TextColor3 = Color3.fromRGB(80, 245, 245)
+
+    Tab:AddToggle("ToggleCollectFruit", {
+        ["Title"] = "Tự Nhặt Trái",
+        ["Description"] = "Đi tới trái đang rơi gần bạn nhất",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        collectOn = (v == true)
+        syncCollectFlags()
+    end)
+    Tab:AddDropdown("DropdownCollectMode", {
+        ["Title"] = "Kiểu Nhặt Trái",
+        ["Values"] = { MODE_TWEEN, MODE_TP },
+        ["Multi"] = false,
+        ["Default"] = 1
+    }):OnChanged(function(v)
+        collectMode = v
+        syncCollectFlags()
+    end)
+
+    local function nearestFruitHandle()
+        local char = __LP.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return nil end
+        local best, bestDist
+        for _, v in ipairs(__WS:GetChildren()) do
+            if v:IsA("Tool") and string.find(v.Name, "Fruit") then
+                local h = v:FindFirstChild("Handle")
+                if h then
+                    local d = (h.Position - hrp.Position).Magnitude
+                    if not bestDist or d < bestDist then
+                        best, bestDist = h, d
                     end
                 end
-            elseif vu996:FindFirstChild("NameEsp") then
-                vu996:FindFirstChild("NameEsp"):Destroy()
             end
-        end)
+        end
+        return best
     end
+
+    task.spawn(function()
+        while task.wait(0.15) do
+            if collectOn then
+                pcall(function()
+                    local h = nearestFruitHandle()
+                    if not h then return end
+                    if collectMode == MODE_TP then
+                        __LP.Character.HumanoidRootPart.CFrame = h.CFrame
+                    else
+                        Tween2(h.CFrame)
+                    end
+                end)
+            end
+        end
+    end)
+
+    permDD = Tab:AddDropdown("DropdownFruitPermanent", {
+        ["Title"] = "Chọn Trái Vĩnh Viễn",
+        ["Values"] = { "(Đang tải...)" },
+        ["Multi"] = false,
+        ["Default"] = 1
+    })
+    permDD:OnChanged(function(v)
+        selectedPerm = v
+    end)
+
+    Tab:AddButton({
+        ["Title"] = "Đổi Sang Trái Vĩnh Viễn",
+        ["Description"] = "Dùng trái chọn ở mục \"Chọn Trái Vĩnh Viễn\" phía trên",
+        ["Callback"] = function()
+            task.spawn(function()
+                if not selectedPerm or selectedPerm == "(Đang tải...)" then
+                    notify("Chưa chọn trái. Bấm Làm Mới Stock để tải danh sách.")
+                    return
+                end
+                invoke("SwitchFruit", selectedPerm)
+                notify("Đã gửi yêu cầu đổi sang: " .. tostring(selectedPerm))
+            end)
+        end
+    })
 end
 Tabs.Raid:AddSection("Đột Kích")
 local v999 = Tabs.Raid:AddDropdown("DropdownRaid", {
@@ -25542,200 +25415,7 @@ spawn(function()
     end)
 end)
 
-local _ = v491:AddSection({"Fruits"})
-v491:AddToggle({
-    Name = "Auto Random Fruits",
-    Description = "",
-    Default = false,
-    Callback = function(v1074)
-        _G.RandomAuto = v1074
-    end
-})
-spawn(function()
-    pcall(function()
-        while task.wait(0.1) do
-            if _G.RandomAuto then
-                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Cousin", "Buy")
-            end
-        end
-    end)
-end)
-v491:AddToggle({
-    Title = "Auto Store Fruits",
-    Description = "",
-    Value = false,
-    Callback = function(v1075)
-        getgenv().AutoStoreFruit = v1075
-    end
-})
-spawn(function()
-    while task.wait(0.2) do
-        if getgenv().AutoStoreFruit then
-            pcall(function()
-                local l_LocalPlayer_16 = game:GetService("Players").LocalPlayer
-                local v1077 = l_LocalPlayer_16.Character or l_LocalPlayer_16.CharacterAdded:Wait()
-                local l_Backpack_3 = l_LocalPlayer_16:WaitForChild("Backpack")
-                for _, v1080 in ipairs({
-                    {"Rocket Fruit", "Rocket-Rocket"},
-                    {"Spin Fruit", "Spin-Spin"},
-                    {"Blade Fruit", "Blade-Blade"},
-                    {"Spring Fruit", "Spring-Spring"},
-                    {"Bomb Fruit", "Bomb-Bomb"},
-                    {"Smoke Fruit", "Smoke-Smoke"},
-                    {"Spike Fruit", "Spike-Spike"},
-                    {"Flame Fruit", "Flame-Flame"},
-                    {"Eagle Fruit", "Eagle-Eagle"},
-                    {"Ice Fruit", "Ice-Ice"},
-                    {"Sand Fruit", "Sand-Sand"},
-                    {"Dark Fruit", "Dark-Dark"},
-                    {"Diamond Fruit", "Diamond-Diamond"},
-                    {"Light Fruit", "Light-Light"},
-                    {"Rubber Fruit", "Rubber-Rubber"},
-                    {"Creation Fruit", "Creation-Creation"},
-                    {"Ghost Fruit", "Ghost-Ghost"},
-                    {"Magma Fruit", "Magma-Magma"},
-                    {"Quake Fruit", "Quake-Quake"},
-                    {"Buddha Fruit", "Buddha-Buddha"},
-                    {"Love Fruit", "Love-Love"},
-                    {"Spider Fruit", "Spider-Spider"},
-                    {"Sound Fruit", "Sound-Sound"},
-                    {"Phoenix Fruit", "Phoenix-Phoenix"},
-                    {"Portal Fruit", "Portal-Portal"},
-                    {"Lightning Fruit", "Lightning-Lightning"},
-                    {"Pain Fruit", "Pain-Pain"},
-                    {"Blizzard Fruit", "Blizzard-Blizzard"},
-                    {"Gravity Fruit", "Gravity-Gravity"},
-                    {"Mammoth Fruit", "Mammoth-Mammoth"},
-                    {"T-Rex Fruit", "T-Rex-T-Rex"},
-                    {"Dough Fruit", "Dough-Dough"},
-                    {"Shadow Fruit", "Shadow-Shadow"},
-                    {"Venom Fruit", "Venom-Venom"},
-                    {"Gas Fruit", "Gas-Gas"},
-                    {"Control Fruit", "Control-Control"},
-                    {"Spirit Fruit", "Spirit-Spirit"},
-                    {"Leopard Fruit", "Leopard-Leopard"},
-                    {"Yeti Fruit", "Yeti-Yeti"},
-                    {"Kitsune Fruit", "Kitsune-Kitsune"},
-                    {"Dragon Fruit", "Dragon-Dragon"}
-                }) do
-                    local v1081 = v1080[1]
-                    local v1082 = v1080[2]
-                    local v1083 = l_Backpack_3:FindFirstChild(v1081) or v1077:FindFirstChild(v1081)
-                    if v1083 then
-                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", v1082, v1083)
-                        break
-                    end
-                end
-            end)
-        end
-    end
-end)
-v491:AddToggle({
-    Name = "Teleport To Fruit Spawn",
-    Description = "",
-    Default = false,
-    Callback = function(v1084)
-        _G.Tweenfruit = v1084
-    end
-})
-spawn(function()
-    while wait(0.1) do
-        if _G.TweenFruit then
-            for _, v1086 in pairs(game.Workspace:GetChildren()) do
-                if string.find(v1086.Name, "Fruit") then
-                    TP1(v1086.Handle.CFrame)
-                end
-            end
-        end
-    end
-end)
-v491:AddToggle({
-    Name = "Auto Teleport Fruits",
-    Description = "",
-    Default = false,
-    Callback = function(v1087)
-        _G.Grabfruit = v1087
-    end
-})
-spawn(function()
-    while wait(0.1) do
-        if _G.Grabfruit then
-            for _, v1089 in pairs(game.Workspace:GetChildren()) do
-                if string.find(v1089.Name, "Fruit") then
-                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v1089.Handle.CFrame
-                end
-            end
-        end
-    end
-end)
-local _ = v491:AddSection({"Check Stock Fruits"})
-local function v1096(v1091)
-    local v1092 = tostring(v1091)
-    repeat
-        local v1093 = nil
-        local v1094, v1095 = v1092.gsub(v1092, "^(-?%d+)(%d%d%d)", "%1,%2")
-        v1093 = v1095
-        v1092 = v1094
-    until v1093 == 0
-    return v1092
-end
-local l_CommF__1 = game:GetService("ReplicatedStorage").Remotes.CommF_
-local function v1111()
-    local v1098 = "Advance Fruit Stock\n"
-    local l_status_2, l_result_2 = pcall(function()
-        return l_CommF__1:InvokeServer("GetFruits", true)
-    end)
-    if not l_status_2 or not l_result_2 then
-        v1098 = v1098 .. "-       khi   d    li   u.\n"
-    else
-        local v1101 = false
-        for _, v1103 in pairs(l_result_2) do
-            if v1103.OnSale then
-                v1101 = true
-                local v1104 = v1096(v1103.Price)
-                v1098 = v1098 .. v1103.Name .. " - $" .. v1104 .. "\n"
-            end
-        end
-        if not v1101 then
-            v1098 = v1098 .. "- Kh  ng c   tr  i  .\n"
-        end
-    end
-    v1098 = v1098 .. "\nNormal Fruit Stock\n"
-    local l_status_3, l_result_3 = pcall(function()
-        return l_CommF__1:InvokeServer("GetFruits")
-    end)
-    if l_status_3 and l_result_3 then
-        local v1107 = false
-        for _, v1109 in pairs(l_result_3) do
-            if v1109.OnSale then
-                v1107 = true
-                local v1110 = v1096(v1109.Price)
-                v1098 = v1098 .. v1109.Name .. " - $" .. v1110 .. "\n"
-            end
-        end
-        if not v1107 then
-            v1098 = v1098 .. "- Kh  ng c   tr  i  .\n"
-        end
-    else
-        v1098 = v1098 .. "-       khi   d    li   u.\n"
-    end
-    return v1098
-end
-local v1112 = v491:AddParagraph({
-    Title = "Stock",
-    Content = "  ang   d    li   u..."
-})
-task.spawn(function()
-    while task.wait(60) do
-        pcall(function()
-            v1112:Set(v1111())
-        end)
-    end
-end)
-pcall(function()
-    v1112:Set(v1111())
-end)
-
+-- [Đã gộp] Các mục Fruits/Check Stock Fruits của module mở rộng đã chuyển vào tab Fruit chính (không còn bị lặp)
 if World1 then
     v491:AddParagraph({
         Title = "Raids only works in Sea 2 and 3",
@@ -27470,19 +27150,9 @@ v496:AddButton({
 })
 
 local _ = v496:AddSection({"Settings"})
-v496:AddToggle({
-    Name = "Fast Attack",
-    Description = "",
-    Default = true,
-    Callback = function(value)
-        _G.AutoAttack = value
-        if value then
-            print("")
-        else
-            print("")
-        end
-    end
-})
+-- [ĐÃ XOÁ] Công tắc "Fast Attack" bị lặp ở cuối tab Cài Đặt.
+-- Vòng đánh nhanh mở rộng vẫn bật mặc định và vẫn được tắt/bật bằng nút "Đánh Nhanh (Bật/Tắt)" ở đầu tab Cài Đặt.
+_G.AutoAttack = true
 
 local v1 = next
 local v2 = {
