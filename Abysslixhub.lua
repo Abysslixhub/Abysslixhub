@@ -2497,7 +2497,7 @@ function UpdateRealFruitChams()
     end
 end
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if MobESP then
                 for v112, v113 in pairs(__WS.Enemies:GetChildren()) do
@@ -2536,7 +2536,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if SeaESP then
                 for v123, v124 in pairs(__WS.SeaBeasts:GetChildren()) do
@@ -2575,7 +2575,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if NpcESP then
                 for v134, v135 in pairs(__WS.NPCs:GetChildren()) do
@@ -3146,7 +3146,9 @@ end
 
 local _lastClick, _lastLog = 0, 0
 
+_G.FastAttackEnabled = true
 function AttackNoCoolDown()
+    if _G.FastAttackEnabled == false then return end   -- tắt Đánh Nhanh (nút ở tab Cài Đặt)
     local ok, err = pcall(function()
         local char = vu198.Character
         local myRoot = char and char:FindFirstChild("HumanoidRootPart")
@@ -3458,10 +3460,10 @@ Tabs.Info:AddParagraph({
     ["Title"] = "Các Client Pc Hợ Trỡ",
     ["Description"] = "Tất Cả Client Pc"
 })
-_G.FastAttackStrix_Mode = "Super Fast Attack"
-_G.Fast_Delay = 1e-9
+_G.FastAttackStrix_Mode = "Fast Attack"
+_G.Fast_Delay = 0.05
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.FastAttackStrix_Mode then
             pcall(function()
                 if _G.FastAttackStrix_Mode == "Super Fast Attack" then
@@ -3550,32 +3552,11 @@ Tabs.Main:AddSlider("SliderAttackRange", {
     ["Rounding"] = 0,
     ["Callback"] = function(v) _G.AttackRange = tonumber(v) or 60 end
 })
-Tabs.Main:AddSection("Tốc Độ Đánh & Vũ Khí")
-local vFastMode = Tabs.Main:AddDropdown("DropdownFastAttackMode", {
-    ["Title"] = "Tốc Độ Đánh Nhanh",
-    ["Values"] = {
-        "Siêu Nhanh (Super Fast)",
-        "Nhanh (Fast)",
-        "Bình Thường (Normal)"
-    },
-    ["Multi"] = false,
-    ["Default"] = 1
-})
-vFastMode:SetValue("Siêu Nhanh (Super Fast)")
-vFastMode:OnChanged(function(mode)
-    if string.find(tostring(mode), "Siêu") then
-        _G.FastAttackStrix_Mode = "Super Fast Attack"
-        _G.Fast_Delay = 1e-9
-    elseif string.find(tostring(mode), "Nhanh") then
-        _G.FastAttackStrix_Mode = "Fast Attack"
-        _G.Fast_Delay = 0.05
-    else
-        _G.FastAttackStrix_Mode = "Normal Attack"
-        _G.Fast_Delay = 0.15
-    end
-end)
+-- Tốc độ đánh cố định (phù hợp, ổn định, ít lag): Fast Attack = 0.05s
+_G.FastAttackStrix_Mode = "Fast Attack"
+_G.Fast_Delay = 0.05
 task.spawn(function()
-    while wait() do
+    while task.wait(0.5) do
         pcall(function()
             -- Tìm trong Backpack VÀ Character (tool đang cầm nằm trong Character)
             local sources = {__LP.Backpack}
@@ -3753,41 +3734,8 @@ spawn(function()
         end
     end
 end)
-Tabs.Main:AddSection("Chiến Đấu")
-Tabs.Main:AddToggle("ToggleOneHit", {
-    ["Title"] = "Đánh Nhanh",
-    ["Default"] = false
-}):OnChanged(function(v)
-    _G.OneHitKill = v
-end)
-Tabs.Main:AddToggle("ToggleHideSwing", {
-    ["Title"] = "Ẩn Động Tác Tay Khi Đánh",
-    ["Default"] = false
-}):OnChanged(function(v)
-    _G.HideSwing = v
-end)
--- Dừng animation đánh ở máy bạn (tay đứng yên). Đòn đánh vẫn do click gửi lên server.
-task.spawn(function()
-    while task.wait(0.03) do
-        if _G.HideSwing then
-            pcall(function()
-                local ch = __LP.Character
-                local hum = ch and ch:FindFirstChildOfClass("Humanoid")
-                local an = hum and (hum:FindFirstChildOfClass("Animator") or hum)
-                if an then
-                    for _, tr in ipairs(an:GetPlayingAnimationTracks()) do
-                        local n = tr.Animation and tr.Animation.Name or ""
-                        -- chỉ dừng động tác đánh, giữ animation đi/đứng/nhảy
-                        if tr.Priority == Enum.AnimationPriority.Action or tr.Priority == Enum.AnimationPriority.Action2
-                            or tr.Priority == Enum.AnimationPriority.Action3 or tr.Priority == Enum.AnimationPriority.Action4 then
-                            tr:Stop(0)
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
+_G.OneHitKill = false
+_G.HideSwing = false
 -- ===== [MỚI] FARM BẰNG SKILL (giống video: dùng chiêu Z/X/C/V, có số damage, quest tính kill) =====
 -- Skill do server tính sát thương thật nên quái mất máu, hiện số damage và tính vào quest.
 -- Dùng cùng lúc với Tự Động Cày Cấp / Cày Xương / Đánh Quái Gần. Cần có đủ Energy cho chiêu.
@@ -4053,7 +4001,7 @@ Tabs.Main:AddToggle("ToggleMobAura", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.AutoNear then
             pcall(function()
                 for v279, v280 in pairs(__WS.Enemies:GetChildren()) do
@@ -4090,7 +4038,7 @@ Tabs.Main:AddToggle("ToggleCastleRaid", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.CastleRaid then
             pcall(function()
                 local v282 = CFrame.new(- 5496.17432, 313.768921, - 2841.53027, 0.924894512, 7.37058015e-9, 0.380223751, 3.5881019e-8, 1, - 1.06665446e-7, - 0.380223751, 1.12297109e-7, 0.924894512)
@@ -4172,7 +4120,7 @@ Tabs.Main:AddToggle("ToggleCollectChest", {
     _G.AutoCollectChest = p296
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoCollectChest then
             local v297 = __LP
             local v298 = (v297.Character or v297.CharacterAdded:Wait()):GetPivot().Position
@@ -4204,7 +4152,7 @@ Tabs.Main:AddToggle("ToggleCollectBerry", {
     _G.AutoCollectBerry = p307
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoCollectBerry then
             local v308 = __LP
             local v309 = (v308.Character or v308.CharacterAdded:Wait()):GetPivot().Position
@@ -4340,7 +4288,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if AutoFarmMasDevilFruit and TypeMastery == "Near Mob" then
             pcall(function()
                 local v335, v336, v337 = pairs(__WS.Enemies:GetChildren())
@@ -4734,7 +4682,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if AutoFarmMasGun and TypeMastery == "Near Mob" then
             pcall(function()
                 local v378, v379, v380 = pairs(__WS.Enemies:GetChildren())
@@ -5454,7 +5402,7 @@ if Sea3 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while task.wait() do
             if CakeOn() then
                 pcall(function()
                     local enemies = __WS.Enemies
@@ -5582,7 +5530,7 @@ if Sea2 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while task.wait() do
             pcall(function()
                 if _G.Ectoplasm then
                     if __WS.Enemies:FindFirstChild("Ship Deckhand") or (__WS.Enemies:FindFirstChild("Ship Engineer") or (__WS.Enemies:FindFirstChild("Ship Steward") or __WS.Enemies:FindFirstChild("Ship Officer"))) then
@@ -5680,7 +5628,7 @@ Tabs.Main:AddToggle("ToggleAutoFarmBoss", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.AutoBoss then
             pcall(function()
                 if __WS.Enemies:FindFirstChild(_G.SelectBoss) then
@@ -5836,7 +5784,7 @@ if Sea3 then
             v489 = __WS.Map:FindFirstChild("KitsuneIsland")
             wait(1)
         end
-        while wait() do
+        while task.wait(0.1) do
             if _G.TweenToKitsune then
                 local v490 = v489:FindFirstChild("ShrineActive")
                 if v490 then
@@ -5857,7 +5805,7 @@ if Sea3 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.CollectAzure then
                 pcall(function()
                     if __WS:FindFirstChild("AttachedAzureEmber") then
@@ -6591,7 +6539,7 @@ if Sea3 then
     -- [SetValue skipped - Library không cần]
     _G.IsFlying = false
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.AutoTerrorshark then
                 pcall(function()
                     local v602 = __LP.Character
@@ -6646,7 +6594,7 @@ if Sea3 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.farmpiranya then
                 pcall(function()
                     if __WS.Enemies:FindFirstChild("Piranha") then
@@ -6681,7 +6629,7 @@ if Sea3 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.AutoShark then
                 pcall(function()
                     if __WS.Enemies:FindFirstChild("Shark") then
@@ -6720,7 +6668,7 @@ if Sea3 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.AutoFishCrew then
                 pcall(function()
                     if __WS.Enemies:FindFirstChild("Fish Crew Member") then
@@ -6777,7 +6725,7 @@ if Sea3 then
         end
     end
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.Ship then
                 pcall(function()
                     if CheckPirateBoat() then
@@ -6825,7 +6773,7 @@ if Sea3 then
         end
     end
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             pcall(function()
                 if _G.bjirFishBoat and CheckFishBoat() then
                     __VIM:SendKeyEvent(true, 32, false, game)
@@ -6846,7 +6794,7 @@ if Sea3 then
         end
     end)
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.bjirFishBoat then
                 pcall(function()
                     if CheckFishBoat() then
@@ -6922,7 +6870,7 @@ if Sea3 then
         ["Title"] = "Trạng Thái Elite",
     })
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             pcall(function()
                 if __RS:FindFirstChild("Diablo") or (__RS:FindFirstChild("Deandre") or (__RS:FindFirstChild("Urban") or (__WS.Enemies:FindFirstChild("Diablo") or (__WS.Enemies:FindFirstChild("Deandre") or __WS.Enemies:FindFirstChild("Urban"))))) then
                     vu652:SetDesc("Elite Boss: \226\156\133\239\184\143 | Killed:  " .. __RS.Remotes.CommF_:InvokeServer("EliteHunter", "Progress"))
@@ -7304,7 +7252,7 @@ Tabs.Sea:AddToggle("ToggleTpAdvanced", {
     _G.AutoTpAdvanced = p665
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoTpAdvanced then
             local v666 = __RS.NPCs:FindFirstChild("Advanced Fruit Dealer")
             if v666 and v666:IsA("Model") then
@@ -7328,7 +7276,7 @@ end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.TweenToGear and __WS.Map:FindFirstChild("MysticIsland") then
                 for v671, v672 in pairs(__WS.Map.MysticIsland:GetChildren()) do
                     if v672:IsA("MeshPart") and v672.Material == Enum.Material.Neon then
@@ -7347,7 +7295,7 @@ Tabs.Sea:AddToggle("Togglelockmoon", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.AutoLockMoon then
                 local v674 = game.Lighting:GetMoonDirection()
@@ -7358,7 +7306,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.AutoLockMoon then
                 __RS.Remotes.CommE:FireServer("ActivateAbility")
@@ -7487,7 +7435,7 @@ end)
 -- [SetValue removed]
 local vu686 = CFrame.new(- 7748.0185546875, 5606.80615234375, - 2305.898681640625)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.Auto_PoleV1 then
             pcall(function()
                 if __WS.Enemies:FindFirstChild("Thunder God") then
@@ -7527,7 +7475,7 @@ end)
 -- [SetValue skipped - Library không cần]
 local vu692 = CFrame.new(- 690.33081054688, 15.09425163269, 1582.2380371094)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.Auto_Saw then
             pcall(function()
                 if __WS.Enemies:FindFirstChild("The Saw") then
@@ -7567,7 +7515,7 @@ end)
 -- [SetValue skipped - Library không cần]
 local vu698 = CFrame.new(5186.14697265625, 24.86684226989746, 832.1885375976562)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.Auto_Warden then
             pcall(function()
                 if __WS.Enemies:FindFirstChild("Chief Warden") then
@@ -7607,7 +7555,7 @@ if Sea3 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             if AutoHallowSycthe then
                 pcall(function()
                     if __WS.Enemies:FindFirstChild("Soul Reaper") then
@@ -7642,7 +7590,7 @@ if Sea3 then
         end
     end)
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             if AutoHallowSycthe then
                 __RS.Remotes.CommF_:InvokeServer(unpack({
                     "Bones",
@@ -7661,7 +7609,7 @@ if Sea3 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.AutoYama and __RS.Remotes.CommF_:InvokeServer("EliteHunter", "Progress") >= 30 then
                 wait()
                 fireclickdetector(__WS.Map.Waterfall.SealedKatana.Handle.ClickDetector)
@@ -7725,7 +7673,7 @@ if Sea3 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.Auto_Holy_Torch then
                 pcall(function()
                     wait()
@@ -7767,7 +7715,7 @@ end)
 -- [SetValue skipped - Library không cần]
 local vu716 = CFrame.new(5311.07421875, 426.0243835449219, 165.12762451171875)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.Auto_Canvander then
             pcall(function()
                 if __WS.Enemies:FindFirstChild("Beautiful Pirate") then
@@ -7890,7 +7838,7 @@ Tabs.Item:AddToggle("ToggleAutoObservationV2", {
 end)
 -- [SetValue removed]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.Auto_ObservationV2 then
                 if __RS.Remotes.CommF_:InvokeServer("CitizenQuestProgress", "Citizen") ~= 3 then
@@ -8066,7 +8014,7 @@ Tabs.Item:AddToggle("ToggleAutoSkullGuitar", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait() do
         pcall(function()
             if _G.Auto_SkullGuitar and GetWeaponInventory("Skull Guitar") == false then
                 if (CFrame.new(- 9681.458984375, 6.139880657196045, 6341.3720703125).Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5000 then
@@ -8183,7 +8131,7 @@ end)
 -- [SetValue skipped - Library không cần]
 local vu762 = CFrame.new(- 731.2034301757812, 381.5658874511719, - 11198.4951171875)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.Auto_Buddy then
             pcall(function()
                 if __WS.Enemies:FindFirstChild("Cake Queen") then
@@ -8222,7 +8170,7 @@ Tabs.Item:AddToggle("ToggleAutoDualKatana", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.Auto_DualKatana then
                 if __LP.Character:FindFirstChild("Tushita") or (__LP.Backpack:FindFirstChild("Tushita") or (__LP.Character:FindFirstChild("Yama") or __LP.Backpack:FindFirstChild("Yama"))) then
@@ -8241,7 +8189,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait() do
         pcall(function()
             if _G.Auto_DualKatana then
                 if GetMaterial("Alucard Fragment") ~= 0 then
@@ -8355,7 +8303,7 @@ if (_mc771.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 th
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if Auto_Quest_Yama_1 then
             pcall(function()
                 if __WS.Enemies:FindFirstChild("Mythological Pirate") then
@@ -8376,7 +8324,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if Auto_Quest_Yama_2 then
                 for v778, v779 in pairs(__WS.Enemies:GetChildren()) do
@@ -8396,7 +8344,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait() do
         pcall(function()
             for v786, v787 in pairs(__WS.Enemies:GetChildren()) do
                 if Auto_Quest_Yama_2 and (v787:FindFirstChild("HazeESP") and (v787.HumanoidRootPart.Position - FarmPossEsp.Position).magnitude <= 300) then
@@ -8414,7 +8362,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if Auto_Quest_Yama_2 then
             pcall(function()
                 local v789, v790, v791 = pairs(__WS.Enemies:GetChildren())
@@ -8471,7 +8419,7 @@ if (_mc796.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 th
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if Auto_Quest_Yama_3 then
             pcall(function()
 				-- block 65
@@ -8547,7 +8495,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if Auto_Quest_Tushita_1 then
             Tween2(CFrame.new(- 9546.990234375, 21.139892578125, 4686.1142578125))
             wait(5)
@@ -8558,7 +8506,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if Auto_Quest_Tushita_2 then
             pcall(function()
 				-- block 30
@@ -8596,7 +8544,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if Auto_Quest_Tushita_3 then
             pcall(function()
 				-- block 66
@@ -8748,7 +8696,7 @@ end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait() do
             if _G.AutoFarmSwan then
                 if __WS.Enemies:FindFirstChild("Don Swan") then
                     for v825, vu826 in pairs(__WS.Enemies:GetChildren()) do
@@ -8786,7 +8734,7 @@ end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait() do
             if _G.Auto_Regoku then
                 if __LP.Backpack:FindFirstChild("Hidden Key") or __LP.Character:FindFirstChild("Hidden Key") then
                     EquipTool("Hidden Key")
@@ -8827,7 +8775,7 @@ if Sea2 or Sea3 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.Auto_Buy_Enchancement then
                 __RS.Remotes.CommF_:InvokeServer(unpack({
                     "ColorsDealer",
@@ -8846,7 +8794,7 @@ if Sea2 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             pcall(function()
                 if _G.BuyLengendSword or Triple_A then
                     __RS.Remotes.CommF_:InvokeServer(unpack({
@@ -8926,6 +8874,12 @@ if Sea2 then
     end)
 end
 Tabs.Setting:AddSection("Cài Đặt")
+Tabs.Setting:AddToggle("ToggleFastAttack", {
+    ["Title"] = "Đánh Nhanh (Bật/Tắt)",
+    ["Default"] = true
+}):OnChanged(function(v)
+    _G.FastAttackEnabled = v
+end)
 Tabs.Setting:AddSlider("SliderTweenSpeed", {
     ["Title"] = "Tốc Độ Bay",
     ["Description"] = "10 - 500 (studs/giây). Bị server kéo lại thì giảm xuống.",
@@ -8944,7 +8898,7 @@ Tabs.Setting:AddToggle("ToggleAutoT", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.AutoT then
                 __RS.Remotes.CommE:FireServer("ActivateAbility")
@@ -8960,7 +8914,7 @@ Tabs.Setting:AddToggle("ToggleAutoY", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.AutoY then
                 __VIM:SendKeyEvent(true, "Y", false, game)
@@ -8983,7 +8937,7 @@ Tabs.Setting:AddToggle("ToggleAutoKen", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.AutoKen then
                 __RS.Remotes.CommE:FireServer("Ken", true)
@@ -9004,7 +8958,7 @@ Tabs.Setting:AddToggle("ToggleSaveSpawn", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.SaveSpawn then
                 __RS.Remotes.CommF_:InvokeServer(unpack({
@@ -9151,7 +9105,7 @@ Tabs.Setting:AddToggle("ToggleRemoveNotify", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         local _n = __LP.PlayerGui:FindFirstChild("Notifications")
         local _want = not RemoveNotify
         if _n and _n.Enabled ~= _want then _n.Enabled = _want end -- [OPT] chỉ ghi khi đổi
@@ -9256,7 +9210,7 @@ local vu885 = Tabs.Status:AddParagraph({
 })
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if __WS.Map:FindFirstChild("FrozenDimension") then
                 vu885:SetDesc("\239\191\189\239\191\189")
             else
@@ -9294,7 +9248,7 @@ Tabs.Status:AddToggle("MyToggle", {
     _G.Join = p887
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.Join then
             game:GetService("TeleportService"):TeleportToPlaceInstance(game.placeId, _G.Job, __LP)
         end
@@ -9337,7 +9291,7 @@ Tabs.Stats:AddToggle("ToggleFruit", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.Auto_Stats_Devil_Fruit then
             __RS.Remotes.CommF_:InvokeServer(unpack({
                 "AddPoint",
@@ -9348,7 +9302,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.Auto_Stats_Gun then
             __RS.Remotes.CommF_:InvokeServer(unpack({
                 "AddPoint",
@@ -9359,7 +9313,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.Auto_Stats_Sword then
             __RS.Remotes.CommF_:InvokeServer(unpack({
                 "AddPoint",
@@ -9370,7 +9324,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.Auto_Stats_Defense then
             __RS.Remotes.CommF_:InvokeServer(unpack({
                 "AddPoint",
@@ -9381,7 +9335,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.Auto_Stats_Melee then
             __RS.Remotes.CommF_:InvokeServer(unpack({
                 "AddPoint",
@@ -9433,7 +9387,7 @@ Tabs.Player:AddToggle("ToggleTeleport", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.TeleportPly then
             pcall(function()
                 if __PL:FindFirstChild(_G.SelectPly) then
@@ -9475,7 +9429,7 @@ Tabs.Player:AddToggle("ToggleSpeedRun", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if InfAbility then
             InfAb()
         end
@@ -9544,7 +9498,7 @@ end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.EnabledPvP and __LP.PlayerGui.Main.PvpDisabled.Visible == true then
                 __RS.Remotes.CommF_:InvokeServer("EnablePvp")
             end
@@ -9783,7 +9737,7 @@ Tabs.Teleport:AddToggle("ToggleAutoSea2", {
 end)
 -- [SetValue removed]
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.Auto_Sea2 then
             pcall(function()
                 if __LP.Data.Level.Value >= 700 and World1 then
@@ -9846,7 +9800,7 @@ Tabs.Teleport:AddToggle("ToggleAutoSea3", {
 end)
 -- [SetValue removed]
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.AutoSea3 then
             pcall(function()
                 if __LP.Data.Level.Value >= 1500 and World2 then
@@ -10463,7 +10417,7 @@ end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.Random_Auto then
                 __RS.Remotes.CommF_:InvokeServer("Cousin", "Buy")
             end
@@ -10478,7 +10432,7 @@ Tabs.Fruit:AddToggle("ToggleCollectTP", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.CollectFruitTP then
             for v959, v960 in pairs(__WS:GetChildren()) do
                 if string.find(v960.Name, "Fruit") then
@@ -10496,7 +10450,7 @@ Tabs.Fruit:AddToggle("ToggleCollect", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.Tweenfruit then
             for v964, v965 in pairs(__WS:GetChildren()) do
                 if string.find(v965.Name, "Fruit") then
@@ -10739,7 +10693,7 @@ Tabs.Raid:AddToggle("ToggleBuy", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.Auto_Buy_Chips_Dungeon then
             pcall(function()
                 local v1002 = {
@@ -10760,7 +10714,7 @@ Tabs.Raid:AddToggle("ToggleStart", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.Auto_StartRaid and (__LP.PlayerGui.Main.Timer.Visible == false and (not __WS._WorldOrigin.Locations:FindFirstChild("Island 1") and (__LP.Backpack:FindFirstChild("Special Microchip") or __LP.Character:FindFirstChild("Special Microchip")))) then
                 if Sea2 then
@@ -10859,7 +10813,7 @@ Tabs.Raid:AddToggle("ToggleGetFruit", {
     _G.Autofruit = p1010
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.Autofruit then
                 __RS.Remotes.CommF_:InvokeServer(unpack({
@@ -10960,7 +10914,7 @@ end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if Auto_Law and not (__LP.Character:FindFirstChild("Microchip") or (__LP.Backpack:FindFirstChild("Microchip") or (__WS.Enemies:FindFirstChild("Order") or __RS:FindFirstChild("Order")))) then
                 wait()
                 __RS.Remotes.CommF_:InvokeServer("BlackbeardReward", "Microchip", "1")
@@ -10971,7 +10925,7 @@ spawn(function()
 end)
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait() do
             if Auto_Law then
                 if not __WS.Enemies:FindFirstChild("Order") and (not __RS:FindFirstChild("Order") and (__LP.Character:FindFirstChild("Microchip") or __LP.Backpack:FindFirstChild("Microchip"))) then
                     fireclickdetector(__WS.Map.CircleIsland.RaidSummon.Button.Main.ClickDetector)
@@ -11067,7 +11021,7 @@ end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait() do
             if _G.AutoQuestRace then
                 if __LP.Data.Race.Value ~= "Human" then
                     if __LP.Data.Race.Value ~= "Skypiea" then
@@ -11217,7 +11171,7 @@ Tabs.Race:AddToggle("ToggleKillTrial", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait() do
         pcall(function()
             if _G.AutoKillTrial then
                 for v1057, v1058 in pairs(__PL:GetChildren()) do
@@ -11248,7 +11202,7 @@ v1059:OnChanged(function(p1061)
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if vu1060 then
             pcall(function()
                 if __LP.Character:FindFirstChild("RaceTransformed") then
@@ -11703,7 +11657,7 @@ function Hop()
         end
     end
     vu916 = function()
-        while wait() do
+        while task.wait(0.1) do
             pcall(function()
                 TPReturner()
                 if vu1069 ~= "" then
@@ -11810,7 +11764,7 @@ Tabs.Misc:AddToggle("ToggleRejoin", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoRejoin then
             getgenv().rejoin = game:GetService("CoreGui").RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(p1090)
                 if p1090.Name == "ErrorPrompt" and p1090:FindFirstChild("MessageArea") and p1090.MessageArea:FindFirstChild("ErrorFrame") then
@@ -11858,7 +11812,7 @@ local vu1094 = {
     912348
 }
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AntiBand then
             for v1097, v1098 in pairs(__PL:GetPlayers()) do
                 if table.find(vu1094, v1098.UserId) then
@@ -11889,7 +11843,7 @@ spawn(function()
         v1101 = __WS.Map:FindFirstChild("FrozenDimension")
         wait()
     end
-    while wait() do
+    while task.wait(0.1) do
         if _G.TweenToFrozenDimension and v1101 then
             Tween2(v1101.CFrame)
         end
@@ -12036,7 +11990,7 @@ Tabs.Sea:AddToggle("ToggleBlazeEmber", {
     _G.AutoBlazeEmber = p1104
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoBlazeEmber then
             pcall(function()
                 __RS:WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/DragonDojoEmber"):FireServer()
@@ -12182,7 +12136,7 @@ local vu1134 = {
     CFrame.new(5258.96484375, 1004.1998901367188, 345.5052490234375)
 }
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoHydraTree then
             AutoHaki()
             local v1135, v1136, v1137 = ipairs(vu1134)
@@ -12251,7 +12205,7 @@ Tabs.Sea:AddToggle("ToggleCollectFireFlowers", {
     _G.AutoCollectFireFlowers = p1140
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         local v1141 = _G.AutoCollectFireFlowers and workspace:FindFirstChild("FireFlowers")
         if v1141 then
             for v1144, v1145 in pairs(v1141:GetChildren()) do
@@ -12304,7 +12258,7 @@ Tabs.Sea:AddToggle("ToggleTrialTeleport", {
     _G.AutoTrialTeleport = p1148
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoTrialTeleport then
             local v1149 = workspace.Map.PrehistoricIsland:FindFirstChild("TrialTeleport")
             if v1149 and v1149:IsA("Part") then
@@ -12322,7 +12276,7 @@ local vu1150 = Tabs.Sea:AddParagraph({
 })
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if __WS.Map:FindFirstChild("PrehistoricIsland") then
                 vu1150:SetDesc("Đảo Dung Nham: \226\156\133\239\184\143")
             else
@@ -12344,7 +12298,7 @@ spawn(function()
         v1152 = __WS.Map:FindFirstChild("PrehistoricIsland")
         wait()
     end
-    while wait() do
+    while task.wait(0.1) do
         local v1153 = _G.TweenToPrehistoric and __WS.Map:FindFirstChild("PrehistoricIsland")
         if v1153 then
             local v1154 = v1153:FindFirstChild("Core")
@@ -12466,7 +12420,7 @@ local function vu1196(p1185)
     end
 end
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoDefendVolcano then
             AutoHaki()
             pcall(vu1176)
@@ -12505,7 +12459,7 @@ Tabs.Sea:AddToggle("ToggleKillAura", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    while wait() do
+    while task.wait() do
         if KillAura then
             pcall(function()
                 for v1203, v1204 in pairs(__WS.Enemies:GetChildren()) do
@@ -12546,7 +12500,7 @@ Tabs.Sea:AddToggle("ToggleCollectEgg", {
     _G.AutoCollectEgg = p1210
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoCollectEgg then
             local v1211 = workspace.Map.PrehistoricIsland.Core.SpawnedDragonEggs:GetChildren()
             if # v1211 > 0 then
@@ -12657,7 +12611,7 @@ Tabs.Main:AddToggle("ToggleRaidPirate", {
     ["Default"] = false
 }):OnChanged(function(v) _G.AutoRaidPirate = v end)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.AutoRaidPirate then pcall(function()
             local raidPos = CFrame.new(-5496.17432, 313.768921, -2841.53027)
             local center = Vector3.new(-5539.31, 313.80, -2972.37)
@@ -12816,7 +12770,7 @@ if Sea3 then
         ["Default"] = false
     }):OnChanged(function(v) _G.Hallow = v end)
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.Hallow then pcall(function()
                 if not __WS.Enemies:FindFirstChild("Soul Reaper") then
                     if __LP.Backpack:FindFirstChild("Hallow Essence") or __LP.Character:FindFirstChild("Hallow Essence") then
@@ -12852,7 +12806,7 @@ Tabs.Setting:AddToggle("ToggleSPSword", {["Title"] = "Sword", ["Default"] = fals
 Tabs.Setting:AddToggle("ToggleSPGun", {["Title"] = "Gun", ["Default"] = false}):OnChanged(function(v) _spGun = v end)
 Tabs.Setting:AddToggle("ToggleSPFruit", {["Title"] = "Trái Ác Quỷ", ["Default"] = false}):OnChanged(function(v) _spFruit = v end)
 spawn(function()
-    while wait() do pcall(function()
+    while task.wait(0.1) do pcall(function()
         if __LP.Data.Points.Value >= 1 then
             local function ap(s) __RS.Remotes.CommF_:InvokeServer("AddPoint",s,1) end
             if _spMelee then ap("Melee") end; if _spDef then ap("Defense") end
@@ -12901,7 +12855,7 @@ spawn(function()
 end)
 Tabs.Setting:AddToggle("ToggleDodgeNoCD", {["Title"] = "Dodge No Cooldown", ["Default"] = false}):OnChanged(function(v) DodgeNoCD = v end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if DodgeNoCD then pcall(function()
             for _, v in next, getgc() do
                 if typeof(v)=="function" and getfenv(v).script == __LP.Character:WaitForChild("Dodge") then
@@ -15690,7 +15644,7 @@ function UpdateRealFruitChams()
     end
 end
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if MobESP then
                 for _, v282 in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
@@ -15729,7 +15683,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if not SeaESP then
                 for _, v289 in pairs(game:GetService("Workspace").SeaBeasts:GetChildren()) do
@@ -15768,7 +15722,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if not NpcESP then
                 for _, v296 in pairs(game:GetService("Workspace").NPCs:GetChildren()) do
@@ -15988,7 +15942,7 @@ function UpdateLSDESP()
     end
 end
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if InfAbility then
             InfAb()
         end
@@ -16255,7 +16209,7 @@ function KillMob(v373, v374)
     end)
 end
 spawn(function()
-    while wait() do
+    while task.wait() do
         pcall(function()
             if NoClip ~= true then
                 if plr.Character.Head:FindFirstChild("Nigga") then
@@ -16504,7 +16458,7 @@ function TP1(v418)
     topos(v418)
 end
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.SpinPos then
             Pos = CFrame.new(0, PosY, -20)
             wait(0.1)
@@ -16637,7 +16591,7 @@ function StopTween(v440)
 end
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             for _, v442 in pairs(game:GetService("Players").LocalPlayer.Backpack:GetChildren()) do
                 if v442:IsA("Tool") and v442:FindFirstChild("RemoteFunctionShoot") then
                     _G.SelectWeaponGun = v442.Name
@@ -17105,7 +17059,7 @@ v485:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.AutoRaidPirate then
             pcall(function()
                 local v544 = CFrame.new(-5496.17432, 313.768921, -2841.53027, 0.924894512, 7.37058015E-9, 0.380223751, 3.5881019E-8, 1, -1.06665446E-7, -0.380223751, 1.12297109E-7, 0.924894512)
@@ -17147,7 +17101,7 @@ if World2 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             spawn(function()
                 if _G.AutoFactory then
                     if game:GetService("Workspace").Enemies:FindFirstChild("Core") then
@@ -17181,7 +17135,7 @@ v485:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.AutoNear then
             pcall(function()
                 for _, v522 in pairs(game.Workspace.Enemies:GetChildren()) do
@@ -17293,7 +17247,7 @@ spawn(function()
     end)
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoPlayerHunter then
             if game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Visible == false then
                 wait(0.5)
@@ -17330,7 +17284,7 @@ v485:AddToggle({
 })
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.SafeMode then
                 game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 200, 0)
             end
@@ -17614,7 +17568,7 @@ v485:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait() do
         local v592 = CFrame.new(-9508.5673828125, 142.1398468017578, 5737.3603515625)
         do
             local l_v592_0 = v592
@@ -17687,7 +17641,7 @@ v485:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.Hallow then
             pcall(function()
                 if not game:GetService("Workspace").Enemies:FindFirstChild("Soul Reaper") then
@@ -17910,7 +17864,7 @@ v485:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.Fullykatakuri then
             pcall(function()
                 if not game.Players.LocalPlayer.Backpack:FindFirstChild("God's Chalice") and not game.Players.LocalPlayer.Character:FindFirstChild("God's Chalice") then
@@ -18024,7 +17978,7 @@ v485:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.CollectBerry then
             local l_LocalPlayer_8 = game:GetService("Players").LocalPlayer
             local l_Position_2 = (l_LocalPlayer_8.Character or l_LocalPlayer_8.CharacterAdded:Wait()):GetPivot().Position
@@ -18072,7 +18026,7 @@ v485:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.FarmChest then
             local l_LocalPlayer_9 = game:GetService("Players").LocalPlayer
             local l_Position_4 = (l_LocalPlayer_9.Character or l_LocalPlayer_9.CharacterAdded:Wait()):GetPivot().Position
@@ -18473,7 +18427,7 @@ if World1 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.AutoSecondSea then
                 pcall(function()
                     if game.Players.LocalPlayer.Data.Level.Value >= 700 and World1 then
@@ -18533,7 +18487,7 @@ if World1 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.Greybeard then
                 pcall(function()
                     if game:GetService("Workspace").Enemies:FindFirstChild("Greybeard") then
@@ -18685,7 +18639,7 @@ if World1 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.Autopole then
                 pcall(function()
                     if game:GetService("Workspace").Enemies:FindFirstChild("Thunder God") then
@@ -18724,7 +18678,7 @@ if World1 then
     do
         local l_v711_0 = v711
         spawn(function()
-            while wait() do
+            while task.wait() do
                 if _G.Autosaw then
                     pcall(function()
                         if not game:GetService("Workspace").Enemies:FindFirstChild("The Saw") then
@@ -18772,7 +18726,7 @@ if World1 then
             end
         })
         spawn(function()
-            while wait() do
+            while task.wait() do
                 if _G.ChiefWarden then
                     pcall(function()
                         if game:GetService("Workspace").Enemies:FindFirstChild("Chief Warden") then
@@ -18808,7 +18762,7 @@ if World1 then
             end
         })
         spawn(function()
-            while wait() do
+            while task.wait() do
                 if _G.Trident then
                     pcall(function()
                         if game:GetService("Workspace").Enemies:FindFirstChild("Fishman Lord") then
@@ -18989,7 +18943,7 @@ if World2 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.ThirdSea then
                 pcall(function()
                     if game:GetService("Players").LocalPlayer.Data.Level.Value >= 1500 and World2 then
@@ -19043,7 +18997,7 @@ if World2 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.AutoDarkBoss then
                 pcall(function()
                     if not game:GetService("Workspace").Enemies:FindFirstChild("Darkbeard") then
@@ -19081,7 +19035,7 @@ if World2 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.CursedCaptain then
                 pcall(function()
                     if not game:GetService("Workspace").Enemies:FindFirstChild("Cursed Captain") then
@@ -19120,7 +19074,7 @@ if World2 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.AutoBuyEnchancementColour then
                 local v744 = {[1] = "ColorsDealer", [2] = "2"}
                 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(v744))
@@ -19135,7 +19089,7 @@ if World2 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.AutoBuyLegendarySword then
                 pcall(function()
                     local v746 = {[1] = "LegendarySwordDealer", [2] = "1"}
@@ -19159,7 +19113,7 @@ if World2 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.Longsword then
                 pcall(function()
                     if game:GetService("Workspace").Enemies:FindFirstChild("Diamond") then
@@ -19195,7 +19149,7 @@ if World2 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.GravityBlade then
                 pcall(function()
                     if not game:GetService("Workspace").Enemies:FindFirstChild("Fajita") then
@@ -19233,7 +19187,7 @@ if World2 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.SwodsFlail then
                 pcall(function()
                     if game:GetService("Workspace").Enemies:FindFirstChild("Smoke Admiral") then
@@ -19270,7 +19224,7 @@ if World2 then
     })
     spawn(function()
         pcall(function()
-            while wait() do
+            while task.wait() do
                 if _G.AutoRengoku then
                     if game:GetService("Players").LocalPlayer.Backpack:FindFirstChild("Hidden Key") or game:GetService("Players").LocalPlayer.Character:FindFirstChild("Hidden Key") then
                         EquipWeapon("Hidden Key")
@@ -19313,7 +19267,7 @@ if World2 then
         end
     })
     spawn(function()
-        while wait() do
+        while task.wait() do
             if _G.SwodsDRTrident then
                 pcall(function()
                     if game:GetService("Workspace").Enemies:FindFirstChild("Tide Keeper") then
@@ -19357,7 +19311,7 @@ if World3 then
         local l_v768_0 = v768
         spawn(function()
             pcall(function()
-                while wait() do
+                while task.wait() do
                     if _G.RipIndraKill then
                         if not game:GetService("Workspace").Enemies:FindFirstChild("rip_indra True Form") and not game:GetService("Workspace").Enemies:FindFirstChild("rip_indra") then
                             if BypassTP then
@@ -19413,7 +19367,7 @@ if World3 then
             end
         })
         spawn(function()
-            while wait() do
+            while task.wait(0.1) do
                 if _G.AutoBuyEnchancementColour then
                     local v776 = {[1] = "ColorsDealer", [2] = "2"}
                     game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(v776))
@@ -19528,7 +19482,7 @@ if World3 then
             end
         })
         spawn(function()
-            while wait() do
+            while task.wait() do
                 if _G.AutoElitehunter and World3 then
                     pcall(function()
                         if game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Visible == true then
@@ -19651,7 +19605,7 @@ if World3 then
             end
         })
         spawn(function()
-            while wait() do
+            while task.wait(0.1) do
                 if _G.AutoYama and game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("EliteHunter", "Progress") >= 30 then
                     repeat
                         wait()
@@ -19670,7 +19624,7 @@ if World3 then
             end
         })
         spawn(function()
-            while wait() do
+            while task.wait(0.1) do
                 if _G.AutoHolyTorch then
                     pcall(function()
                         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(5657.88623046875, 1013.0790405273438, -335.4996337890625))
@@ -19716,7 +19670,7 @@ if World3 then
             end
         })
         spawn(function()
-            while wait() do
+            while task.wait() do
                 if _G.AutoGetTushita then
                     pcall(function()
                         if game:GetService("Workspace").Enemies:FindFirstChild("Longma") then
@@ -19753,7 +19707,7 @@ if World3 then
             end
         })
         spawn(function()
-            while wait() do
+            while task.wait() do
                 if _G.SwodTwinHooks then
                     pcall(function()
                         if not game:GetService("Workspace").Enemies:FindFirstChild("Captain Elephant") then
@@ -19791,7 +19745,7 @@ if World3 then
             end
         })
         spawn(function()
-            while wait() do
+            while task.wait() do
                 if _G.SwodCanvander then
                     pcall(function()
                         if game:GetService("Workspace").Enemies:FindFirstChild("Beautiful Pirate") then
@@ -19827,7 +19781,7 @@ if World3 then
             end
         })
         spawn(function()
-            while wait() do
+            while task.wait() do
                 if _G.SwodsBuddy then
                     pcall(function()
                         if not game:GetService("Workspace").Enemies:FindFirstChild("Cake Queen") then
@@ -19944,7 +19898,7 @@ v487:AddToggle({
 })
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait() do
             if _G.AutoQuestRace then
                 if game:GetService("Players").LocalPlayer.Data.Race.Value == "Human" then
                     for _, v1001 in pairs(game.Workspace.Enemies:GetDescendants()) do
@@ -20133,7 +20087,7 @@ v489:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.SailBoat and (not game:GetService("Workspace").Enemies:FindFirstChild("Shark") or not game:GetService("Workspace").Enemies:FindFirstChild("Terrorshark") or not game:GetService("Workspace").Enemies:FindFirstChild("Piranha") or not game:GetService("Workspace").Enemies:FindFirstChild("Fish Crew Member")) then
                 if game:GetService("Workspace").Boats:FindFirstChild("PirateBrigade") then
@@ -20177,7 +20131,7 @@ spawn(function()
 end)
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.SailBoat and (game:GetService("Workspace").Enemies:FindFirstChild("Shark") or game:GetService("Workspace").Enemies:FindFirstChild("Terrorshark") or game:GetService("Workspace").Enemies:FindFirstChild("Piranha") or game:GetService("Workspace").Enemies:FindFirstChild("Fish Crew Member")) then
                 game.Players.LocalPlayer.Character.Humanoid.Sit = false
             end
@@ -20194,7 +20148,7 @@ v489:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.Autoterrorshark and World3 then
             pcall(function()
                 if not game:GetService("Workspace").Enemies:FindFirstChild("Terrorshark") and not game:GetService("Workspace").Enemies:FindFirstChild("Piranha") and not game:GetService("Workspace").Enemies:FindFirstChild("Fish Crew Member") and not game:GetService("Workspace").Enemies:FindFirstChild("Shark") and not game:GetService("Workspace").SeaBeasts:FindFirstChild("SeaBeast1") and not game:GetService("Workspace").Enemies:FindFirstChild("PirateBrigade") and not game:GetService("Workspace").Enemies:FindFirstChild("PirateBasic") then
@@ -20234,7 +20188,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.dao then
             pcall(function()
                 if not game:GetService("Workspace").Boats:FindFirstChild("PirateBrigade") then
@@ -20245,7 +20199,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.dao and game.Players.LocalPlayer.Character.Humanoid.Sit == true then
             TPB(CFrame.new(-25351.8418, 10.7575607, 26430.791, -0.998379767, -0.00721008703, -0.0564435199, -0.00722159958, 0.999973953, -1.53919405E-10, 0.0564420484, 4.07612359E-4, -0.998405814))
         end
@@ -20271,7 +20225,7 @@ spawn(function()
     end
 end)
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.Nocliprock then
             if game.Players.LocalPlayer.Character.Humanoid.Sit == true then
                 for _, v961 in pairs(game.Workspace.Boats:GetDescendants()) do
@@ -20309,7 +20263,7 @@ v489:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.KillShark and World3 and _G.SailBoat then
             pcall(function()
                 if not game:GetService("Workspace").Enemies:FindFirstChild("Shark") and not game:GetService("Workspace").Enemies:FindFirstChild("Piranha") and not game:GetService("Workspace").Enemies:FindFirstChild("Fish Crew Member") and not game:GetService("Workspace").Enemies:FindFirstChild("Terrorshark") and not game:GetService("Workspace").SeaBeasts:FindFirstChild("SeaBeast1") and not game:GetService("Workspace").Enemies:FindFirstChild("PirateBrigade") and not game:GetService("Workspace").Enemies:FindFirstChild("PirateBasic") then
@@ -20353,7 +20307,7 @@ v489:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.KillPiranha and World3 then
             pcall(function()
                 if game:GetService("Workspace").Enemies:FindFirstChild("Piranha") or game:GetService("Workspace").Enemies:FindFirstChild("Shark") or game:GetService("Workspace").Enemies:FindFirstChild("Fish Crew Member") or game:GetService("Workspace").Enemies:FindFirstChild("Terrorshark") or game:GetService("Workspace").SeaBeasts:FindFirstChild("SeaBeast1") or game:GetService("Workspace").Enemies:FindFirstChild("PirateBrigade") or game:GetService("Workspace").Enemies:FindFirstChild("PirateBasic") then
@@ -20397,7 +20351,7 @@ v489:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.KillFishCrew and World3 then
             pcall(function()
                 if not game:GetService("Workspace").Enemies:FindFirstChild("Fish Crew Member") and not game:GetService("Workspace").Enemies:FindFirstChild("Piranha") and not game:GetService("Workspace").Enemies:FindFirstChild("Shark") and not game:GetService("Workspace").Enemies:FindFirstChild("Terrorshark") and not game:GetService("Workspace").SeaBeasts:FindFirstChild("SeaBeast1") and not game:GetService("Workspace").Enemies:FindFirstChild("PirateBrigade") and not game:GetService("Workspace").Enemies:FindFirstChild("PirateBasic") then
@@ -20709,7 +20663,7 @@ spawn(function()
         v883 = game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland")
         wait()
     end
-    while wait() do
+    while task.wait(0.1) do
         if _G.TweenVolcano then
             local l_PrehistoricIsland_0 = game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland")
             if l_PrehistoricIsland_0 then
@@ -20797,7 +20751,7 @@ local function v913(v905)
     end
 end
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.DefendVolcano then
             AutoHaki()
             pcall(v898)
@@ -20867,7 +20821,7 @@ v489:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.KillGolem and World3 then
             pcall(function()
                 if game:GetService("Workspace").Enemies:FindFirstChild("Lava Golem") then
@@ -20906,7 +20860,7 @@ v489:AddToggle({
 })
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait() do
             if _G.Kill_Aura then
                 local l_LocalPlayer_14 = game:GetService("Players").LocalPlayer
                 local l_Children_0 = game:GetService("Workspace").Enemies:GetChildren()
@@ -20946,7 +20900,7 @@ v489:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoCollectBone then
             for _, v936 in pairs(workspace:GetDescendants()) do
                 if v936:IsA("BasePart") and v936.Name == "DinoBone" then
@@ -20966,7 +20920,7 @@ v489:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.CollectEgg then
             pcall(function()
                 game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RE/CollectedDragonEgg"):FireServer()
@@ -21002,7 +20956,7 @@ spawn(function()
         v941 = game:GetService("Workspace").Map:FindFirstChild("KitsuneIsland")
         wait(1)
     end
-    while wait() do
+    while task.wait(0.1) do
         if _G.TweenToKitsune then
             local v942 = v941.FindFirstChild(v941, "ShrineActive")
             if v942 then
@@ -21017,7 +20971,7 @@ spawn(function()
 end)
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.TweenToKitsune then
                 topos(game.Workspace.Map.KitsuneIsland.ShrineActive.NeonShrinePart.CFrame * CFrame.new(0, 0, 10))
             end
@@ -21051,7 +21005,7 @@ v489:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.AutoAzuerEmber then
             pcall(function()
                 if game:GetService("Workspace"):FindFirstChild("AttachedAzureEmber") then
@@ -21125,7 +21079,7 @@ v489:AddToggle({
 })
 local l_VirtualInputManager_4 = game:GetService("VirtualInputManager")
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if getgenv()._G.AutoDooHee then
                 local l_MoonDirection_0 = game.Lighting:GetMoonDirection()
@@ -21150,7 +21104,7 @@ v489:AddToggle({
 })
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.TweenMGear and game:GetService("Workspace").Map:FindFirstChild("MysticIsland") then
                 for _, v995 in pairs(game:GetService("Workspace").Map.MysticIsland:GetChildren()) do
                     if v995:IsA("MeshPart") and v995.Material == Enum.Material.Neon then
@@ -21173,7 +21127,7 @@ v491:AddToggle({
 })
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if _G.RandomAuto then
                 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Cousin", "Buy")
             end
@@ -21550,7 +21504,7 @@ v491:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait() do
         if _G.AutoLawRaid then
             pcall(function()
                 if game:GetService("Workspace").Enemies:FindFirstChild("Order") then
@@ -21785,7 +21739,7 @@ local TyrantStatus = v499:AddParagraph({
 })
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             if game:GetService("Workspace").Enemies:FindFirstChild("Tyrant of the Skies") then
                 TyrantStatus:SetDesc("Status : ✅️")
             else
@@ -21799,7 +21753,7 @@ local CheckRip = v499:AddParagraph({
     Desc = "Status: "
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if game:GetService("ReplicatedStorage"):FindFirstChild("rip_indra True Form") 
             or game:GetService("Workspace").Enemies:FindFirstChild("rip_indra") then
@@ -21815,7 +21769,7 @@ local CheckDoughKing = v499:AddParagraph({
     Desc = "Status: "
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if game:GetService("ReplicatedStorage"):FindFirstChild("Dough King") 
             or game:GetService("Workspace").Enemies:FindFirstChild("Dough King") then
@@ -21831,7 +21785,7 @@ local EliteHunter = v499:AddParagraph({
     Desc = "Status: "
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             local rs = game:GetService("ReplicatedStorage")
             local ws = game:GetService("Workspace").Enemies
@@ -21850,7 +21804,7 @@ local Pullever = v499:AddParagraph({
     Desc = "Status: "
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CheckTempleDoor") then
                 Pullever:SetDesc("✅")
@@ -21865,7 +21819,7 @@ local FM = v499:AddParagraph({
     Desc = ""
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             local moonId = game:GetService("Lighting").Sky.MoonTextureId
             if moonId == "http://www.roblox.com/asset/?id=9709149431" then
@@ -21890,7 +21844,7 @@ local LegendarySword = v499:AddParagraph({
 })
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             local rs = game:GetService("ReplicatedStorage").Remotes.CommF_   
             if rs:InvokeServer("LegendarySwordDealer", "1") then
                 LegendarySword:SetDesc("Shisui")
@@ -21910,7 +21864,7 @@ local Bone = v499:AddParagraph({
 })
 spawn(function()
     pcall(function()
-        while wait() do
+        while task.wait(0.1) do
             local bones = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Bones", "Check")
             Bone:SetDesc("You Have : " .. tostring(bones) .. " Bones")
         end
@@ -23394,7 +23348,7 @@ v496:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if _G.CheckPoint then
             game:GetService("SetSpawnPoint")
         end
@@ -23419,7 +23373,7 @@ v496:AddToggle({
     end
 })
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         pcall(function()
             if _G.AutoRaceV3 then
                 game:GetService("ReplicatedStorage").Remotes.CommE:FireServer("ActivateAbility")
@@ -23505,7 +23459,7 @@ function NoCooldown()
     end
 end
 spawn(function()
-    while wait() do
+    while task.wait(0.1) do
         if DodgewithoutCool then
             pcall(function()
                 NoCooldown()
