@@ -3107,7 +3107,7 @@ end)
 spawn(function()
     while task.wait() do
         if _G.AutoLevel then
-            pcall(function()
+            local __ok, __err = pcall(function()
                 CheckLevel()
 
                 if not Ms or not NameMon or not NameQuest or not QuestLv or not CFrameQ or not CFrameMon then
@@ -3116,15 +3116,17 @@ spawn(function()
 
                 local questVisible = false
                 local QuestTitle = ""
+                pcall(function() questVisible = __LP.PlayerGui.Main.Quest.Visible end)
                 pcall(function()
-                    questVisible = __LP.PlayerGui.Main.Quest.Visible
                     if questVisible then
                         QuestTitle = __LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text
                     end
                 end)
+                -- [FIX] đọc title lỗi => coi như đúng quest; cắt 2 ký tự cuối để khớp số nhiều (Snowman/Snowmen)
+                local titleOK = QuestTitle == "" or string.find(QuestTitle:lower(), NameMon:lower():sub(1, -3), 1, true) ~= nil
 
                 -- Nếu đang có quest KHÁC thì bỏ quest
-                if questVisible and QuestTitle ~= "" and not string.find(QuestTitle, NameMon, 1, true) then
+                if questVisible and not titleOK then
                     bringmob = false
                     __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
                     return
@@ -3144,7 +3146,7 @@ spawn(function()
                 end
 
                 -- Đã có quest đúng → farm (dùng BKP để đứng cạnh quái, giống island travel)
-                if questVisible and string.find(QuestTitle, NameMon, 1, true) then
+                if questVisible and titleOK then
                     if __WS.Enemies:FindFirstChild(Ms) then
                         for _, v in pairs(__WS.Enemies:GetChildren()) do
                             if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == Ms then
@@ -3189,6 +3191,7 @@ spawn(function()
                     end
                 end
             end)
+            if not __ok then warn("[AutoLevel]", __err) end
         end
     end
 end)
@@ -3223,8 +3226,8 @@ end)
 -- ============================================================
 -- HỆ THỐNG HIỆU ỨNG ĐÁNH: Tia lửa đóm đóm CỰC NHIỀU phủ toàn thân quái
 -- ============================================================
-local _fxThread = nil      -- coroutine vòng lặp hiệu ứng
-local _fxEnabled = false   -- bật/tắt hiệu ứng
+_fxThread = nil      -- coroutine vòng lặp hiệu ứng
+_fxEnabled = false   -- bật/tắt hiệu ứng
 
 -- Danh sách sound IDs tiếng đánh (ngắn, mạnh, đa dạng)
 local _hitSounds = {
@@ -3320,7 +3323,7 @@ local function ApplyHitEffect(mob)
 end
 
 -- Vòng lặp hiệu ứng chính: spam đóm + tiếng mỗi 0.06s (~17 lần/giây)
-local function StartFXLoop()
+function StartFXLoop()
     if _fxThread then pcall(function() task.cancel(_fxThread) end) end
     _fxThread = task.spawn(function()
         while _fxEnabled do
@@ -3345,7 +3348,7 @@ local function StartFXLoop()
     end)
 end
 
-local function StopFXLoop()
+function StopFXLoop()
     _fxEnabled = false
     if _fxThread then
         pcall(function() task.cancel(_fxThread) end)
