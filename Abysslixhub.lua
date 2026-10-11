@@ -4419,7 +4419,9 @@ task.delay(40, function() _G.AbyLoaded = true end)   -- dự phòng nếu script
 function _G.AbyCfgKey(tab, id, title) return tostring(tab or "?") .. "|" .. tostring(id) .. "|" .. tostring(title) end
 function _G.AbyCfgOk(title)   -- những mục KHÔNG lưu (tránh tự động nhảy server khi vừa vào game)
     title = tostring(title or "")
-    if title:find("Spam Tham Gia Job ID", 1, true) or title == "Job ID" then return false end
+    if title:find("Spam Tham Gia Job ID", 1, true) or title == "Job ID"
+        or title == "Tự Đổi Tộc Đến Khi Ra Tộc Đã Chọn" or title == "Xác Nhận Đổi Tộc"
+        or title == "Anti AFK (Luôn Bật)" or title == "Tự Đổi Server Mỗi 30 Phút" then return false end
     return true
 end
 function _G.AbyRestore(fn)    -- chờ script nạp xong rồi mới áp lại giá trị đã lưu
@@ -4590,7 +4592,7 @@ local function wrapTab(rawTab, defaultTitle)
         function proxy:Destroy() end
         function proxy:Visible(...) end
         _G.AbyToggles = _G.AbyToggles or {}
-        table.insert(_G.AbyToggles, { proxy = proxy, holder = holder, def = _origDefault })
+        table.insert(_G.AbyToggles, { proxy = proxy, holder = holder, def = _origDefault, id = id })
         if _restored then
             _G.AbyRestore(function()
                 if holder.value ~= true then
@@ -5018,8 +5020,10 @@ Library:Notify({
     Content = "Đã load xong AbysslixHub! Cảm ơn bạn đã sử dụng script."
 })
 
--- Anti AFK
+-- Anti AFK (bật/tắt bằng _G.AntiAFK, mặc định BẬT; nút ở tab Server)
+_G.AntiAFK = true
 __LP.Idled:connect(function()
+    if _G.AntiAFK == false then return end
     game:GetService("VirtualUser"):Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
     wait()
     game:GetService("VirtualUser"):Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
@@ -10110,12 +10114,6 @@ if Sea3 then
     end)
     -- [OPT] đã xóa vòng lặp farm Cake bị nhân đôi y hệt (2 vòng cùng đánh 1 quái)
     _G.SpawnCakePrince = true -- [FIX] nút bật sẵn (Default=true) nhưng cờ chưa gán => không bao giờ triệu hồi
-    Tabs.Main:AddToggle("ToggleSpawnCake", {
-        ["Title"] = "Triệu Hồi Tư Lệnh Bánh",
-        ["Default"] = true
-    }):OnChanged(function(p463)
-        _G.SpawnCakePrince = p463
-    end)
     -- [SetValue skipped - Library không cần]
 end
 spawn(function()
@@ -10488,6 +10486,80 @@ do
                 end)
             end
         end
+    end)
+
+    Tabs.Boss:AddSection("Tự Kích Hoạt (Triệu Hồi) Boss")
+
+    -- Cake Prince: dùng lại cờ có sẵn _G.SpawnCakePrince (vòng lặp triệu hồi đã có trong script)
+    Tabs.Boss:AddToggle("ToggleSpawnCake", {
+        ["Title"] = "Triệu Hồi Cake Prince (Tư Lệnh Bánh)",
+        ["Description"] = "Tự gửi lệnh triệu hồi khi đủ điều kiện (Sea 3)",
+        ["Default"] = true
+    }):OnChanged(function(v) _G.SpawnCakePrince = v end)
+
+    -- Elite (Diablo / Deandre / Urban): nhận Elite Hunter để boss xuất hiện
+    _G.BossSummonElite = false
+    Tabs.Boss:AddToggle("BossSummonEliteToggle", {
+        ["Title"] = "Tự Kích Hoạt Elite (Diablo / Deandre / Urban)",
+        ["Description"] = "Tự nhận Elite Hunter để Elite boss xuất hiện. Dùng cùng 'Tự Đánh Boss Đã Chọn' để tự đánh.",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.BossSummonElite = v end)
+    spawn(function()
+        while task.wait(2) do
+            if _G.BossSummonElite then
+                pcall(function()
+                    if findBoss("Diablo") or findBoss("Deandre") or findBoss("Urban") then return end
+                    if __LP.PlayerGui.Main.Quest.Visible ~= true then
+                        __RS.Remotes.CommF_:InvokeServer("EliteHunter")
+                    end
+                end)
+            end
+        end
+    end)
+
+    -- Soul Reaper: có Hallow Essence thì bay tới Lâu Đài Ma và cầm Hallow Essence để gọi boss
+    _G.BossSummonSoul = false
+    Tabs.Boss:AddToggle("BossSummonSoulToggle", {
+        ["Title"] = "Tự Triệu Hồi Soul Reaper (Hallow Essence)",
+        ["Description"] = "Cần có sẵn Hallow Essence trong túi. Tự bay tới điểm triệu hồi rồi cầm vật phẩm.",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.BossSummonSoul = v end)
+    spawn(function()
+        local spot = CFrame.new(-8932.322265625, 146.83154296875, 6062.55078125)
+        while task.wait(1) do
+            if _G.BossSummonSoul then
+                pcall(function()
+                    if findBoss("Soul Reaper") then return end
+                    local ch = __LP.Character
+                    if not ch or not ch:FindFirstChild("HumanoidRootPart") then return end
+                    if __LP.Backpack:FindFirstChild("Hallow Essence") or ch:FindFirstChild("Hallow Essence") then
+                        repeat
+                            Tween2(spot)
+                            task.wait()
+                        until not _G.BossSummonSoul or (spot.Position - ch.HumanoidRootPart.Position).Magnitude <= 8
+                        if _G.BossSummonSoul then
+                            task.wait()
+                            EquipTool("Hallow Essence")
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+
+    -- Công tắc tổng: bật / tắt cùng lúc các tự kích hoạt (Rip Indra, Cake Prince, Elite, Soul Reaper)
+    local function setT(id, on)
+        for _, e in ipairs(_G.AbyToggles or {}) do
+            if e.id == id and e.holder.value ~= on then pcall(function() e.proxy:SetValue(on) end) end
+        end
+    end
+    local MASTER_IDS = { "ToggleAutoSummonIndra", "ToggleSpawnCake", "BossSummonEliteToggle", "BossSummonSoulToggle" }
+    Tabs.Boss:AddToggle("BossSummonAllToggle", {
+        ["Title"] = "Bật Tất Cả Tự Kích Hoạt Boss",
+        ["Description"] = "Bật / tắt cùng lúc: Rip Indra, Cake Prince, Elite, Soul Reaper",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        for _, id in ipairs(MASTER_IDS) do setT(id, v) end
     end)
 end
 
@@ -11604,8 +11676,8 @@ if Sea3 then
             end
         end
     end)
-    Tabs.Main:AddSection("Elite")
-    local vu652 = Tabs.Main:AddParagraph({
+    Tabs.Boss:AddSection("Elite")
+    local vu652 = Tabs.Boss:AddParagraph({
         ["Title"] = "Trạng Thái Elite",
     })
     spawn(function()
@@ -11619,7 +11691,7 @@ if Sea3 then
             end)
         end
     end)
-    Tabs.Main:AddToggle("ToggleElite", {
+    Tabs.Boss:AddToggle("ToggleElite", {
         ["Title"] = "Đánh Elite",
         ["Default"] = false
     }):OnChanged(function(p653)
@@ -11661,7 +11733,7 @@ if Sea3 then
             end
         end
     end)
-    Tabs.Main:AddToggle("ToggleHopElite", {
+    Tabs.Boss:AddToggle("ToggleHopElite", {
         ["Title"] = "Đổi Server Tìm Elite (Hop Server)",
         ["Default"] = false
     }):OnChanged(function(val)
@@ -13373,56 +13445,34 @@ spawn(function()
     end
 end)
 if Sea2 then
-    Tabs.Item:AddToggle("ToggleFactory", {
+    Tabs.Boss:AddSection("Nhà Máy (Factory Raid)")
+    Tabs.Boss:AddToggle("ToggleFactory", {
         ["Title"] = "Đánh Nhà Máy",
+        ["Description"] = "Khi sự kiện Nhà Máy xuất hiện: tự bay tới và đánh boss Core",
         ["Default"] = false
-    }):OnChanged(function(p817)
-        _G.Factory = p817
-    end)
-    -- [SetValue skipped - Library không cần]
+    }):OnChanged(function(v) _G.Factory = v end)
     spawn(function()
-        while true do
-            repeat
-                if not wait() then
-                    return
-                end
-            until _G.Factory
-            if __WS.Enemies:FindFirstChild("Core") then
-                break
+        local factoryPos = CFrame.new(448.46756, 199.356781, -441.389252)
+        while task.wait() do
+            if _G.Factory then
+                pcall(function()
+                    local core = __WS.Enemies:FindFirstChild("Core")
+                    if core and core:FindFirstChild("Humanoid") and core:FindFirstChild("HumanoidRootPart") and core.Humanoid.Health > 0 then
+                        repeat
+                            task.wait(_G.Fast_Delay)
+                            AttackNoCoolDown()
+                            AutoHaki()
+                            EquipTool(SelectWeapon)
+                            core.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                            core.HumanoidRootPart.CanCollide = false
+                            local cf = core.HumanoidRootPart.CFrame * Pos
+                            if (core.HumanoidRootPart.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(cf) end
+                        until not _G.Factory or not core.Parent or core.Humanoid.Health <= 0
+                    elseif __RS:FindFirstChild("Core") then
+                        Tween2(factoryPos)   -- Core sắp xuất hiện: chờ sẵn tại điểm này
+                    end
+                end)
             end
-            if __RS:FindFirstChild("Core") then
-                Tween2(CFrame.new(448.46756, 199.356781, - 441.389252))
-                wait()
-                if _G.Factory and (__LP.Character.HumanoidRootPart.Position - Vector3.new(448.46756, 199.356781, - 441.389252)).Magnitude > 10 then
-                    break
-                end
-            end
-        end
-        local v818, v819, v820 = pairs(__WS.Enemies:GetChildren())
-        if v821.Name == "Core" and v821.Humanoid.Health > 0 then
-        end
-        local v821
-        v820, v821 = v818(v819, v820)
-        if v820 ~= nil then
-        end
-        wait(_G.Fast_Delay)
-        AttackNoCoolDown()
-        repeat
-            Tween2(CFrame.new(448.46756, 199.356781, - 441.389252))
-            wait()
-        until not _G.Factory or (__LP.Character.HumanoidRootPart.Position - Vector3.new(448.46756, 199.356781, - 441.389252)).Magnitude <= 10
-        EquipTool(SelectWeapon)
-        AutoHaki()
-        local _mc76 = v821.HumanoidRootPart.CFrame * Pos
-        if (v821.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc76) end
-        v821.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-        v821.HumanoidRootPart.Transparency = 1
-        v821.Humanoid.JumpPower = 0
-        v821.Humanoid.WalkSpeed = 0
-        v821.HumanoidRootPart.CanCollide = false
-        FarmPos = v821.HumanoidRootPart.CFrame
-        MonFarm = v821.Name
-        if v821.Parent and (v821.Humanoid.Health > 0 and _G.Factory ~= false) then
         end
     end)
 end
@@ -14136,6 +14186,130 @@ Tabs.Setting:AddButton({
         task.spawn(function() pcall(function() __RS.Remotes.CommF_:InvokeServer("SetTeam", "Pirates") end) end)
     end
 })
+-- ==========================================
+-- [MỞ RỘNG TAB SHOP] Mua bằng Beli, mua bằng Fragments (F), đổi tộc (chọn từ danh sách rồi bấm mua)
+-- Giá lấy từ các nút mua có sẵn của script.
+-- ==========================================
+do
+    local function note(msg)
+        pcall(function() Library:Notify({["Title"] = "Shop", ["Content"] = msg}) end)
+    end
+    -- items: { {"Nhãn hiển thị", { {đối số lệnh 1...}, {đối số lệnh 2...} } hoặc function}, ... }
+    local function buildShop(items, dropId, dropTitle, btnTitle)
+        local labels, byLabel = {}, {}
+        for _, it in ipairs(items) do table.insert(labels, it[1]); byLabel[it[1]] = it[2] end
+        local sel = labels[1]
+        Tabs.Shop:AddDropdown(dropId, {
+            ["Title"] = dropTitle,
+            ["Values"] = labels,
+            ["Multi"] = false,
+            ["Default"] = 1
+        }):OnChanged(function(v) sel = v end)
+        Tabs.Shop:AddButton({["Title"] = btnTitle, ["Description"] = "Chọn món ở trên rồi bấm để mua", ["Callback"] = function()
+            local act = byLabel[sel]
+            if not act then return end
+            task.spawn(function()
+                if type(act) == "function" then
+                    pcall(act)
+                else
+                    for _, args in ipairs(act) do
+                        pcall(function() __RS.Remotes.CommF_:InvokeServer(table.unpack(args)) end)
+                    end
+                end
+                note("Đã gửi lệnh mua: " .. tostring(sel))
+            end)
+        end})
+    end
+
+    -- ===== Mua bằng tiền (Beli) =====
+    Tabs.Shop:AddSection("Mua Bằng Tiền (Beli)")
+    buildShop({
+        { "Geppo - $10,000",              { { "BuyHaki", "Geppo" } } },
+        { "Buso Haki - $25,000",          { { "BuyHaki", "Buso" } } },
+        { "Soru - $25,000",               { { "BuyHaki", "Soru" } } },
+        { "Observation Haki - $750,000",  { { "KenTalk", "Buy" } } },
+        { "Cutlass - $1,000",             { { "BuyItem", "Cutlass" } } },
+        { "Katana - $1,000",              { { "BuyItem", "Katana" } } },
+        { "Iron Mace - $25,000",          { { "BuyItem", "Iron Mace" } } },
+        { "Dual Katana - $12,000",        { { "BuyItem", "Duel Katana" } } },
+        { "Triple Katana - $60,000",      { { "BuyItem", "Triple Katana" } } },
+        { "Pipe - $100,000",              { { "BuyItem", "Pipe" } } },
+        { "Dual-Headed Blade - $400,000", { { "BuyItem", "Dual-Headed Blade" } } },
+        { "Bisento - $1,200,000",         { { "BuyItem", "Bisento" } } },
+        { "Soul Cane - $750,000",         { { "BuyItem", "Soul Cane" } } },
+        { "Slingshot - $5,000",           { { "BuyItem", "Slingshot" } } },
+        { "Musket - $8,000",              { { "BuyItem", "Musket" } } },
+        { "Flintlock - $10,500",          { { "BuyItem", "Flintlock" } } },
+        { "Refined Flintlock - $65,000",  { { "BuyItem", "Refined Flintlock" } } },
+        { "Dual Flintlock",               { { "BuyDualFlintlock" } } },
+        { "Cannon - $100,000",            { { "BuyItem", "Cannon" } } },
+        { "Black Cape - $50,000",         { { "BuyItem", "Black Cape" } } },
+        { "Swordsman Hat - $150,000",     { { "BuyItem", "Swordsman Hat" } } },
+        { "Tomoe Ring - $500,000",        { { "BuyItem", "Tomoe Ring" } } },
+    }, "ShopBeliDropdown", "Món Mua Bằng Beli", "Mua Món Đã Chọn (Beli)")
+
+    -- ===== Mua bằng Fragments (F) =====
+    Tabs.Shop:AddSection("Mua Bằng Fragments (F)")
+    buildShop({
+        { "Dragon Claw - 1,500F",         { { "BlackbeardReward", "DragonClaw", "1" }, { "BlackbeardReward", "DragonClaw", "2" } } },
+        { "Kabucha - 1,500F",             { { "BlackbeardReward", "Slingshot", "1" }, { "BlackbeardReward", "Slingshot", "2" } } },
+        { "Pole V2 - 5,000F",             { { "ThunderGodTalk" } } },
+        { "Reset Điểm Chỉ Số - 2,500F",  { { "BlackbeardReward", "Refund", "1" }, { "BlackbeardReward", "Refund", "2" } } },
+        { "Bizarre Rifle - 250 Ectoplasm", { { "Ectoplasm", "Buy", 1 } } },
+    }, "ShopFragDropdown", "Món Mua Bằng Fragments", "Mua Món Đã Chọn (F)")
+
+    -- ===== Đổi tộc =====
+    Tabs.Shop:AddSection("Đổi Tộc")
+    _G.RaceChangeOK = false
+    Tabs.Shop:AddToggle("RaceChangeConfirmToggle", {
+        ["Title"] = "Xác Nhận Đổi Tộc",
+        ["Description"] = "Phải bật mới đổi được. Đổi tộc tốn tài nguyên và MẤT tiến trình V2/V3/V4 của tộc cũ.",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.RaceChangeOK = v end)
+
+    local raceOpts = {
+        { "Ngẫu Nhiên (Reroll) - 3,000F", { { "BlackbeardReward", "Reroll", "1" }, { "BlackbeardReward", "Reroll", "2" } } },
+        { "Ghoul (dùng Ectoplasm)",       { { "Ectoplasm", "Change", 4 } } },
+        { "Cyborg",                        { { "CyborgTrainer", "Buy" } } },
+        { "Draco (chỉ Biển 3)", function()
+            __RS.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(5661.5322265625, 1013.0907592773438, -334.9649963378906))
+            local spot = CFrame.new(5814.42724609375, 1208.3267822265625, 884.5785522460938)
+            Tween2(spot)
+            local t0 = tick()
+            repeat
+                task.wait()
+                local ch = __LP.Character
+                local hrp = ch and ch:FindFirstChild("HumanoidRootPart")
+            until (hrp and (hrp.Position - spot.Position).Magnitude < 1) or tick() - t0 > 40
+            __RS.Modules.Net:FindFirstChild("RF/InteractDragonQuest"):InvokeServer({ ["NPC"] = "Dragon Wizard", ["Command"] = "DragonRace" })
+        end },
+    }
+    local raceLabels, raceByLabel = {}, {}
+    for _, it in ipairs(raceOpts) do table.insert(raceLabels, it[1]); raceByLabel[it[1]] = it[2] end
+    local raceSel = raceLabels[1]
+    Tabs.Shop:AddDropdown("RaceChangeDropdown", {
+        ["Title"] = "Cách Đổi Tộc",
+        ["Values"] = raceLabels,
+        ["Multi"] = false,
+        ["Default"] = 1
+    }):OnChanged(function(v) raceSel = v end)
+    Tabs.Shop:AddButton({["Title"] = "Đổi Tộc Theo Cách Đã Chọn", ["Callback"] = function()
+        if not _G.RaceChangeOK then note("Hãy bật 'Xác Nhận Đổi Tộc' trước"); return end
+        local act = raceByLabel[raceSel]
+        if not act then return end
+        task.spawn(function()
+            if type(act) == "function" then
+                pcall(act)
+            else
+                for _, args in ipairs(act) do
+                    pcall(function() __RS.Remotes.CommF_:InvokeServer(table.unpack(args)) end)
+                end
+            end
+            note("Đã gửi lệnh đổi tộc: " .. tostring(raceSel))
+        end)
+    end})
+end
+
 Tabs.Setting:AddSection("Haki Tự Động")
 _G.AutoBuso, _G.AutoKen = true, true
 Tabs.Setting:AddToggle("AutoBusoToggle", {
@@ -14353,6 +14527,37 @@ spawn(function()
         if _G.AutoHopTimer then
             if tick() - last >= math.max(_G.HopMinutes, 1) * 60 then last = tick(); srvHop(false) end
         else last = tick() end
+    end
+end)
+
+Tabs.Status:AddSection("Chống AFK & Tự Đổi Server")
+Tabs.Status:AddToggle("AntiAFKToggle", {
+    ["Title"] = "Anti AFK (Luôn Bật)",
+    ["Description"] = "Chống bị đá khỏi game khi đứng yên. Mỗi lần vào game đều tự bật.",
+    ["Default"] = true
+}):OnChanged(function(v) _G.AntiAFK = v end)
+_G.AutoHop30 = false
+Tabs.Status:AddToggle("AutoHop30Toggle", {
+    ["Title"] = "Tự Đổi Server Mỗi 30 Phút",
+    ["Description"] = "Luôn tắt khi vào game. Bật lên thì sau 30 phút tự đổi server (có thông báo trước 1 phút).",
+    ["Default"] = false
+}):OnChanged(function(v) _G.AutoHop30 = v end)
+spawn(function()
+    local startAt, warned = tick(), false
+    while task.wait(1) do
+        if _G.AutoHop30 then
+            local left = 1800 - (tick() - startAt)
+            if left <= 60 and not warned then
+                warned = true
+                pcall(function() Library:Notify({["Title"] = "Server", ["Content"] = "Sắp đổi server sau 1 phút"}) end)
+            end
+            if left <= 0 then
+                startAt, warned = tick(), false
+                pcall(function() srvHop(false) end)
+            end
+        else
+            startAt, warned = tick(), false
+        end
     end
 end)
 
@@ -17797,8 +18002,8 @@ if #_bossPainList > 0 then
 end
 
 -- ========== AUTO RAID PIRATE ==========
-Tabs.Main:AddSection("Farm Hải Tặc Phóng Pháo")
-Tabs.Main:AddToggle("ToggleRaidPirate", {
+Tabs.Boss:AddSection("Hải Tặc (Pirate Raid)")
+Tabs.Boss:AddToggle("ToggleRaidPirate", {
     ["Title"] = "Farm Pirate Raid",
     ["Default"] = false
 }):OnChanged(function(v) _G.AutoRaidPirate = v end)
@@ -21790,6 +21995,7 @@ spawn(function()
     end)
 end)
 game:GetService("Players").LocalPlayer.Idled:connect(function()
+    if _G.AntiAFK == false then return end
     game:GetService("VirtualUser"):Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
     wait(1)
     game:GetService("VirtualUser"):Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
