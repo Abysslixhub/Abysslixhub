@@ -4342,6 +4342,50 @@ end
 -- ==========================================
 -- WRAPPER ELEMENTS: TƯƠNG THÍCH 100% VỚI CODE CŨ & BANANA HUB
 -- ==========================================
+-- ==========================================
+-- [LƯU CẤU HÌNH] Nhớ trạng thái toggle / dropdown / slider / ô nhập giữa các lần vào game
+-- File: Abysslix_Config.json (trong thư mục workspace của executor)
+-- ==========================================
+_G.AbyCfg = _G.AbyCfg or (function()
+    local C = { file = "Abysslix_Config.json", data = {} }
+    pcall(function()
+        if isfile and isfile(C.file) then
+            local d = game:GetService("HttpService"):JSONDecode(readfile(C.file))
+            if type(d) == "table" then C.data = d end
+        end
+    end)
+    local pending = false
+    function C.get(key) return C.data[key] end
+    function C.set(key, val)
+        if not _G.AbyLoaded then return end          -- bỏ qua các lần "gán mặc định" lúc script đang nạp
+        if C.data[key] == val then return end
+        C.data[key] = val
+        if pending then return end
+        pending = true
+        task.delay(1, function()                     -- gom nhiều thay đổi, ghi file 1 lần
+            pending = false
+            pcall(function()
+                if writefile then writefile(C.file, game:GetService("HttpService"):JSONEncode(C.data)) end
+            end)
+        end)
+    end
+    return C
+end)()
+task.delay(40, function() _G.AbyLoaded = true end)   -- dự phòng nếu script nạp lỗi giữa chừng
+function _G.AbyCfgKey(tab, id, title) return tostring(tab or "?") .. "|" .. tostring(id) .. "|" .. tostring(title) end
+function _G.AbyCfgOk(title)   -- những mục KHÔNG lưu (tránh tự động nhảy server khi vừa vào game)
+    title = tostring(title or "")
+    if title:find("Spam Tham Gia Job ID", 1, true) or title == "Job ID" then return false end
+    return true
+end
+function _G.AbyRestore(fn)    -- chờ script nạp xong rồi mới áp lại giá trị đã lưu
+    task.spawn(function()
+        while not _G.AbyLoaded do task.wait(0.5) end
+        task.wait(1)
+        pcall(fn)
+    end)
+end
+
 local function wrapSection(rawSec, tabWrapped)
     local secProxy = {}
     function secProxy:AddToggle(...) return tabWrapped:AddToggle(...) end
@@ -4434,7 +4478,15 @@ local function wrapTab(rawTab, defaultTitle)
         local title = setting.Title or setting.Name or setting.Text or id
         local desc = setting.Description or setting.Desc or ""
         local default = (setting.Default == true)
+        local _origDefault = default
         local origCallback = setting.Callback
+        local _ck = _G.AbyCfgKey(defaultTitle, id, title)
+        local _persist = _G.AbyCfgOk(title)
+        local _restored = false
+        if _persist then
+            local sv = _G.AbyCfg.get(_ck)
+            if type(sv) == "boolean" then default = sv; _restored = (sv == true) end
+        end
         local holder = { extraCallback = nil, value = default }
 
         local rawToggle = sec:AddToggle(id, {
@@ -4445,6 +4497,7 @@ local function wrapTab(rawTab, defaultTitle)
             Callback = function(val)
                 holder.fired = true
                 holder.value = val
+                if _persist then _G.AbyCfg.set(_ck, val) end
                 if origCallback then pcall(origCallback, val) end
                 if holder.extraCallback then pcall(holder.extraCallback, val) end
                 -- [FIX] Tắt chức năng nào cũng dừng chuyến bay đang chạy (trước đây bay tiếp dù đã tắt)
@@ -4492,6 +4545,18 @@ local function wrapTab(rawTab, defaultTitle)
         end
         function proxy:Destroy() end
         function proxy:Visible(...) end
+        _G.AbyToggles = _G.AbyToggles or {}
+        table.insert(_G.AbyToggles, { proxy = proxy, holder = holder, def = _origDefault })
+        if _restored then
+            _G.AbyRestore(function()
+                if holder.value ~= true then
+                    proxy:SetValue(true)
+                else
+                    if origCallback then pcall(origCallback, true) end
+                    if holder.extraCallback then pcall(holder.extraCallback, true) end
+                end
+            end)
+        end
         setmetatable(proxy, { __index = rawToggle })
         return proxy
     end
@@ -4522,6 +4587,17 @@ local function wrapTab(rawTab, defaultTitle)
         end
         local multi = (setting.Multi == true or setting.Selected == true)
         local origCallback = setting.Callback
+        local _ck = _G.AbyCfgKey(defaultTitle, id, title)
+        local _persist = _G.AbyCfgOk(title) and not multi
+        local _restoredVal
+        if _persist then
+            local sv = _G.AbyCfg.get(_ck)
+            if type(sv) == "string" then
+                for _, vv in ipairs(values) do
+                    if vv == sv then default = sv; _restoredVal = sv; break end
+                end
+            end
+        end
         local holder = { extraCallback = nil, value = default or values[1] }
 
         local rawDropdown = sec:AddDropdown(id, {
@@ -4535,6 +4611,7 @@ local function wrapTab(rawTab, defaultTitle)
             Search = (setting.Search == true),
             Callback = function(val)
                 holder.value = val
+                if _persist and type(val) == "string" then _G.AbyCfg.set(_ck, val) end
                 if origCallback then pcall(origCallback, val) end
                 if holder.extraCallback then pcall(holder.extraCallback, val) end
             end
@@ -4585,6 +4662,13 @@ local function wrapTab(rawTab, defaultTitle)
         end
         function proxy:Destroy() end
         function proxy:Visible(...) end
+        if _restoredVal then
+            _G.AbyRestore(function()
+                proxy:SetValue(_restoredVal)
+                if origCallback then pcall(origCallback, _restoredVal) end
+                if holder.extraCallback then pcall(holder.extraCallback, _restoredVal) end
+            end)
+        end
         setmetatable(proxy, { __index = rawDropdown })
         return proxy
     end
@@ -4599,6 +4683,13 @@ local function wrapTab(rawTab, defaultTitle)
         local max = tonumber(setting.Max) or tonumber(setting.MaxValue) or 100
         local default = tonumber(setting.Default) or min
         local origCallback = setting.Callback
+        local _ck = _G.AbyCfgKey(defaultTitle, title, title)
+        local _persist = _G.AbyCfgOk(title)
+        local _restoredNum
+        if _persist then
+            local sv = tonumber(_G.AbyCfg.get(_ck))
+            if sv then default = math.clamp(sv, min, max); _restoredNum = default end
+        end
         local holder = { extraCallback = nil, value = default }
 
         local rawSlider = sec:AddSlider({
@@ -4611,6 +4702,7 @@ local function wrapTab(rawTab, defaultTitle)
             Precise = (setting.Precise == true),
             Callback = function(val)
                 holder.value = val
+                if _persist and type(val) == "number" then _G.AbyCfg.set(_ck, val) end
                 if origCallback then pcall(origCallback, val) end
                 if holder.extraCallback then pcall(holder.extraCallback, val) end
             end
@@ -4640,6 +4732,13 @@ local function wrapTab(rawTab, defaultTitle)
         end
         function proxy:Destroy() end
         function proxy:Visible(...) end
+        if _restoredNum then
+            _G.AbyRestore(function()
+                proxy:SetValue(_restoredNum)
+                if origCallback then pcall(origCallback, _restoredNum) end
+                if holder.extraCallback then pcall(holder.extraCallback, _restoredNum) end
+            end)
+        end
         setmetatable(proxy, { __index = rawSlider })
         return proxy
     end
@@ -4664,6 +4763,13 @@ local function wrapTab(rawTab, defaultTitle)
         local default = tostring(setting.Default or "")
         local placeholder = setting.Placeholder or setting.PlaceholderText or "Nhập..."
         local origCallback = setting.Callback
+        local _ck = _G.AbyCfgKey(defaultTitle, id, title)
+        local _persist = _G.AbyCfgOk(title)
+        local _restoredStr
+        if _persist then
+            local sv = _G.AbyCfg.get(_ck)
+            if type(sv) == "string" then default = sv; _restoredStr = sv end
+        end
         local holder = { extraCallback = nil, value = default }
 
         local rawBox = sec:AddInput(id, {
@@ -4674,6 +4780,7 @@ local function wrapTab(rawTab, defaultTitle)
             Placeholder = placeholder,
             Callback = function(val)
                 holder.value = val
+                if _persist and type(val) == "string" then _G.AbyCfg.set(_ck, val) end
                 if origCallback then pcall(origCallback, val) end
                 if holder.extraCallback then pcall(holder.extraCallback, val) end
             end
@@ -4698,6 +4805,13 @@ local function wrapTab(rawTab, defaultTitle)
         end
         function proxy:Destroy() end
         function proxy:Visible(...) end
+        if _restoredStr and _restoredStr ~= "" then
+            _G.AbyRestore(function()
+                proxy:SetValue(_restoredStr)
+                if origCallback then pcall(origCallback, _restoredStr) end
+                if holder.extraCallback then pcall(holder.extraCallback, _restoredStr) end
+            end)
+        end
         setmetatable(proxy, { __index = rawBox })
         return proxy
     end
@@ -13613,6 +13727,61 @@ Tabs.Setting:AddToggle("ToggleF", {
     SkillF = p867
 end)
 -- [SetValue skipped - Library không cần]
+Tabs.Setting:AddSection("Haki Tự Động")
+_G.AutoBuso, _G.AutoKen = true, true
+Tabs.Setting:AddToggle("AutoBusoToggle", {
+    ["Title"] = "Tự Bật Haki Tay (Buso)",
+    ["Description"] = "Tự bật Haki vũ trang khi chưa có, và bật lại sau khi hồi sinh",
+    ["Default"] = true,
+    ["Callback"] = function(v) _G.AutoBuso = v end
+})
+Tabs.Setting:AddToggle("AutoKenToggle", {
+    ["Title"] = "Tự Bật Haki Quan Sát",
+    ["Description"] = "Tự bật Haki quan sát 1 lần mỗi khi vào game / hồi sinh",
+    ["Default"] = true,
+    ["Callback"] = function(v) _G.AutoKen = v; _G._kenChar = nil end
+})
+spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            local ch = __LP.Character
+            local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+            if not hum or hum.Health <= 0 then return end
+            local CommF = __RS:FindFirstChild("Remotes") and __RS.Remotes:FindFirstChild("CommF_")
+            if not CommF then return end
+            if _G.AutoBuso and not ch:FindFirstChild("HasBuso") then
+                CommF:InvokeServer("Buso")
+            end
+            -- Quan sát là công tắc bật/tắt nên chỉ bật 1 lần cho mỗi lần hồi sinh (không gọi lặp kẻo bị tắt)
+            if _G.AutoKen and _G._kenChar ~= ch then
+                _G._kenChar = ch
+                task.wait(2)
+                CommF:InvokeServer("Ken", true)
+            end
+        end)
+    end
+end)
+Tabs.Setting:AddSection("Đặt Lại")
+Tabs.Setting:AddButton({
+    ["Title"] = "Reset Chức Năng Đang Bật",
+    ["Description"] = "Tắt toàn bộ chức năng đang bật, đưa về trạng thái mặc định (1 lần bấm)",
+    ["Callback"] = function()
+        task.spawn(function()
+            local n = 0
+            for i, e in ipairs(_G.AbyToggles or {}) do
+                if e.holder.value ~= e.def then
+                    pcall(function() e.proxy:SetValue(e.def) end)
+                    n = n + 1
+                    if n % 8 == 0 then task.wait() end
+                end
+            end
+            pcall(function() if StopMovement then StopMovement() end end)
+            pcall(function()
+                Library:Notify({["Title"] = "Reset", ["Content"] = "Đã đặt lại " .. n .. " chức năng về mặc định"})
+            end)
+        end)
+    end
+})
 Tabs.Status:AddSection("Server")
 Tabs.Status:AddParagraph({
     ["Title"] = "Thông Tin",
@@ -28219,4 +28388,5 @@ v496:AddToggle({
     end)
 end
 
+task.delay(6, function() _G.AbyLoaded = true end)   -- từ đây mới bắt đầu ghi cấu hình
 print('✅ Abysslix Hub - Tất cả tính năng đã được load!')
