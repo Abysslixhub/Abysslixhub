@@ -826,8 +826,9 @@ local BF = {
     AutoFarm = false,
     AutoQuest = false,
     AutoSea = false,
-    QuestName = "Bandit",
+    QuestName = nil,
     SelectMap = "Spawn",
+    AutoFarmRange = 220,
 }
 
 local function getCharacter()
@@ -855,15 +856,39 @@ end
 local function getRemoteByNames(names)
     local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
     if not remotesFolder then return nil end
-
     for _, name in ipairs(names) do
         local found = remotesFolder:FindFirstChild(name)
-        if found then
-            return found
-        end
+        if found then return found end
     end
-
     return nil
+end
+
+local function getQuestNameByLevel(level)
+    if level < 10 then return "Bandit" end
+    if level < 15 then return "Monkey" end
+    if level < 30 then return "Gorilla" end
+    if level < 40 then return "Pirate" end
+    if level < 60 then return "Brute" end
+    if level < 75 then return "Desert Bandit" end
+    if level < 90 then return "Desert Officer" end
+    if level < 100 then return "Snow Bandit" end
+    if level < 120 then return "Snowman" end
+    if level < 150 then return "Chief Petty Officer" end
+    if level < 175 then return "Sky Bandit" end
+    if level < 190 then return "Dark Master" end
+    if level < 210 then return "Prisoner" end
+    if level < 250 then return "Toga Warrior" end
+    if level < 300 then return "Gladiator" end
+    if level < 325 then return "Military Soldier" end
+    if level < 375 then return "Military Spy" end
+    if level < 400 then return "Fishman Warrior" end
+    if level < 450 then return "Fishman Commando" end
+    if level < 500 then return "God's Guard" end
+    if level < 550 then return "Shanda" end
+    if level < 650 then return "Royal Soldier" end
+    if level < 700 then return "Galley Pirate" end
+    if level < 800 then return "Pirate Millionaire" end
+    return "Bandit"
 end
 
 local function JoinTeam()
@@ -882,13 +907,13 @@ end
 
 local function StartQuest()
     if not BF.AutoQuest then return end
-    local quest = BF.QuestName or "Bandit"
+    local quest = BF.QuestName or getQuestNameByLevel(getLevel())
     local questRemote = getRemoteByNames({"CommF_", "CommF", "QuestRemote"})
     if not questRemote then return end
 
-    for _, name in ipairs({"StartQuest", "requestQuest", "Quest"}) do
-        local found = questRemote:FindFirstChild(name)
-        if found then
+    local names = {"StartQuest", "requestQuest", "Quest"}
+    for _, name in ipairs(names) do
+        if questRemote:FindFirstChild(name) then
             pcall(function()
                 questRemote:InvokeServer(name, quest)
             end)
@@ -902,17 +927,30 @@ local function StartQuest()
 end
 
 local function GetNearestEnemy(maxDistance)
-    maxDistance = maxDistance or 220
+    maxDistance = maxDistance or BF.AutoFarmRange or 220
     local char = getCharacter()
     local root = getRoot(char)
     if not root then return nil end
 
-    local enemiesFolder = Workspace:FindFirstChild("Enemies") or Workspace
+    local candidates = {}
+    local enemiesFolder = Workspace:FindFirstChild("Enemies")
+    if enemiesFolder then
+        for _, obj in ipairs(enemiesFolder:GetDescendants()) do
+            table.insert(candidates, obj)
+        end
+    end
+
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") then
+            table.insert(candidates, obj)
+        end
+    end
+
     local nearest = nil
     local nearestDist = math.huge
 
-    for _, obj in ipairs(enemiesFolder:GetDescendants()) do
-        if obj:IsA("Model") and obj ~= char then
+    for _, obj in ipairs(candidates) do
+        if obj ~= char and obj:IsA("Model") then
             local hum = obj:FindFirstChildOfClass("Humanoid")
             local hrp = obj:FindFirstChild("HumanoidRootPart")
             if hum and hrp and hum.Health > 0 then
@@ -920,22 +958,6 @@ local function GetNearestEnemy(maxDistance)
                 if dist < maxDistance and dist < nearestDist then
                     nearest = obj
                     nearestDist = dist
-                end
-            end
-        end
-    end
-
-    if not nearest then
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("Model") and obj ~= char then
-                local hum = obj:FindFirstChildOfClass("Humanoid")
-                local hrp = obj:FindFirstChild("HumanoidRootPart")
-                if hum and hrp and hum.Health > 0 then
-                    local dist = (hrp.Position - root.Position).Magnitude
-                    if dist < maxDistance and dist < nearestDist then
-                        nearest = obj
-                        nearestDist = dist
-                    end
                 end
             end
         end
@@ -956,7 +978,7 @@ local function AttackTarget(target)
         hum:MoveTo(enemyRoot.Position)
     end
 
-    task.wait(0.1)
+    task.wait(0.08)
     root.CFrame = enemyRoot.CFrame * CFrame.new(0, 0, 7)
 
     pcall(function()
@@ -969,7 +991,7 @@ end
 
 local function AutoFarmLoop()
     if not BF.AutoFarm then return end
-    local target = GetNearestEnemy(220)
+    local target = GetNearestEnemy(BF.AutoFarmRange)
     if target then
         AttackTarget(target)
     end
@@ -986,23 +1008,26 @@ local function AutoSeaLoop()
     if not BF.AutoSea then return end
     local level = getLevel()
     local targetMap = getSeaMapByLevel(level)
+    if BF.SelectMap ~= targetMap then
+        BF.SelectMap = targetMap
+    end
     TeleportToMap(targetMap)
 end
 
 local MapPositions = {
-    Spawn = Vector3.new(0, 5, 0),
-    Desert = Vector3.new(1000, 5, 4490),
-    Jungle = Vector3.new(-1580, 35, 150),
-    Snow = Vector3.new(1390, 90, -1300),
-    Sky = Vector3.new(-4700, 850, -1900),
-    Marine = Vector3.new(-5890, 10, 7100),
-    Pirate = Vector3.new(-1120, 15, 3840),
+    Spawn = CFrame.new(0, 5, 0),
+    Desert = CFrame.new(894.488647, 5.14000702, 4392.43359),
+    Jungle = CFrame.new(-1598.08911, 35.5501175, 153.377838),
+    Snow = CFrame.new(1389.74451, 88.1519318, -1298.90796),
+    Sky = CFrame.new(-4839.53027, 716.368591, -2619.44165),
+    Marine = CFrame.new(-5039.58643, 27.3500385, 4324.68018),
+    Pirate = CFrame.new(-1141.07483, 4.10001802, 3831.5498),
 }
 
 local function TeleportToMap(mapName)
     local chosen = mapName or BF.SelectMap or "Spawn"
-    local pos = MapPositions[chosen]
-    if not pos then
+    local targetCF = MapPositions[chosen]
+    if not targetCF then
         warn("[Abysslix] Map không tồn tại: " .. tostring(chosen))
         return
     end
@@ -1010,7 +1035,7 @@ local function TeleportToMap(mapName)
     local char = getCharacter()
     local root = getRoot(char)
     if root then
-        root.CFrame = CFrame.new(pos)
+        root.CFrame = targetCF
     end
 end
 
@@ -1019,7 +1044,7 @@ local function SetupBFUI()
         local mainSec = Tabs.Main:AddSection("Auto")
         mainSec:AddToggle("Auto Farm", {
             Title = "Auto Farm",
-            Description = "Tự động tấn công mob gần nhất",
+            Description = "Tự động đánh quái gần nhất",
             Default = false,
             Callback = function(state)
                 BF.AutoFarm = state
@@ -1028,7 +1053,7 @@ local function SetupBFUI()
 
         mainSec:AddToggle("Auto Quest", {
             Title = "Auto Quest",
-            Description = "Tự động nhận quest",
+            Description = "Tự động nhận quest phù hợp level",
             Default = false,
             Callback = function(state)
                 BF.AutoQuest = state
@@ -1037,7 +1062,7 @@ local function SetupBFUI()
 
         mainSec:AddToggle("Auto Sea", {
             Title = "Auto Sea",
-            Description = "Tự động vào Sea phù hợp",
+            Description = "Tự động di chuyển tới island phù hợp",
             Default = false,
             Callback = function(state)
                 BF.AutoSea = state
@@ -1048,8 +1073,8 @@ local function SetupBFUI()
     if Tabs and Tabs.Teleport then
         local tpSec = Tabs.Teleport:AddSection("Map")
         tpSec:AddDropdown("Map Select", {
-            Title = "Chọn Map",
-            Description = "Dịch chuyển theo map",
+            Title = "Chọn Island",
+            Description = "Di chuyển tới island theo map",
             Values = {"Spawn", "Desert", "Jungle", "Snow", "Sky", "Marine", "Pirate"},
             Default = "Spawn",
             Callback = function(value)
@@ -1059,7 +1084,7 @@ local function SetupBFUI()
 
         tpSec:AddButton("Teleport Now", {
             Title = "Teleport Now",
-            Description = "Dịch chuyển ngay tới map đã chọn",
+            Description = "Dịch chuyển ngay tới island đã chọn",
             Callback = function()
                 TeleportToMap(BF.SelectMap)
             end
