@@ -14567,9 +14567,16 @@ do
     vAimMode:OnChanged(function(m) _G.AimMode = tostring(m) end)
 
     Tabs.Player:AddToggle("ToggleAutoAim", {
-        ["Title"] = "Tự Động Ngắm",
+        ["Title"] = "Tự Động Ngắm (Không Xoay Màn Hình)",
+        ["Description"] = "Ngắm ngầm: skill và súng bay thẳng vào mục tiêu, camera đứng yên",
         ["Default"] = false
     }):OnChanged(function(v) _G.AutoAim = v end)
+    _G.AimMoveCamera = false
+    Tabs.Player:AddToggle("ToggleAimMoveCamera", {
+        ["Title"] = "Xoay Màn Hình Theo Mục Tiêu",
+        ["Description"] = "Tùy chọn: bật nếu muốn camera cũng xoay theo như bản cũ",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.AimMoveCamera = v end)
 
     local function GetAimTarget()
         local myChar = __LP.Character
@@ -14600,18 +14607,49 @@ do
         return nil
     end
 
-    RunService.RenderStepped:Connect(function()
-        if not _G.AutoAim then return end
-        local cam = __WS.CurrentCamera
-        if not cam then return end
+    local function GetAimPos()
         local t = GetAimTarget()
-        if t then
-            local aimPos = t.Position + t.AssemblyLinearVelocity * _G.AimPredict
-            cam.CFrame = CFrame.new(cam.CFrame.Position, aimPos)
-        end
+        return t and (t.Position + t.AssemblyLinearVelocity * _G.AimPredict) or nil
+    end
+
+    -- Xoay camera: chỉ chạy khi bạn bật thêm nút "Xoay Màn Hình Theo Mục Tiêu"
+    RunService.RenderStepped:Connect(function()
+        if not (_G.AutoAim and _G.AimMoveCamera) then return end
+        local cam = __WS.CurrentCamera
+        local aimPos = cam and GetAimPos()
+        if aimPos then cam.CFrame = CFrame.new(cam.CFrame.Position, aimPos) end
     end)
 
-    -- ---------- CHẠY NHANH / NHẢY CAO (10 - 500) ----------
+    -- Ngắm ngầm: khi GAME gửi vị trí chuột lên server cho skill / súng, đổi vị trí đó thành vị trí mục tiêu.
+    -- Chỉ đụng tới remote "RemoteEvent" nằm trong vũ khí đang cầm và "RemoteFunctionShoot" (súng),
+    -- và chỉ đổi các giá trị Vector3 là toạ độ xa (bỏ qua vector hướng của đòn đánh thường).
+    pcall(function()
+        if not (hookmetamethod and getnamecallmethod) then return end
+        local old
+        local function hook(self, ...)
+            if _G.AutoAim and not (checkcaller and checkcaller()) then
+                local m = getnamecallmethod()
+                if (m == "FireServer" or m == "InvokeServer") and typeof(self) == "Instance" then
+                    local name = self.Name
+                    if (name == "RemoteEvent" and self.Parent and self.Parent:IsA("Tool")) or name == "RemoteFunctionShoot" then
+                        local pos = GetAimPos()
+                        if pos then
+                            local args = table.pack(...)
+                            for i = 1, args.n do
+                                local a = args[i]
+                                if typeof(a) == "Vector3" and a.Magnitude > 20 then args[i] = pos end
+                            end
+                            return old(self, table.unpack(args, 1, args.n))
+                        end
+                    end
+                end
+            end
+            return old(self, ...)
+        end
+        old = hookmetamethod(game, "__namecall", newcclosure and newcclosure(hook) or hook)
+    end)
+
+    -- ---------- CHẠY NHANH / NHẢY CAO (50 - 500) ----------
     Tabs.Player:AddSection("Tốc Độ & Nhảy")
     _G.SpeedValue = 50
     _G.SwimSpeedValue = 50
@@ -14635,12 +14673,12 @@ do
     end)
     Tabs.Player:AddSlider("SliderCustomSpeed", {
         ["Title"] = "Tốc Độ Chạy",
-        ["Description"] = "10 - 500",
+        ["Description"] = "50 - 500",
         ["Default"] = 50,
-        ["Min"] = 10,
+        ["Min"] = 50,
         ["Max"] = 500,
         ["Callback"] = function(v)
-            _G.SpeedValue = math.clamp(math.floor((tonumber(v) or 50) + 0.5), 10, 500)
+            _G.SpeedValue = math.clamp(math.floor((tonumber(v) or 50) + 0.5), 50, 500)
         end
     })
 
@@ -14674,12 +14712,12 @@ do
     end)
     Tabs.Player:AddSlider("SliderCustomJump", {
         ["Title"] = "Độ Cao Nhảy",
-        ["Description"] = "10 - 500",
+        ["Description"] = "50 - 500",
         ["Default"] = 50,
-        ["Min"] = 10,
+        ["Min"] = 50,
         ["Max"] = 500,
         ["Callback"] = function(v)
-            _G.JumpValue = math.clamp(math.floor((tonumber(v) or 50) + 0.5), 10, 500)
+            _G.JumpValue = math.clamp(math.floor((tonumber(v) or 50) + 0.5), 50, 500)
         end
     })
 
@@ -27949,13 +27987,13 @@ local JUMP_SAVE_FILE = "jump_save.txt"
 
 -- carrega valores salvos
 if isfile(SPEED_SAVE_FILE) then
-	getgenv().WalkSpeedValue = tonumber(readfile(SPEED_SAVE_FILE)) or 58
+	getgenv().WalkSpeedValue = math.clamp(tonumber(readfile(SPEED_SAVE_FILE)) or 58, 50, 500)
 else
 	getgenv().WalkSpeedValue = 58
 end
 
 if isfile(JUMP_SAVE_FILE) then
-	getgenv().JumpValue = tonumber(readfile(JUMP_SAVE_FILE)) or 58
+	getgenv().JumpValue = math.clamp(tonumber(readfile(JUMP_SAVE_FILE)) or 58, 50, 500)
 else
 	getgenv().JumpValue = 58
 end
@@ -27967,10 +28005,12 @@ local function v1135(v1133)
 		v1134.JumpPower = getgenv().JumpValue
 
 		v1134:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+			if _G.CustomSpeed then return end -- đang bật chạy nhanh tùy chỉnh ở tab PVP thì không ép lại
 			v1134.WalkSpeed = getgenv().WalkSpeedValue
 		end)
 
 		v1134:GetPropertyChangedSignal("JumpPower"):Connect(function()
+			if _G.CustomJump then return end -- đang bật nhảy cao tùy chỉnh ở tab PVP thì không ép lại
 			v1134.JumpPower = getgenv().JumpValue
 		end)
 	end
@@ -27986,8 +28026,8 @@ end
 
 v496:AddSlider({
 	Title = "Speed",
-	Min = 26,
-	Max = 300,
+	Min = 50,
+	Max = 500,
 	Default = getgenv().WalkSpeedValue,
 	Callback = function(v1137)
 		getgenv().WalkSpeedValue = v1137
