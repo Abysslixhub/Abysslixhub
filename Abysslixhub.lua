@@ -5270,6 +5270,7 @@ if Sea3 then
     local function PrepBoneMob(mob)
         pcall(function()
             local hrp, hum = mob.HumanoidRootPart, mob.Humanoid
+            if hum.Health <= 0 then return end -- [FIX XÁC QUÁI] quái đã chết thì không phóng to/đóng băng nữa
             if hrp.Size ~= _MOB_BIG then hrp.Size = _MOB_BIG end
             if hrp.Transparency ~= 1 then hrp.Transparency = 1 end
             if hum.JumpPower ~= 0 then hum.JumpPower = 0 end
@@ -5523,6 +5524,7 @@ if Sea3 then
     function AbyCake.Prep(mob)
         pcall(function()
             local hrp, hum = mob.HumanoidRootPart, mob.Humanoid
+            if hum.Health <= 0 then return end
             if hrp.Size ~= _MOB_BIG then hrp.Size = _MOB_BIG end
             if hrp.Transparency ~= 1 then hrp.Transparency = 1 end
             if hum.WalkSpeed ~= 0 then hum.WalkSpeed = 0 end
@@ -5623,7 +5625,11 @@ if Sea3 then
             if not (CakeOn() and bringmob and POSCAKE) then return end -- [OPT] thoát sớm: không quét Enemies khi không cần
             pcall(function()
                 for v453, v454 in pairs(__WS.Enemies:GetChildren()) do
-                    if CAKE_MOBS[v454.Name] and (v454.HumanoidRootPart.Position - POSCAKE.Position).Magnitude <= 350 then
+                    -- [FIX XÁC QUÁI] chỉ gom quái còn sống: trước đây xác quái đang chết vẫn bị kéo về, phóng to 60 và xóa Animator
+                    -- mỗi frame => xác đứng khựng/khổng lồ, đè luôn bản khôi phục size lúc chết
+                    local _h454 = v454:FindFirstChild("Humanoid")
+                    if CAKE_MOBS[v454.Name] and _h454 and _h454.Health > 0 and v454:FindFirstChild("HumanoidRootPart")
+                        and (v454.HumanoidRootPart.Position - POSCAKE.Position).Magnitude <= 350 then
                         v454.HumanoidRootPart.CFrame = POSCAKE
                         v454.HumanoidRootPart.CanCollide = false
                         v454.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
