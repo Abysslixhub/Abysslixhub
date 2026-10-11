@@ -4823,7 +4823,6 @@ Tabs = {
     ["Player"]   = createTab("PVP", "user"),
     ["Teleport"] = createTab("Dịch Chuyển", "map-pin"),
     ["ESP"]      = createTab("ESP", "eye"),
-    ["Visual"]   = createTab("Giả Mạo", "eye"),
     ["Fruit"]    = createTab("Fruit", "cherry", "Kiểm Tra Stock Trái"),
     ["Race"]     = createTab("Nâng Cấp Chủng Tộc", "zap"),
     ["Misc"]     = createTab("Khác", "folder"),
@@ -7424,8 +7423,17 @@ end
 local _lastClick, _lastLog = 0, 0
 
 _G.FastAttackEnabled = true
+_G.AttackMinInterval = 0.1     -- giãn cách tối thiểu giữa 2 lượt đánh (giây): tránh server chặn vì spam
+_G.AttackMaxTargets  = 5       -- tối đa số quái trúng đòn mỗi lượt (gần nhất trước)
+_G.AttackStallSeconds = 4      -- quá số giây này đánh mà quái không mất máu => tạm nghỉ + cầm lại vũ khí
+_G.AbyAtk = _G.AbyAtk or { busyAt = nil, last = 0, pauseUntil = 0, mob = nil, hp = 0, since = 0, stalls = 0 }
 function AttackNoCoolDown()
-    if _G.FastAttackEnabled == false then return end   -- tắt Đánh Nhanh (nút ở tab Cài Đặt)
+    if _G.FastAttackEnabled == false then return end
+    local _S, _now = _G.AbyAtk, os.clock()
+    if _S.busyAt and _now - _S.busyAt < 3 then return end      -- lượt trước còn đang chờ server => không chồng lệnh
+    if _now < _S.pauseUntil then return end                     -- đang nghỉ sau khi phát hiện bị đứng đòn
+    if _now - _S.last < (_G.AttackMinInterval or 0.1) then return end
+    _S.last, _S.busyAt = _now, _now   -- tắt Đánh Nhanh (nút ở tab Cài Đặt)
     local ok, err = pcall(function()
         local char = vu198.Character
         local myRoot = char and char:FindFirstChild("HumanoidRootPart")
@@ -7453,6 +7461,7 @@ function AttackNoCoolDown()
 
         -- gom quái trong tầm _G.AttackRange studs (chỉnh bằng thanh "Tầm Đánh")
         local hits, firstPart, dirs, firstMob = {}, nil, {}, nil
+        local cand = {}
         for _, mob in ipairs(enemiesFolder:GetChildren()) do
             if not mob:GetAttribute("IsBoat") and _alive(mob) then
                 local mhrp = mob:FindFirstChild("HumanoidRootPart")
@@ -7460,15 +7469,38 @@ function AttackNoCoolDown()
                 if mhrp and part then
                     local diff = mhrp.Position - myPos
                     if diff.Magnitude <= (_G.AttackRange or 60) then
-                        table.insert(hits, { mob, part })
-                        table.insert(dirs, diff.Magnitude > 0 and diff.Unit or Vector3.new(0, 0, 1))
-                        firstPart = firstPart or part
-                        firstMob = firstMob or mob
+                        cand[#cand + 1] = { mob = mob, part = part, diff = diff, mag = diff.Magnitude }
                     end
                 end
             end
         end
+        table.sort(cand, function(a, b) return a.mag < b.mag end)
+        for i = 1, math.min(#cand, _G.AttackMaxTargets or 5) do
+            local c = cand[i]
+            table.insert(hits, { c.mob, c.part })
+            table.insert(dirs, c.mag > 0 and c.diff.Unit or Vector3.new(0, 0, 1))
+            firstPart = firstPart or c.part
+            firstMob = firstMob or c.mob
+        end
         if not firstPart then return end
+
+        -- Phát hiện bị "đứng đòn": đánh liên tục mà quái gần nhất không mất máu => nghỉ ngắn rồi cầm lại vũ khí
+        do
+            local fh = firstMob:FindFirstChildOfClass("Humanoid")
+            if fh then
+                local t = os.clock()
+                if _S.mob ~= firstMob then
+                    _S.mob, _S.hp, _S.since = firstMob, fh.Health, t
+                elseif fh.Health < _S.hp then
+                    _S.hp, _S.since = fh.Health, t
+                elseif t - _S.since > (_G.AttackStallSeconds or 4) then
+                    _S.since, _S.pauseUntil, _S.stalls = t, t + 2, _S.stalls + 1
+                    pcall(function() hum:UnequipTools() end)
+                    if _G.AttackDebug then print("[Attack] đứng đòn lần " .. _S.stalls .. " -> nghỉ 2s, cầm lại vũ khí") end
+                    return
+                end
+            end
+        end
 
         local fired = {}
         local only = _G.AttackOnly   -- [FIX] mặc định nil = dùng TẤT CẢ cách đánh (trước đây "or Click" ép chỉ click thật nên không trúng quái). Muốn ép 1 cách: _G.AttackOnly = "Click" / "RegisterMau" / "LeftClickRemote" / "RegisterMacDinh"
@@ -7490,9 +7522,7 @@ function AttackNoCoolDown()
         if (not only or only == "XacThuc") and (wt == "Melee" or wt == "Sword") then
             local targets = {}
             for _, h in ipairs(hits) do
-                for _, bp in ipairs(h[1]:GetChildren()) do
-                    if bp:IsA("BasePart") then targets[#targets + 1] = { h[1], bp } end
-                end
+                targets[#targets + 1] = { h[1], h[1]:FindFirstChild("HumanoidRootPart") or h[2] }
             end
             local head = hits[1] and hits[1][1]:FindFirstChild("Head")
             if head and #targets > 0 then
@@ -7529,6 +7559,7 @@ function AttackNoCoolDown()
                 tostring(_tmpl["RE/RegisterHit"] ~= nil)))
         end
     end)
+    _S.busyAt = nil
     if not ok then warn("[AttackNoCoolDown] " .. tostring(err)) end
 end
 -- ===== TỰ KIỂM TRA: cách đánh nào thật sự làm quái mất máu =====
@@ -13747,6 +13778,107 @@ spawn(function()
     end
 end)
 
+-- ==========================================
+-- [MỞ RỘNG TAB SERVER] Danh sách server, lọc theo số người, link join, danh sách người chơi, thông báo ra/vào
+-- ==========================================
+local function srvNotify(msg)
+    pcall(function() Library:Notify({["Title"] = "Server", ["Content"] = msg}) end)
+end
+local function srvFetch(order)
+    local out = {}
+    pcall(function()
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=" .. order .. "&limit=100"
+        local data = HttpService:JSONDecode(game:HttpGet(url))
+        for _, v in ipairs(data.data or {}) do
+            if v.id ~= game.JobId and v.playing < v.maxPlayers then
+                table.insert(out, v)
+            end
+        end
+    end)
+    return out
+end
+local function srvJoin(id)
+    pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, id, __LP) end)
+end
+
+Tabs.Status:AddSection("Danh Sách Server")
+local srvMap, srvSelected = {}, nil
+local srvDrop = Tabs.Status:AddDropdown("ServerListDropdown", {
+    ["Title"] = "Chọn Server",
+    ["Description"] = "Bấm 'Làm Mới Danh Sách' để tải server",
+    ["Values"] = {"(Chưa tải danh sách)"},
+    ["Default"] = 1,
+    ["Callback"] = function(val) srvSelected = srvMap[val] end
+})
+Tabs.Status:AddButton({["Title"] = "Làm Mới Danh Sách Server", ["Description"] = "Tải các server còn chỗ trống (ít người trước)", ["Callback"] = function()
+    local list = srvFetch("Asc")
+    srvMap, srvSelected = {}, nil
+    local names = {}
+    for i, v in ipairs(list) do
+        local label = string.format("#%d | %d/%d người | %s", i, v.playing, v.maxPlayers, string.sub(v.id, 1, 6))
+        srvMap[label] = v.id
+        table.insert(names, label)
+    end
+    if #names == 0 then names = {"(Không tìm thấy server)"} end
+    pcall(function() srvDrop:Set(names) end)
+    srvNotify("Đã tải " .. #list .. " server")
+end})
+Tabs.Status:AddButton({["Title"] = "Vào Server Đã Chọn", ["Callback"] = function()
+    if srvSelected then srvJoin(srvSelected) else srvNotify("Chưa chọn server nào") end
+end})
+Tabs.Status:AddButton({["Title"] = "Vào Server Ngẫu Nhiên", ["Description"] = "Chọn ngẫu nhiên 1 server còn chỗ", ["Callback"] = function()
+    local list = srvFetch("Desc")
+    if #list > 0 then srvJoin(list[math.random(1, #list)].id) else srvNotify("Không tìm thấy server phù hợp") end
+end})
+
+Tabs.Status:AddSection("Lọc Server Theo Số Người")
+_G.SrvMin, _G.SrvMax = 1, 8
+Tabs.Status:AddInput("SrvMinPlayers", {["Title"] = "Số Người Tối Thiểu", ["Default"] = "1", ["Placeholder"] = "1", ["Callback"] = function(v) _G.SrvMin = tonumber(v) or 1 end})
+Tabs.Status:AddInput("SrvMaxPlayers", {["Title"] = "Số Người Tối Đa", ["Default"] = "8", ["Placeholder"] = "8", ["Callback"] = function(v) _G.SrvMax = tonumber(v) or 8 end})
+Tabs.Status:AddButton({["Title"] = "Nhảy Server Theo Số Người", ["Description"] = "Vào server có số người trong khoảng đã nhập", ["Callback"] = function()
+    local matches = {}
+    for _, v in ipairs(srvFetch("Asc")) do
+        if v.playing >= _G.SrvMin and v.playing <= _G.SrvMax then table.insert(matches, v) end
+    end
+    if #matches > 0 then srvJoin(matches[math.random(1, #matches)].id) else srvNotify("Không có server nào trong khoảng này") end
+end})
+
+Tabs.Status:AddSection("Tiện Ích Server")
+Tabs.Status:AddButton({["Title"] = "Copy Link Tham Gia Server", ["Description"] = "Link roblox:// để mở thẳng vào server này", ["Callback"] = function()
+    pcall(function()
+        setclipboard("roblox://experiences/start?placeId=" .. game.PlaceId .. "&gameInstanceId=" .. game.JobId)
+        srvNotify("Đã copy link tham gia")
+    end)
+end})
+Tabs.Status:AddButton({["Title"] = "Copy Danh Sách Người Chơi", ["Callback"] = function()
+    pcall(function()
+        local names = {}
+        for _, p in ipairs(__PL:GetPlayers()) do table.insert(names, p.DisplayName .. " (@" .. p.Name .. ")") end
+        setclipboard(table.concat(names, "\n"))
+        srvNotify("Đã copy " .. #names .. " người chơi")
+    end)
+end})
+local plrInfo = Tabs.Status:AddParagraph({["Title"] = "Người Chơi Trong Server", ["Description"] = "Đang tải..."})
+spawn(function()
+    while task.wait(3) do
+        pcall(function()
+            local lines = {}
+            for i, p in ipairs(__PL:GetPlayers()) do
+                table.insert(lines, i .. ". " .. p.DisplayName .. " (@" .. p.Name .. ")")
+            end
+            plrInfo:SetDesc(table.concat(lines, "\n"))
+        end)
+    end
+end)
+_G.PlayerNotify = false
+Tabs.Status:AddToggle("PlayerNotifyToggle", {["Title"] = "Thông Báo Người Chơi Vào/Ra", ["Description"] = "Hiện thông báo khi có người vào hoặc rời server", ["Default"] = false, ["Callback"] = function() end}):OnChanged(function(v) _G.PlayerNotify = v end)
+__PL.PlayerAdded:Connect(function(p)
+    if _G.PlayerNotify then srvNotify(p.DisplayName .. " (@" .. p.Name .. ") đã vào server") end
+end)
+__PL.PlayerRemoving:Connect(function(p)
+    if _G.PlayerNotify then srvNotify(p.DisplayName .. " (@" .. p.Name .. ") đã rời server") end
+end)
+
 end
 Tabs.Stats:AddSection("Chỉ Số")
 Tabs.Stats:AddToggle("ToggleMelee", {
@@ -14628,89 +14760,6 @@ Tabs.Teleport:AddButton({
         else
             Tween2(CFrame.new(979.79895019531, 16.516613006592, 1429.0466308594))
         end
-    end
-})
-Tabs.Visual:AddSection("Giả Mạo")
-Tabs.Visual:AddButton({
-    ["Title"] = "Giả",
-    ["Callback"] = function()
-        local v930 = __LP
-        local v931 = require(__RS.Notification)
-        local v932 = v930:WaitForChild("Data")
-        local v933 = require(__RS:WaitForChild("EXPFunction"))
-        local v934 = require(__RS.Effect.Container.LevelUp)
-        local v935 = require(__RS.Util.Sound)
-        local v936 = __RS.Util.Sound.Storage.Other:FindFirstChild("LevelUp_Proxy") or __RS.Util.Sound.Storage.Other:FindFirstChild("LevelUp")
-        function v129(p937)
-            repeat
-                local v938
-                p937, v938 = string.gsub(p937, "^(-?%d+)(%d%d%d)", "%1,%2")
-            until v938 == 0
-            return p937
-        end
-        v931.new("<Color=Yellow>QUEST COMPLETED!<Color=/>"):Display()
-        v931.new("Earned<Color=Yellow>9,999,999,999,999 Exp.<Color=/>(+None)"):Display()
-        v931.new("Earned<Color=Green>$9,999,999,999,999<Color=/>"):Display()
-        v930.Data.Exp.Value = 999999999999
-        v930.Data.Beli.Value = v930.Data.Beli.Value + 999999999999
-        delay = 0
-        count = 0
-        while v930.Data.Exp.Value - v933(v932.Level.Value) > 0 do
-            v930.Data.Exp.Value = v930.Data.Exp.Value - v933(v932.Level.Value)
-            v930.Data.Level.Value = v930.Data.Level.Value + 1
-            v930.Data.Points.Value = v930.Data.Points.Value + 3
-            v934({
-                v930
-            })
-            v935:Play(v936.Value)
-            v931.new("<Color=Green>LEVEL UP!<Color=/>(" .. v930.Data.Level.Value .. ")"):Display()
-            count = count + 1
-            if count >= 5 then
-                delay = tick()
-                count = 0
-                wait()
-            end
-        end
-    end
-})
-Tabs.Visual:AddInput("Input_Level", {
-    ["Title"] = "Cấp",
-    ["Default"] = "",
-    ["Placeholder"] = "Nhắp",
-    ["Numeric"] = false,
-    ["Finished"] = false,
-    ["Callback"] = function(p939)
-        __LP.Data.Level.Value = tonumber(p939)
-    end
-})
-Tabs.Visual:AddInput("Input_EXP", {
-    ["Title"] = "Kinh Nghiậm",
-    ["Default"] = "",
-    ["Placeholder"] = "Nhắp",
-    ["Numeric"] = false,
-    ["Finished"] = false,
-    ["Callback"] = function(p940)
-        __LP.Data.Exp.Value = tonumber(p940)
-    end
-})
-Tabs.Visual:AddInput("Input_Beli", {
-    ["Title"] = "Tiền",
-    ["Default"] = "",
-    ["Placeholder"] = "Nhắp",
-    ["Numeric"] = false,
-    ["Finished"] = false,
-    ["Callback"] = function(p941)
-        __LP.Data.Beli.Value = tonumber(p941)
-    end
-})
-Tabs.Visual:AddInput("Input_Fragments", {
-    ["Title"] = "\239\191\189iểm F",
-    ["Default"] = "",
-    ["Placeholder"] = "Nhắp",
-    ["Numeric"] = false,
-    ["Finished"] = false,
-    ["Callback"] = function(p942)
-        __LP.Data.Fragments.Value = tonumber(p942)
     end
 })
 -- ==========================================
@@ -27994,7 +28043,7 @@ v496:AddToggle({
     -- Mỗi dòng rule: { "Tab đích", "Tên section", { "từ khoá trong tên nút", ... } }
     -- (rule khớp đầu tiên thắng; không khớp rule nào thì dùng `default`)
     -- Tab đích: Main=Cày Cấp, Sea=Sự Kiện, Status=Webhook, Stats=Chỉ Số, Player=PVP,
-    --           Teleport=Dịch Chuyển, Visual=Giả Mạo, Fruit, Race, Misc=Khác, Setting, Shop
+    --           Teleport=Dịch Chuyển, Fruit, Race, Misc=Khác, Setting, Shop
     --           (Item = Shop, Raid = Fruit)
     -- =====================================================================
     local _mkTab
@@ -28042,9 +28091,9 @@ v496:AddToggle({
             ["Teleport"] = { default = { "Teleport", "Dịch Chuyển" } },
             ["Status"]   = { default = { "Status", "Thông Tin" } },
             ["Visual"] = {
-                default = { "Visual", "Hiệu Ứng" },
+                default = { "Misc", "Hiệu Ứng" },
                 { "Player", "Aimbot", { "Aimbot", "Ignore Mobs" } },
-                { "Visual", "ESP", { "ESP", "Esp" } },
+                { "ESP", "ESP", { "ESP", "Esp" } },
             },
             ["Shop"] = {
                 default = { "Shop", "Khác" },
