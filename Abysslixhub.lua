@@ -675,30 +675,8 @@ local function wrapTab(rawTab, defaultTitle)
     return wrapped
 end
 
--- ==========================================
--- TẠO CÁC TABS (BANANA HUB STYLE VỚI ICON RBXASSETID CHUẨN)
--- ==========================================
-local LucideToAsset = {
-    ["info"]          = "rbxassetid://10723346959",
-    ["swords"]        = "rbxassetid://10734954701",
-    ["waves"]         = "rbxassetid://10709819149",
-    ["package"]       = "rbxassetid://10709782497",
-    ["settings"]      = "rbxassetid://10734950309",
-    ["radio"]         = "rbxassetid://10709789310",
-    ["bar-chart-2"]   = "rbxassetid://10709752317",
-    ["user"]          = "rbxassetid://10747373176",
-    ["map-pin"]       = "rbxassetid://10734914109",
-    ["eye"]           = "rbxassetid://10723346959",
-    ["cherry"]        = "rbxassetid://10709775086",
-    ["flame"]         = "rbxassetid://10709768000",
-    ["zap"]           = "rbxassetid://10734975486",
-    ["shopping-cart"] = "rbxassetid://10747372992",
-    ["folder"]        = "rbxassetid://10723387563",
-}
-
-local function createTab(tabTitle, lucideIcon)
-    local iconId = LucideToAsset[lucideIcon] or (string.find(tostring(lucideIcon or ""), "rbxassetid://") and lucideIcon) or HUB_ICON
-    local raw = Window:AddTab(tabTitle, iconId)
+local function createTab(tabTitle)
+    local raw = Window:AddTab(tabTitle)
     return wrapTab(raw, tabTitle)
 end
 
