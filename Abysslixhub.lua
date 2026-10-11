@@ -326,8 +326,8 @@ task.spawn(function()
                     bStroke.Transparency = 0.2
                     bStroke.Parent = btn
                 end
+                break
             end
-            break
         end
         task.wait(0.1)
     end
@@ -351,34 +351,37 @@ local function applyTextGlow(inst)
     end
 end
 
+local function applyMainContainerGlow(gui)
+    local main = gui:FindFirstChild("Main")
+    local mainCont = main and main:FindFirstChild("MainContainer")
+    if not mainCont then return end
+
+    local stroke = mainCont:FindFirstChildOfClass("UIStroke")
+    if stroke then
+        stroke.Color = Color3.fromRGB(0, 240, 255)
+        stroke.Thickness = 1.2
+    else
+        local newStroke = Instance.new("UIStroke")
+        newStroke.Color = Color3.fromRGB(0, 240, 255)
+        newStroke.Thickness = 1.2
+        newStroke.Parent = mainCont
+    end
+end
+
 task.spawn(function()
     local gethui = gethui or function() return game:GetService("CoreGui") end
     local pGui = gethui() or game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
     
     local function setupGlow(gui)
         if not gui then return end
-        local main = gui:FindFirstChild("Main")
-        if main then
-            local mainCont = main:FindFirstChild("MainContainer")
-            if mainCont then
-                local st = mainCont:FindFirstChildOfClass("UIStroke")
-                if st then
-                    st.Color = Color3.fromRGB(0, 240, 255)
-                    st.Thickness = 1.2
-                else
-                    local nSt = Instance.new("UIStroke")
-                    nSt.Color = Color3.fromRGB(0, 240, 255)
-                    nSt.Thickness = 1.2
-                    nSt.Parent = mainCont
-                end
-            end
-        end
+        applyMainContainerGlow(gui)
         for _, obj in ipairs(gui:GetDescendants()) do
             applyTextGlow(obj)
         end
         gui.DescendantAdded:Connect(function(obj)
             task.defer(function()
                 applyTextGlow(obj)
+                applyMainContainerGlow(gui)
             end)
         end)
     end
