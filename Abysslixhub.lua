@@ -39,6 +39,98 @@ if not getgenv then
     end
 end
 
+local ACTIVE_EXECUTORS = {
+    "Real",
+    "Solara",
+    "Celery",
+    "Hydrogen",
+    "Ronix",
+    "Cryptic",
+    "Nihon",
+    "Valkyrie",
+    "Evon",
+    "Synapse X",
+    "Synapse",
+    "Script-Ware",
+    "ScriptWare",
+    "KRNL",
+    "Krnl",
+    "Fluxus",
+    "Comet",
+    "Codex",
+    "Xeno",
+    "Arceus X",
+    "ArceusX",
+    "Delta",
+    "Hydroxide",
+    "Trigon",
+    "Wave",
+    "Sirius",
+    "Magma",
+    "Fates",
+    "Electron",
+    "Oxygen U",
+    "Oxygen",
+    "JJSploit",
+    "WeAreDevs",
+    "WeAreDevs Academy",
+    "Rag",
+    "Velocity",
+    "Murder",
+    "Crescent",
+    "Oblivion",
+    "Bloxstrap",
+    "Nexus",
+    "Eclipse",
+    "Sentinel",
+    "Rost",
+    "Proto",
+    "Cobra",
+    "Vega X",
+    "Vega",
+    "Phantom",
+    "Horizon",
+    "Hubs",
+    "Kronos",
+    "Violet",
+    "Astra",
+    "Universal",
+}
+
+local function detectExecutor()
+    local detected = "Universal"
+    local candidates = {
+        getexecutorname,
+        identifyexecutor,
+        getExecutorName,
+        syn and syn.name,
+        _G and _G.getexecutorname,
+        _G and _G.identifyexecutor,
+    }
+
+    for _, getter in ipairs(candidates) do
+        if type(getter) == "function" then
+            local value = getter()
+            if type(value) == "string" and value ~= "" then
+                detected = value
+                break
+            end
+        elseif type(getter) == "string" and getter ~= "" then
+            detected = getter
+            break
+        end
+    end
+
+    local lower = detected:lower()
+    for _, name in ipairs(ACTIVE_EXECUTORS) do
+        if lower:find(name:lower(), 1, true) then
+            return name
+        end
+    end
+
+    return detected or "Universal"
+end
+
 getgenv().ReadyForGuiLoaded = getEnv("ReadyForGuiLoaded", true)
 getgenv().UIToggled = getEnv("UIToggled", false)
 
@@ -62,7 +154,7 @@ Player.CharacterAdded:Connect(function(newChar)
 end)
 
 -- EXPLOIT COMPATIBILITY (Hỗ trợ mọi Executor, không kick người chơi)
-local executor = (getexecutorname and getexecutorname()) or (identifyexecutor and identifyexecutor()) or "Universal"
+local executor = detectExecutor()
 print("[Abysslix Hub] Đang chạy trên Executor: " .. tostring(executor))
 
 -- ALIASES
@@ -822,6 +914,8 @@ local BF = {
     PVPJumpPower = 50,
     FarmPullSpeed = 150,
     FarmGroupCount = 3,
+    LeviathanFarm = false,
+    LeviathanZone = "Center",
     SeaZone = "Lv 1",
     SeaMonster = "Bandit",
     SeaMonsterList = {"Bandit", "Pirate", "Brute", "Monkey", "Gorilla"},
@@ -1490,7 +1584,7 @@ local function SetupBFUI()
         mainSec:AddSlider("Farm Range", {
             Title = "Farm Range",
             Description = "Khoảng cách tấn công quái",
-            Min = 50,
+            Min = 10,
             Max = 500,
             Default = 220,
             Callback = function(value)
@@ -1567,6 +1661,25 @@ local function SetupBFUI()
             Default = false,
             Callback = function(state)
                 BF.AutoSeaEvent = state
+            end
+        })
+
+        seaSec:AddToggle("Leviathan Farm", {
+            Title = "Leviathan Farm",
+            Description = "Farm Leviathan ở khu vực được chọn, riêng từng vùng",
+            Default = false,
+            Callback = function(state)
+                BF.LeviathanFarm = state
+            end
+        })
+
+        seaSec:AddDropdown("Leviathan Area", {
+            Title = "Leviathan Area",
+            Description = "Chọn khu vực farm Leviathan: Center, Left, Right, Front, Back, Top, Bottom",
+            Values = {"Center", "Left", "Right", "Front", "Back", "Top", "Bottom"},
+            Default = BF.LeviathanZone or "Center",
+            Callback = function(value)
+                BF.LeviathanZone = value
             end
         })
 
