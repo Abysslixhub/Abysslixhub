@@ -3525,33 +3525,8 @@ vFarmHeightSlider = Tabs.Main:AddSlider("SliderFarmHeight", {
     ["Rounding"] = 0,
     ["Callback"] = function(v) _setFarmHeight(v, "slider") end
 })
-vFarmHeightInput = Tabs.Main:AddInput("InputFarmHeight", {
-    ["Title"] = "Nhập Độ Cao (0 - 100)",
-    ["Default"] = "30",
-    ["Placeholder"] = "0 - 100",
-    ["Callback"] = function(v) _setFarmHeight(v, "input") end
-})
 Pos = CFrame.new(0, _farmH, _farmD)
-Tabs.Main:AddSlider("SliderFarmDist", {
-    ["Title"] = "Khoảng Cách Đứng Với Quái",
-    ["Default"] = 10,
-    ["Min"] = 0,
-    ["Max"] = 40,
-    ["Rounding"] = 0,
-    ["Callback"] = function(v)
-        _farmD = tonumber(v) or 10
-        Pos = CFrame.new(0, _farmH, _farmD)
-    end
-})
 _G.AttackRange = 60   -- 60 studs chạy ổn; tăng dần nếu muốn đánh từ xa hơn
-Tabs.Main:AddSlider("SliderAttackRange", {
-    ["Title"] = "Tầm Đánh (studs) - đứng cao/xa vẫn đánh trúng quái",
-    ["Default"] = 60,
-    ["Min"] = 20,
-    ["Max"] = 300,
-    ["Rounding"] = 0,
-    ["Callback"] = function(v) _G.AttackRange = tonumber(v) or 60 end
-})
 -- Tốc độ đánh cố định (phù hợp, ổn định, ít lag): Fast Attack = 0.05s
 _G.FastAttackStrix_Mode = "Fast Attack"
 _G.Fast_Delay = 0.05
@@ -3582,6 +3557,41 @@ task.spawn(function()
     end
 end)
 local _MOB_BIG = Vector3.new(60, 60, 60)
+-- [FIX_DEATH_SIZE] Trả size HRP về bình thường khi quái chết (tránh hiệu ứng chết bị phóng to)
+-- (bọc trong hàm riêng để không thêm biến local vào scope chính)
+task.spawn(function()
+    local origSize = setmetatable({}, { __mode = "k" })
+
+    local function watchMob(mob)
+        local hum = mob:WaitForChild("Humanoid", 5)
+        local hrp = mob:WaitForChild("HumanoidRootPart", 5)
+        if not hum or not hrp then return end
+        if not origSize[hrp] then
+            origSize[hrp] = (hrp.Size ~= _MOB_BIG) and hrp.Size or Vector3.new(2, 2, 1)
+        end
+        local done = false
+        local function restore()
+            if done then return end
+            done = true
+            task.spawn(function()
+                -- vòng farm có thể ghi lại 60 thêm 1 lần sau khi chết -> ép lại trong ~2s
+                local t0 = os.clock()
+                while os.clock() - t0 < 2 and hrp.Parent do
+                    if hrp.Size ~= origSize[hrp] then hrp.Size = origSize[hrp] end
+                    task.wait()
+                end
+            end)
+        end
+        hum.Died:Connect(restore)
+        hum.HealthChanged:Connect(function(h) if h <= 0 then restore() end end)
+    end
+
+    local enemies = workspace:WaitForChild("Enemies", 10)
+    if enemies then
+        for _, m in ipairs(enemies:GetChildren()) do task.spawn(watchMob, m) end
+        enemies.ChildAdded:Connect(function(m) task.spawn(watchMob, m) end)
+    end
+end)
 Tabs.Main:AddToggle("ToggleLevel", {
     ["Title"] = "Tự Động Cày Cấp",
     ["Default"] = false
@@ -12927,7 +12937,7 @@ Tabs.Misc:AddButton({
 -- ===============================================================
 -- =====================================================================
 -- [TÍNH NĂNG MỞ RỘNG] Bộ chức năng bổ sung (Farm, Quest/Item, Fishing, Sea Event, Raid/Fruits,
--- Stats, Teleport, Status, Visual, Shop, Misc), hiển thị bằng UI Abysslix (các tab "Mở Rộng | ...")
+-- Stats, Teleport, Status, Visual, Shop, Misc), hiển thị bằng UI Abysslix (gộp vào các tab hiện có, section "Mở Rộng • ...")
 -- Chạy trong môi trường (setfenv) riêng để không ghi đè hàm/biến global của Abysslix.
 -- =====================================================================
 do
@@ -23828,34 +23838,158 @@ v496:AddToggle({
         end })
     end
 
-    local function _mkTab(a)
-        local name = (type(a) == "table") and (a[1] or a.Name or a.Title) or a
-        local icon = (type(a) == "table") and a[2] or nil
-        local tab = createTab("Mở Rộng | " .. tostring(name), icon)
-        local uid = 0
-        local function uniq(n) uid = uid + 1; return "ext_" .. tostring(name) .. "_" .. uid .. "_" .. tostring(n) end
-        local t = {}
-        function t:AddSection(x)
-            local n = (type(x) == "table") and (x[1] or x.Name or x.Title) or x
-            return _safe(tab:AddSection(tostring(n or "")))
-        end
-        function t:AddToggle(x)
-            local obj = tab:AddToggle(uniq(x.Name or x.Title), x)
-            -- UI có thể không tự bắn callback lúc tạo: ép đồng bộ cờ cho nút mặc định BẬT (vd Fast Attack)
-            if x.Default == true and type(x.Callback) == "function" then
-                task.defer(function() pcall(x.Callback, true) end)
+    -- =====================================================================
+    -- [GỘP TAB] Không tạo thêm các tab "Mở Rộng | ..." nữa.
+    -- Mỗi nút/công tắc mở rộng được đưa vào TAB HIỆN CÓ phù hợp nhất (theo ROUTES bên dưới),
+    -- nằm trong section riêng có tiền tố "Mở Rộng • ..." để phân biệt với tính năng gốc.
+    -- Muốn chuyển 1 nút sang chỗ khác: sửa tab đích / tên section / từ khoá trong ROUTES.
+    -- Mỗi dòng rule: { "Tab đích", "Tên section", { "từ khoá trong tên nút", ... } }
+    -- (rule khớp đầu tiên thắng; không khớp rule nào thì dùng `default`)
+    -- Tab đích: Main=Cày Cấp, Sea=Sự Kiện, Status=Webhook, Stats=Chỉ Số, Player=PVP,
+    --           Teleport=Dịch Chuyển, Visual=Giả Mạo, Fruit, Race, Misc=Khác, Setting, Shop
+    --           (Item = Shop, Raid = Fruit)
+    -- =====================================================================
+    local _mkTab
+    do
+        local PFX = "Mở Rộng • "
+        local lastSec = setmetatable({}, { __mode = "k" })  -- tab đích -> section đang mở
+
+        local function has(s, list)
+            for _, k in ipairs(list) do
+                if string.find(s, k, 1, true) then return true end
             end
-            return _safe(obj)
+            return false
         end
-        function t:AddButton(x) return _safe(tab:AddButton(x)) end
-        function t:AddDropdown(x)
-            if x.MultiSelect and x.Multi == nil then x.Multi = true end
-            return _safe(tab:AddDropdown(uniq(x.Name or x.Title), x))
+
+        local ROUTES = {
+            ["Farm"] = {
+                default = { "Main", "Farm Level" },
+                { "Main", "Tyrant of the Skies", { "Tyrant" } },
+                { "Main", "Xương (Bones)", { "Bones", "Soul Reaper", "Auto Pray", "Try Luck" } },
+                { "Main", "Katakuri", { "Katakuri" } },
+                { "Main", "Rương & Berry", { "Berry", "Chest" } },
+                { "Main", "Boss", { "Boss" } },
+                { "Main", "Nguyên Liệu", { "Material" } },
+            },
+            ["Auto Fishing"] = {
+                default = { "Main", "Câu Cá" },
+            },
+            ["Quest | Items"] = {
+                default = { "Main", "Nhiệm Vụ & Boss" },
+                { "Item", "Kiếm & Vật Phẩm", { "Sword", "Saber", "Longsword", "Yama", "Tushita", "Cdk", "Skull Guitar", "Haki Colors" } },
+                { "Race", "Trial Tộc V4", { "Trial", "Race Door", "Acient", "Ancient", "GreatTree", "Temple Of Time", "Lever Pull", "The Clock", "Auto Skill" } },
+            },
+            ["Sea Event"] = {
+                default = { "Sea", "Prehistoric Island" },
+                { "Sea", "Thuyền & Quái Biển", { "Boats", "Terror", "Shark", "Piranha", "Fish Crew" } },
+                { "Sea", "Dragon Dojo", { "Dojo", "Dragon Hunter" } },
+                { "Sea", "Kitsune", { "Kitsune", "Azuer" } },
+                { "Sea", "Mirage", { "Mirage", "Moon", "Gear" } },
+            },
+            ["Raid/Fruits"] = {
+                default = { "Fruit", "Trái Ác Quỷ" },
+                { "Raid", "Đột Kích", { "Raid", "Chip" } },
+            },
+            ["Stats"]    = { default = { "Stats", "Cộng Điểm" } },
+            ["Teleport"] = { default = { "Teleport", "Dịch Chuyển" } },
+            ["Status"]   = { default = { "Status", "Thông Tin" } },
+            ["Visual"] = {
+                default = { "Visual", "Hiệu Ứng" },
+                { "Player", "Aimbot", { "Aimbot", "Ignore Mobs" } },
+                { "Visual", "ESP", { "ESP", "Esp" } },
+            },
+            ["Shop"] = {
+                default = { "Shop", "Khác" },
+                { "Shop", "Võ", { "Buy Black Leg", "Buy Electro", "Buy Fishman Karate", "Buy Superhuman", "Buy Death Step", "Buy Sharkman Karate", "Buy Electric Claw", "Buy Dragon Talon", "Buy God Human", "Buy Sanguine Art" } },
+                { "Shop", "Chế Tạo", { "Craft " } },
+                { "Shop", "Khả Năng", { "Geppo", "Buso", "Soru", "Observation" } },
+                { "Shop", "Kiếm", { "Cutlass", "Katana", "Iron Mace", "Pipe", "Bisento", "Soul Cane", "Dual-Headed", "Pole V2" } },
+                { "Shop", "Súng", { "Slingshot", "Musket", "Flintlock", "Cannon", "Kabucha", "Bizarre Rifle" } },
+                { "Shop", "Phụ Kiện", { "Cape", "Hat", "Ring" } },
+            },
+            ["Misc"] = {
+                default = { "Misc", "Tiện Ích" },
+                { "Status", "Job ID", { "Job ID", "Join Clipboard" } },
+                { "Setting", "Tấn Công", { "Fast Attack", "Bring Mob" } },
+                { "Player", "Tốc Độ & Nhảy", { "Speed", "Jump" } },
+                { "Race", "Tộc V3/V4", { "Race V3", "Race V4" } },
+                { "Player", "Di Chuyển", { "Infinite", "Dodge", "Walk on Water" } },
+                { "Misc", "Hiển Thị", { "Full Bright", "Sky Fog" } },
+                { "Misc", "Đội & Danh Hiệu", { "Join Pirates", "Join Marines", "Title" } },
+                { "Misc", "FPS & Server", { "FPS", "Codes", "White Screen", "Rejoin", "Server Hop", "Anti-reset" } },
+            },
+        }
+
+        -- tên hiển thị của 1 phần tử (hỗ trợ cả kiểu bảng mảng {"Tên", function})
+        local function titleOf(x)
+            if type(x) ~= "table" then return tostring(x or "") end
+            local t = x.Name or x.Title or x.Text or x.Content or x.Description or x[1]
+            return type(t) == "string" and t or ""
         end
-        function t:AddSlider(x) return _safe(tab:AddSlider(x)) end
-        function t:AddTextBox(x) return _safe(tab:AddInput(uniq(x.Name or x.Title), x)) end
-        function t:AddParagraph(x) return _safe(tab:AddParagraph(x)) end
-        return t
+
+        -- [FIX] nút kiểu {"Meteor Rain", function() ... end} trước đây hiện thành "Button" và không chạy
+        local function norm(x)
+            if type(x) ~= "table" then return x end
+            if x.Title == nil and x.Name == nil and type(x[1]) == "string" then
+                x.Title = x[1]
+                if x.Callback == nil and type(x[2]) == "function" then x.Callback = x[2] end
+            end
+            return x
+        end
+
+        _mkTab = function(a)
+            local name = tostring((type(a) == "table") and (a[1] or a.Name or a.Title) or a)
+            local icon = (type(a) == "table") and a[2] or nil
+            local fallback
+            local function getFallback() -- chỉ tạo tab riêng nếu không có tab đích (an toàn dự phòng)
+                if not fallback then fallback = createTab("Mở Rộng | " .. name, icon) end
+                return fallback
+            end
+            local uid = 0
+            local function uniq(n) uid = uid + 1; return "ext_" .. name .. "_" .. uid .. "_" .. tostring(n) end
+
+            -- chọn tab đích; đổi nhóm thì mở section mới ("Mở Rộng • ...")
+            local function dest(x)
+                local title = titleOf(x)
+                local R = ROUTES[name]
+                local key, sec
+                if R then
+                    for _, r in ipairs(R) do
+                        if has(title, r[3]) then key, sec = r[1], r[2]; break end
+                    end
+                    if not key and R.default then key, sec = R.default[1], R.default[2] end
+                end
+                local tab = key and Tabs[key]
+                if not tab then return getFallback() end
+                if lastSec[tab] ~= sec then
+                    lastSec[tab] = sec
+                    pcall(function() tab:AddSection(PFX .. sec) end)
+                end
+                return tab
+            end
+
+            local t = {}
+            function t:AddSection() return _dummy end -- section do ROUTES quyết định
+            function t:AddToggle(x)
+                x = norm(x)
+                local obj = dest(x):AddToggle(uniq(x.Name or x.Title), x)
+                -- UI có thể không tự bắn callback lúc tạo: ép đồng bộ cờ cho nút mặc định BẬT (vd Fast Attack)
+                if x.Default == true and type(x.Callback) == "function" then
+                    task.defer(function() pcall(x.Callback, true) end)
+                end
+                return _safe(obj)
+            end
+            function t:AddButton(x) x = norm(x); return _safe(dest(x):AddButton(x)) end
+            function t:AddDropdown(x)
+                x = norm(x)
+                if x.MultiSelect and x.Multi == nil then x.Multi = true end
+                return _safe(dest(x):AddDropdown(uniq(x.Name or x.Title), x))
+            end
+            function t:AddSlider(x) x = norm(x); return _safe(dest(x):AddSlider(x)) end
+            function t:AddTextBox(x) x = norm(x); return _safe(dest(x):AddInput(uniq(x.Name or x.Title), x)) end
+            function t:AddParagraph(x) x = norm(x); return _safe(dest(x):AddParagraph(x)) end
+            return t
+        end
     end
 
     local function _extraNotify(msg)
@@ -23883,7 +24017,7 @@ v496:AddToggle({
             warn("[Extra] Lỗi khi chạy: " .. tostring(e))
             _extraNotify("Tính năng mở rộng báo lỗi: " .. tostring(e))
         else
-            _extraNotify("Đã nạp xong tính năng mở rộng (các tab 'Mở Rộng | ...').")
+            _extraNotify("Đã nạp xong tính năng mở rộng (đã gộp vào các tab tương ứng, trong section \"Mở Rộng • ...\").")
         end
     end)
 end
