@@ -939,7 +939,7 @@ Tabs = {
     ["Info"]     = createTab("Thông Tin", "info"),
     ["Shop"]     = createTab("Shop", "shopping-cart"),
     ["Main"]     = createTab("Cày Cấp", "swords"),
-    ["Sea"]      = createTab("Sự Kiện", "waves"),
+    ["Sea"]      = createTab("Sea Event", "waves"),
     ["Status"]   = createTab("Webhook", "radio"),
     ["Stats"]    = createTab("Chỉ Số", "bar-chart-2"),
     ["Player"]   = createTab("PVP", "user"),
@@ -5171,10 +5171,28 @@ function AbyQuest.Ensure(id, qName, qLv, qMob, qCF, flagFn)
         or not flagFn() or not MoverBusy() or os.clock() - t0 > 10
     task.wait(0.2)
     if flagFn() and (qCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 then
-        __RS.Remotes.CommF_:InvokeServer("StartQuest", qName, qLv)
-        st.tries = st.tries + 1
+        -- [FIX 2-3 LẦN MỚI NHẬN] chờ server cập nhật vị trí rồi mới gọi StartQuest,
+        -- gọi xong thì CHỜ UI Quest hiện để xác nhận (thay vì đếm 'tries' mù quáng như trước)
+        task.wait(0.5)
+        for _ = 1, 3 do
+            if not flagFn() then return false end
+            pcall(function()
+                local hrp = __LP.Character.HumanoidRootPart
+                hrp.CFrame = qCF -- giữ sát NPC
+                hrp.AssemblyLinearVelocity = Vector3.zero
+            end)
+            __RS.Remotes.CommF_:InvokeServer("StartQuest", qName, qLv)
+            local t1 = os.clock()
+            repeat task.wait(0.1) until (GetQuestGui()) or os.clock() - t1 > 1.2 or not flagFn()
+            if GetQuestGui() then
+                st.tries = 0
+                st.start = os.clock()
+                return false -- vòng sau thấy UI + đúng title => đi farm
+            end
+        end
+        -- 3 lần mà UI vẫn không báo: dùng fallback cũ (coi như đã nhận, tối đa 90s)
+        st.tries = 2
         st.start = os.clock()
-        task.wait(0.3)
     end
     return false
 end
@@ -5483,6 +5501,35 @@ if Sea3 then
         end
     end)
     -- [SetValue skipped - Library không cần]
+    -- [FIX FARM CAKE] bãi quái theo từng loại (lấy từ bảng CheckLevel của file). Điểm chờ cũ (-1579, 329, -12310)
+    -- chỉ gần Cake Guard; với Cookie Crafter / Baking Staff / Head Baker nó cách 700-850 studs nên quái không spawn
+    -- và nhân vật treo ở đó mãi.
+    -- (dùng bảng global AbyCake, không thêm biến local ở cấp file vì Lua giới hạn 200 local mỗi chunk)
+    AbyCake = AbyCake or {}
+    AbyCake.SPAWN = {
+        ["Cookie Crafter"] = CFrame.new(-2321.71216, 36.699482, -12216.7871),
+        ["Cake Guard"]     = CFrame.new(-1418.11011, 36.6718941, -12255.7324),
+        ["Baking Staff"]   = CFrame.new(-1980.43848, 36.6716766, -12983.8418),
+        ["Head Baker"]     = CFrame.new(-2251.5791, 52.2714615, -13033.3965),
+    }
+    function AbyCake.SpawnFor(qMob)
+        if qMob and AbyCake.SPAWN[qMob] then return AbyCake.SPAWN[qMob] end
+        local lv = __LP.Data.Level.Value
+        if lv < 2225 then return AbyCake.SPAWN["Cookie Crafter"] end
+        if lv < 2250 then return AbyCake.SPAWN["Cake Guard"] end
+        if lv < 2275 then return AbyCake.SPAWN["Baking Staff"] end
+        return AbyCake.SPAWN["Head Baker"]
+    end
+    function AbyCake.Prep(mob)
+        pcall(function()
+            local hrp, hum = mob.HumanoidRootPart, mob.Humanoid
+            if hrp.Size ~= _MOB_BIG then hrp.Size = _MOB_BIG end
+            if hrp.Transparency ~= 1 then hrp.Transparency = 1 end
+            if hum.WalkSpeed ~= 0 then hum.WalkSpeed = 0 end
+            if hum.JumpPower ~= 0 then hum.JumpPower = 0 end
+            if hrp.CanCollide then hrp.CanCollide = false end
+        end)
+    end
     spawn(function()
         while task.wait() do
             if CakeOn() then
@@ -5511,7 +5558,7 @@ if Sea3 then
                         end
                     else
                         -- ===== Giai đoạn quái phụ =====
-                        -- [NEW] Chế độ CÓ nhiệm vụ: nhận quest theo cấp, chỉ đánh đúng quái của quest
+                        -- Chế độ CÓ nhiệm vụ: nhận quest theo cấp, chỉ đánh đúng quái của quest
                         local qName, qLv, qMob, qCF
                         if _G.Cake then qName, qLv, qMob, qCF = GetCakeQuest() end
                         if qName and not AbyQuest.Ensure("cake", qName, qLv, qMob, qCF, function() return _G.Cake end) then
@@ -5521,31 +5568,50 @@ if Sea3 then
                             if qMob then return m.Name == qMob end
                             return CAKE_MOBS[m.Name] == true
                         end
-                        local has = false
+                        local function alive(m)
+                            local h, r = m:FindFirstChild("Humanoid"), m:FindFirstChild("HumanoidRootPart")
+                            return h ~= nil and r ~= nil and h.Health > 0
+                        end
+                        local myHRP = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
+                        if not myHRP then return end
+                        -- chọn con đúng loại, còn sống, gần mình nhất
+                        local target, bestD = nil, math.huge
                         for _, m in ipairs(enemies:GetChildren()) do
-                            if isTarget(m) then has = true break end
-                        end
-                        if has then
-                            for _, v450 in pairs(enemies:GetChildren()) do
-                                local hum450 = v450:FindFirstChild("Humanoid")
-                                if isTarget(v450) and hum450 and hum450.Health > 0 then
-                                    repeat
-                                        wait(_G.Fast_Delay)
-                                        AutoHaki()
-                                        EquipTool(SelectWeapon)
-                                        bringmob = true
-                                        v450.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                                        POSCAKE = v450.HumanoidRootPart.CFrame
-                                        local _mc41 = v450.HumanoidRootPart.CFrame * Pos
-                                        if (v450.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc41) end
-                                        AttackNoCoolDown()
-                                    until not CakeOn() or (__RS:FindFirstChild("Cake Prince") or (__RS:FindFirstChild("Dough King") or (not v450.Parent or hum450.Health <= 0 or (qMob and not AbyQuest.Active("cake")))))
-                                end
+                            if isTarget(m) and alive(m) then
+                                local d = (m.HumanoidRootPart.Position - myHRP.Position).Magnitude
+                                if d < bestD then target, bestD = m, d end
                             end
-                        else
-                            bringmob = false
-                            Tween2(CFrame.new(- 1579.9111328125, 329.7358703613281, - 12310.365234375))
                         end
+                        if not target then
+                            -- chưa có quái: bay tới đúng bãi của loại quái này để chúng spawn
+                            bringmob = false
+                            Tween2(AbyCake.SpawnFor(qMob) * CFrame.new(0, 15, 0))
+                            return
+                        end
+                        -- ở xa thì bay mượt tới (không teleport thẳng cả trăm studs như trước)
+                        if bestD > 60 then
+                            bringmob = false
+                            Tween2(target.HumanoidRootPart.CFrame * Pos)
+                            return
+                        end
+                        local hum = target.Humanoid
+                        repeat
+                            wait(_G.Fast_Delay)
+                            if not target.Parent or not alive(target) then break end
+                            AttackNoCoolDown()
+                            AutoHaki()
+                            EquipTool(SelectWeapon)
+                            bringmob = true
+                            POSCAKE = target.HumanoidRootPart.CFrame
+                            AbyCake.Prep(target)
+                            local _cf = target.HumanoidRootPart.CFrame * Pos
+                            local _hrp = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
+                            if _hrp and (_cf.Position - _hrp.Position).Magnitude > 5 then BKP(_cf) end
+                        until not CakeOn()
+                            or __RS:FindFirstChild("Cake Prince") or __RS:FindFirstChild("Dough King")
+                            or not target.Parent or hum.Health <= 0
+                            or (qMob and not AbyQuest.Active("cake"))
+                        bringmob = false
                     end
                 end)
             end
@@ -5571,6 +5637,7 @@ if Sea3 then
         end)
     end)
     -- [OPT] đã xóa vòng lặp farm Cake bị nhân đôi y hệt (2 vòng cùng đánh 1 quái)
+    _G.SpawnCakePrince = true -- [FIX] nút bật sẵn (Default=true) nhưng cờ chưa gán => không bao giờ triệu hồi
     Tabs.Main:AddToggle("ToggleSpawnCake", {
         ["Title"] = "Triệu Hồi Tư Lệnh Bánh",
         ["Default"] = true
@@ -8951,6 +9018,7 @@ Tabs.Setting:AddToggle("ToggleFastAttack", {
     ["Default"] = true
 }):OnChanged(function(v)
     _G.FastAttackEnabled = v
+    if _ExtraG then _ExtraG.AutoAttack = v end -- đồng bộ luôn vòng Fast Attack mở rộng
 end)
 Tabs.Setting:AddSlider("SliderTweenSpeed", {
     ["Title"] = "Tốc Độ Bay",
@@ -9469,6 +9537,10 @@ spawn(function()
         end
     end
 end)
+-- [FIX ĐI TRÊN NƯỚC] nút bật sẵn (Default=true) nhưng cờ chưa từng được gán => luôn nil => vòng lặp ép mặt nước về 80.
+-- Gán sẵn cờ + 1 hàm dùng chung để nút "Walk on Water" ở phần mở rộng cũng điều khiển đúng cờ này.
+_G.WalkonWater = true
+function AbySetWalkWater(v) _G.WalkonWater = (v == true) end
 Tabs.Player:AddToggle("ToggleWalkonWater", {
     ["Title"] = "Đi Trên Nư\225\187\155c",
     ["Default"] = true
@@ -9479,11 +9551,10 @@ end)
 spawn(function()
     while task.wait() do
         pcall(function()
-            if _G.WalkonWater then
-                __WS.Map["WaterBase-Plane"].Size = Vector3.new(1000, 112, 1000)
-            else
-                __WS.Map["WaterBase-Plane"].Size = Vector3.new(1000, 80, 1000)
-            end
+            local plane = __WS.Map:FindFirstChild("WaterBase-Plane")
+            if not plane then return end
+            local want = _G.WalkonWater and 112 or 80
+            if plane.Size.Y ~= want then plane.Size = Vector3.new(1000, want, 1000) end
         end)
     end
 end)
@@ -23179,7 +23250,8 @@ end
 task.spawn(function()
     while task.wait(0.0001) do
         -- Só executa se o toggle estiver ativado
-        if _G.AutoAttack then
+        -- [FIX] nút "Đánh Nhanh" ở tab Cài Đặt (_G.FastAttackEnabled) cũng phải tắt được vòng này
+        if _G.AutoAttack and _G.FastAttackEnabled ~= false then
             local _Character = game.Players.LocalPlayer.Character
             local v13
 
@@ -23567,22 +23639,12 @@ v496:AddToggle({
     Default = true,
     Callback = function(v1188)
         _G.WalkWater = v1188
+        -- [FIX] chuyển về cờ chung của Abysslix, không còn vòng lặp thứ 2 giành ghi đè kích thước mặt nước
+        if AbySetWalkWater then AbySetWalkWater(v1188) end
     end
 })
 
 _G.WalkWater = true
-
-spawn(function()
-    while task.wait() do
-        pcall(function()
-            if not _G.WalkWater then
-                game:GetService("Workspace").Map["WaterBase-Plane"].Size = Vector3.new(1000, 80, 1000)
-            else
-                game:GetService("Workspace").Map["WaterBase-Plane"].Size = Vector3.new(1000, 112, 1000)
-            end
-        end)
-    end
-end)
 
 local Lighting = game:GetService("Lighting")
 local FULLBRIGHT_SAVE_FILE = "fullbright_save.txt"
