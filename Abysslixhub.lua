@@ -3172,9 +3172,14 @@ function AttackNoCoolDown()
             _lastClick = os.clock()
             pcall(function()
                 local fp = firstPart.Position
-                myRoot.CFrame = CFrame.new(myPos, Vector3.new(fp.X, myPos.Y, fp.Z))
-                local cam = __WS.CurrentCamera
-                if cam then cam.CFrame = CFrame.new(cam.CFrame.Position, fp) end
+                if myPos.Y - fp.Y > 3 then
+                    -- đứng cao hơn quái: nhìn thẳng xuống quái (cả root lẫn camera) để đòn đánh hướng xuống trúng
+                    myRoot.CFrame = CFrame.new(myPos, fp)
+                    local cam = __WS.CurrentCamera
+                    if cam then cam.CFrame = CFrame.new(cam.CFrame.Position, fp) end
+                else
+                    myRoot.CFrame = CFrame.new(myPos, Vector3.new(fp.X, myPos.Y, fp.Z))
+                end
             end)
             _realClick()
             fired[#fired + 1] = "Click"
@@ -3234,7 +3239,7 @@ end
 
 -- [OPT] Type/Pos là hằng số: gán 1 lần thay vì 2 vòng lặp wait() chạy mãi
 Type = 1
-Pos = CFrame.new(0, 10, 0)
+Pos = CFrame.new(0, 2, 10)
 function AutoHaki()
     if not __LP.Character:FindFirstChild("HasBuso") then
         __RS.Remotes.CommF_:InvokeServer("Buso")
@@ -3266,18 +3271,39 @@ function to(pu241)
     end)
 end
 task.defer(function()
-    if __RS:FindFirstChild("Effect") and (__RS.Effect:FindFirstChild("Container") and __RS.Effect.Container:FindFirstChild("Death")) then
-        local v250 = require(__RS.Effect.Container.Death)
+    -- Tắt hiệu ứng chết của quái (cục to đùng) bằng 3 lớp:
+    -- 1) vô hiệu module Death  2) xoá vật thể hiệu ứng mới sinh ra  3) tắt rung camera
+    pcall(function()
         local v251 = require(__RS.Util.CameraShaker)
-        if v251 then
-            v251:Stop()
-        end
+        if v251 and v251.Stop then v251:Stop() end
+    end)
+    pcall(function()
+        local m = __RS.Effect.Container.Death
+        local r = require(m)
         if hookfunction then
-            hookfunction(v250, function(...)
-                return
-            end)
+            if type(r) == "function" then
+                hookfunction(r, function() end)
+            elseif type(r) == "table" then
+                for k, f in pairs(r) do
+                    if type(f) == "function" then pcall(hookfunction, f, function() end) end
+                end
+            end
         end
+    end)
+    local function _kill(o)
+        task.defer(function()
+            pcall(function()
+                if o:IsA("BasePart") or o:IsA("Model") or o:IsA("ParticleEmitter") or o:IsA("Beam") or o:IsA("Trail") then
+                    if o:IsA("Model") and (o == __LP.Character or Players:GetPlayerFromCharacter(o)) then return end
+                    o:Destroy()
+                end
+            end)
+        end)
     end
+    local wo = __WS:FindFirstChild("_WorldOrigin")
+    if wo then wo.ChildAdded:Connect(_kill) end
+    local cam = __WS.CurrentCamera
+    if cam then cam.ChildAdded:Connect(_kill) end
 end)
 Tabs.Info:AddSection("Thông Tin")
 Tabs.Info:AddButton({
@@ -3343,8 +3369,9 @@ end)
 -- ĐỘ CAO KHI FARM (đầu tab Main): kéo thanh hoặc nhập số, min 10 - max 100
 -- ==========================================
 Tabs.Main:AddSection("Độ Cao Khi Farm")
-local _FARM_H_MIN, _FARM_H_MAX = 10, 100
-local _farmH = 10
+local _FARM_H_MIN, _FARM_H_MAX = 0, 100
+local _farmH = 2
+local _farmD = 10   -- khoảng cách đứng ngang với quái (studs)
 local _farmHSync = false
 local vFarmHeightSlider, vFarmHeightInput
 
@@ -3353,7 +3380,7 @@ local function _setFarmHeight(raw, src)
     if not n then return end
     n = math.clamp(math.floor(n + 0.5), _FARM_H_MIN, _FARM_H_MAX)
     _farmH = n
-    Pos = CFrame.new(0, n, 0)
+    Pos = CFrame.new(0, n, _farmD)
     if _farmHSync then return end
     _farmHSync = true
     if src ~= "slider" and vFarmHeightSlider then pcall(function() vFarmHeightSlider:SetValue(n) end) end
@@ -3363,19 +3390,30 @@ end
 
 vFarmHeightSlider = Tabs.Main:AddSlider("SliderFarmHeight", {
     ["Title"] = "Độ Cao Khi Farm",
-    ["Default"] = 10,
+    ["Default"] = 2,
     ["Min"] = _FARM_H_MIN,
     ["Max"] = _FARM_H_MAX,
     ["Rounding"] = 0,
     ["Callback"] = function(v) _setFarmHeight(v, "slider") end
 })
 vFarmHeightInput = Tabs.Main:AddInput("InputFarmHeight", {
-    ["Title"] = "Nhập Độ Cao (10 - 100)",
-    ["Default"] = "10",
-    ["Placeholder"] = "10 - 100",
+    ["Title"] = "Nhập Độ Cao (0 - 100)",
+    ["Default"] = "2",
+    ["Placeholder"] = "0 - 100",
     ["Callback"] = function(v) _setFarmHeight(v, "input") end
 })
-Pos = CFrame.new(0, _farmH, 0)
+Pos = CFrame.new(0, _farmH, _farmD)
+Tabs.Main:AddSlider("SliderFarmDist", {
+    ["Title"] = "Khoảng Cách Đứng Với Quái",
+    ["Default"] = 10,
+    ["Min"] = 0,
+    ["Max"] = 40,
+    ["Rounding"] = 0,
+    ["Callback"] = function(v)
+        _farmD = tonumber(v) or 10
+        Pos = CFrame.new(0, _farmH, _farmD)
+    end
+})
 Tabs.Main:AddSection("Tốc Độ Đánh & Vũ Khí")
 local vFastMode = Tabs.Main:AddDropdown("DropdownFastAttackMode", {
     ["Title"] = "Tốc Độ Đánh Nhanh",
@@ -3444,7 +3482,7 @@ task.spawn(function()
 end)
 local _MOB_BIG = Vector3.new(60, 60, 60)
 Tabs.Main:AddToggle("ToggleLevel", {
-    ["Title"] = "Cày Cấp",
+    ["Title"] = "Tự Động Cày Cấp",
     ["Default"] = false
 }):OnChanged(function(p267)
     _G.AutoLevel = p267
@@ -3590,6 +3628,34 @@ Tabs.Main:AddToggle("ToggleOneHit", {
     _G.OneHitKill = v
     getgenv().AutoClick = v
 end)
+Tabs.Main:AddToggle("ToggleHideSwing", {
+    ["Title"] = "Ẩn Động Tác Tay Khi Đánh",
+    ["Default"] = false
+}):OnChanged(function(v)
+    _G.HideSwing = v
+end)
+-- Dừng animation đánh ở máy bạn (tay đứng yên). Đòn đánh vẫn do click gửi lên server.
+task.spawn(function()
+    while task.wait(0.03) do
+        if _G.HideSwing then
+            pcall(function()
+                local ch = __LP.Character
+                local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+                local an = hum and (hum:FindFirstChildOfClass("Animator") or hum)
+                if an then
+                    for _, tr in ipairs(an:GetPlayingAnimationTracks()) do
+                        local n = tr.Animation and tr.Animation.Name or ""
+                        -- chỉ dừng động tác đánh, giữ animation đi/đứng/nhảy
+                        if tr.Priority == Enum.AnimationPriority.Action or tr.Priority == Enum.AnimationPriority.Action2
+                            or tr.Priority == Enum.AnimationPriority.Action3 or tr.Priority == Enum.AnimationPriority.Action4 then
+                            tr:Stop(0)
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
 -- AutoClick: dùng Button1Down/Up vào giữa viewport game - KHÔNG click vào UI
 getgenv().AutoClick = false
 getgenv().ClicksPerSecond = 20
@@ -3602,6 +3668,12 @@ task.spawn(function()
     while task.wait(1 / getgenv().ClicksPerSecond) do
         if getgenv().AutoClick then
             pcall(_clickOnce)
+        else
+            -- đang farm (Cày Cấp / Xương / Đánh Quái Gần) -> tự click, không cần bật "Đánh Nhanh"
+            local okF, farming = pcall(function()
+                return _G.AutoLevel or _G.AutoBone or _G.AutoNear or BoneNoQuestOn()
+            end)
+            if okF and farming then pcall(_clickOnce) end
         end
     end
 end)
