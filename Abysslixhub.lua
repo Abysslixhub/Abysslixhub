@@ -3478,9 +3478,26 @@ end)
 -- ==========================================
 -- ĐỘ CAO KHI FARM (đầu tab Main): kéo thanh hoặc nhập số, min 10 - max 100
 -- ==========================================
-Tabs.Main:AddSection("Độ Cao Khi Farm")
+Tabs.Main:AddSection("Select tool")
+local v253 = Tabs.Main:AddDropdown("DropdownSelectWeapon", {
+    ["Title"] = "Choose Weapon (Chọn Vũ Khí Farm)",
+    ["Values"] = {
+        "Melee",
+        "Sword",
+        "Blox Fruit",
+        "Gun"
+    },
+    ["Multi"] = false,
+    ["Default"] = 1
+})
+v253:SetValue("Melee")
+ChooseWeapon = "Melee" -- khởi tạo ngay, không chờ callback
+v253:OnChanged(function(p254)
+    ChooseWeapon = p254
+end)
+Tabs.Main:AddSection("Độ Cao Farm")
 local _FARM_H_MIN, _FARM_H_MAX = 0, 100
-local _farmH = 2
+local _farmH = 30
 local _farmD = 10   -- khoảng cách đứng ngang với quái (studs)
 local _farmHSync = false
 local vFarmHeightSlider, vFarmHeightInput
@@ -3499,8 +3516,8 @@ local function _setFarmHeight(raw, src)
 end
 
 vFarmHeightSlider = Tabs.Main:AddSlider("SliderFarmHeight", {
-    ["Title"] = "Độ Cao Khi Farm",
-    ["Default"] = 2,
+    ["Title"] = "Độ Cao Farm (Melee/Sword)",
+    ["Default"] = 30,
     ["Min"] = _FARM_H_MIN,
     ["Max"] = _FARM_H_MAX,
     ["Rounding"] = 0,
@@ -3508,7 +3525,7 @@ vFarmHeightSlider = Tabs.Main:AddSlider("SliderFarmHeight", {
 })
 vFarmHeightInput = Tabs.Main:AddInput("InputFarmHeight", {
     ["Title"] = "Nhập Độ Cao (0 - 100)",
-    ["Default"] = "2",
+    ["Default"] = "30",
     ["Placeholder"] = "0 - 100",
     ["Callback"] = function(v) _setFarmHeight(v, "input") end
 })
@@ -3556,22 +3573,6 @@ vFastMode:OnChanged(function(mode)
         _G.FastAttackStrix_Mode = "Normal Attack"
         _G.Fast_Delay = 0.15
     end
-end)
-local v253 = Tabs.Main:AddDropdown("DropdownSelectWeapon", {
-    ["Title"] = "Vũ Khí Farm",
-    ["Values"] = {
-        "Melee",
-        "Sword",
-        "Blox Fruit",
-        "Gun"
-    },
-    ["Multi"] = false,
-    ["Default"] = 1
-})
-v253:SetValue("Melee")
-ChooseWeapon = "Melee" -- khởi tạo ngay, không chờ callback
-v253:OnChanged(function(p254)
-    ChooseWeapon = p254
 end)
 task.spawn(function()
     while wait() do
