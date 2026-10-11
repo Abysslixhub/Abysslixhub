@@ -35,6 +35,7 @@ Player.CharacterAdded:Connect(function(newChar)
     Humanoid = newChar:WaitForChild("Humanoid", 10)
     HumanoidRootPart = newChar:WaitForChild("HumanoidRootPart", 10)
     Root = HumanoidRootPart
+    pcall(function() if StopMovement then StopMovement() end end)
 
     pcall(function()
         local stun = newChar:WaitForChild("Stun", 5)
@@ -361,9 +362,14 @@ local function wrapTab(rawTab, defaultTitle)
             Desc = desc,
             Default = default,
             Callback = function(val)
+                holder.fired = true
                 holder.value = val
                 if origCallback then pcall(origCallback, val) end
                 if holder.extraCallback then pcall(holder.extraCallback, val) end
+                -- [FIX] Tắt chức năng nào cũng dừng chuyến bay đang chạy (trước đây bay tiếp dù đã tắt)
+                if val == false then
+                    pcall(function() if StopMovement then StopMovement() end end)
+                end
             end
         })
 
@@ -374,9 +380,20 @@ local function wrapTab(rawTab, defaultTitle)
         end
         function proxy:SetValue(val)
             local boolVal = (val == true)
-            holder.value = boolVal
-            if rawToggle and rawToggle.SetStage then
-                pcall(rawToggle.SetStage, boolVal)
+            if holder.value == boolVal then return end
+            holder.fired = false
+            local f = rawToggle and rawToggle.SetStage
+            if f then
+                -- [FIX] thử cả 2 kiểu gọi (hàm thường / method có self)
+                if not pcall(f, boolVal) then pcall(f, rawToggle, boolVal) end
+            end
+            -- [FIX] Nếu thư viện UI không tự bắn callback khi đổi bằng code (ví dụ 2 nút Xương/Bánh loại trừ nhau),
+            -- tự gọi để cờ _G.* đồng bộ với trạng thái nút -> không còn nút "tắt rồi mà vẫn chạy"
+            if not holder.fired then
+                holder.value = boolVal
+                if origCallback then pcall(origCallback, boolVal) end
+                if holder.extraCallback then pcall(holder.extraCallback, boolVal) end
+                if not boolVal then pcall(function() if StopMovement then StopMovement() end end) end
             end
         end
         function proxy:SetStage(val)
@@ -711,21 +728,42 @@ end
 
 Tabs = {
     ["Info"]     = createTab("Thông Tin", "info"),
-    ["Shop"]     = createTab("Cửa Hàng", "shopping-cart"),
+    ["Shop"]     = createTab("Shop", "shopping-cart"),
     ["Main"]     = createTab("Cày Cấp", "swords"),
     ["Sea"]      = createTab("Sự Kiện", "waves"),
-    ["Item"]     = createTab("Lấy & Nâng Cấp Vật Phẩm", "package"),
     ["Status"]   = createTab("Webhook", "radio"),
     ["Stats"]    = createTab("Chỉ Số", "bar-chart-2"),
-    ["Player"]   = createTab("Người Chơi", "user"),
+    ["Player"]   = createTab("PVP", "user"),
     ["Teleport"] = createTab("Dịch Chuyển", "map-pin"),
     ["Visual"]   = createTab("Giả Mạo", "eye"),
-    ["Fruit"]    = createTab("Trái Ác Quỷ", "cherry"),
-    ["Raid"]     = createTab("Đột Kích", "flame"),
+    ["Fruit"]    = createTab("Fruit", "cherry"),
     ["Race"]     = createTab("Nâng Cấp Chủng Tộc", "zap"),
     ["Misc"]     = createTab("Khác", "folder"),
     ["Setting"]  = createTab("Cài Đặt", "settings"),
+    ["Discord"]  = createTab("Discord", nil),
 }
+
+-- [GỘP TAB] Item -> Shop, Raid -> Fruit
+-- Code cũ vẫn gọi Tabs.Item / Tabs.Raid nên cho chúng trỏ về cùng 1 tab (không phải sửa 30+ chỗ)
+Tabs.Item = Tabs.Shop
+Tabs.Raid = Tabs.Fruit
+
+-- [TAB DISCORD]
+Tabs.Discord:AddSection("Cộng Đồng Discord")
+Tabs.Discord:AddParagraph({
+    ["Title"] = "Abysslix Community",
+    ["Description"] = "Tham gia Discord để nhận cập nhật, báo lỗi và hỗ trợ."
+})
+Tabs.Discord:AddButton({
+    ["Title"] = "Copy Link Discord",
+    ["Description"] = "https://dsc.gg/nopermc",
+    ["Callback"] = function()
+        pcall(function() setclipboard("https://dsc.gg/nopermc") end)
+        pcall(function()
+            Library:Notify({ Title = "Discord", Content = "Đã copy link Discord vào clipboard!" })
+        end)
+    end
+})
 
 task.wait(0.5)
 
@@ -2497,104 +2535,113 @@ function UpdateGeaESP()
         end)
     end
 end
-function Tween2(p170)
-    local v171 = (p170.Position - __LP.Character.HumanoidRootPart.Position).Magnitude
-    local v172 = 350
-    local v173 = TweenInfo.new(v171 / v172, Enum.EasingStyle.Linear)
-    local v174 = TweenService:Create(__LP.Character.HumanoidRootPart, v173, {
-        ["CFrame"] = p170
-    })
-    v174:Play()
-    if _G.StopTween2 then
-        v174:Cancel()
+-- =====================================================================
+-- [FIX] HỆ THỐNG DI CHUYỂN MỚI (thay Tween2 / SafeMove / Tween / TweenBlock cũ)
+-- Lỗi cũ:
+--   * Tween2 tạo TweenService mới mỗi lần gọi mà KHÔNG hủy tween cũ -> nhiều tween đánh nhau -> giật.
+--   * SafeMove nhảy 60 studs rồi đứng chờ 0.5s -> bay bị khựng từng nhịp.
+--   * Tween() mới bị lỗi (_tweenThread == nil ngay lúc chạy) nên không làm gì,
+--     khiến lệnh Tween(HRP.CFrame) dùng để "dừng bay" khi tắt nút không còn tác dụng.
+-- Cách mới: 1 bộ di chuyển duy nhất chạy theo Heartbeat, tốc độ theo dt (mượt, độc lập FPS),
+-- luôn chỉ có 1 đích tại một thời điểm, và có StopMovement() để hủy ngay lập tức.
+-- =====================================================================
+_G.TweenSpeed = tonumber(_G.TweenSpeed) or 300   -- studs/giây. Bị server kéo lại thì giảm xuống (vd 250)
+
+local _moveTarget = nil     -- CFrame đích hiện tại (nil = đang đứng yên)
+local _moveToken  = 0       -- tăng mỗi khi có lệnh bay mới / lệnh dừng -> lệnh cũ tự thoát
+
+local function _getHRP()
+    local c = __LP.Character
+    return c and c:FindFirstChild("HumanoidRootPart")
+end
+
+RunService.Heartbeat:Connect(function(dt)
+    local target = _moveTarget
+    if not target then return end
+    local hrp = _getHRP()
+    if not hrp then _moveTarget = nil; _G.Clip2 = false; return end
+
+    local pos    = hrp.Position
+    local delta  = target.Position - pos
+    local dist   = delta.Magnitude
+    local stepLen = (_G.TweenSpeed or 300) * math.min(dt, 0.1)
+
+    if dist <= stepLen then
+        hrp.CFrame = target
+        _moveTarget = nil
+        _G.Clip2 = false
+    else
+        hrp.CFrame = CFrame.new(pos + delta.Unit * stepLen) * target.Rotation
     end
-    _G.Clip2 = true
-    wait(v171 / v172)
+    -- Triệt tiêu vận tốc vật lý để không bị rơi / trôi gây giật
+    hrp.AssemblyLinearVelocity  = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
+end)
+
+-- Dừng mọi chuyến bay ngay lập tức
+function StopMovement()
+    _moveToken = _moveToken + 1
+    _moveTarget = nil
     _G.Clip2 = false
-end
-function BKP(p175)
-    __LP.Character.HumanoidRootPart.CFrame = p175
-    task.wait()
-    __LP.Character.HumanoidRootPart.CFrame = p175
-end
-TweenSpeed = 600
--- Tốc độ tối đa server Blox Fruits chấp nhận (studs/giây)
--- Nếu vượt quá, server giật player về vị trí cũ
-local SERVER_MAX_SPEED = 120  -- studs/giây, an toàn cho server
-local STEP_SIZE = 60          -- studs mỗi bước (120 studs/s × 0.5s wait)
-local STEP_WAIT = 0.5         -- giây chờ giữa mỗi bước
-
--- SafeMove: di chuyển từng bước nhỏ để server không reject
--- Mỗi bước ~60 studs, chờ 0.5s để server sync trước khi bước tiếp
-local function SafeMove(targetCF, checkStop)
-    local player = __LP
-    if not player.Character then return end
-    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    local targetPos = targetCF.Position
-    while true do
-        if checkStop and checkStop() then break end
-        local curPos = hrp.Position
-        local remaining = (targetPos - curPos).Magnitude
-        if remaining < 8 then break end
-
-        -- Tính điểm đến của bước này
-        local dir = (targetPos - curPos).Unit
-        local stepDist = math.min(remaining, STEP_SIZE)
-        local nextPos = curPos + dir * stepDist
-
-        -- Giữ nguyên rotation của CFrame đích, chỉ thay position
-        local nextCF
-        if remaining <= STEP_SIZE then
-            nextCF = targetCF  -- bước cuối giữ đúng CFrame
-        else
-            nextCF = CFrame.new(nextPos)
-        end
-
-        -- Set CFrame (server sync qua physics)
+    local hrp = _getHRP()
+    if hrp then
         pcall(function()
-            hrp.CFrame = nextCF
+            hrp.AssemblyLinearVelocity  = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
         end)
-        -- Chờ để server nhận và xác nhận vị trí mới
-        task.wait(STEP_WAIT)
     end
 end
 
--- Tween không blocking: dùng SafeMove trong coroutine riêng
--- Khi đích thay đổi, hủy coroutine cũ
-local _tweenThread = nil
-
-function Tween(p176)
-    if not p176 then return end
-    -- Hủy coroutine tween cũ nếu có
-    if _tweenThread then
-        pcall(function() task.cancel(_tweenThread) end)
-        _tweenThread = nil
-    end
-    _tweenThread = task.spawn(function()
-        SafeMove(p176, function()
-            return _tweenThread == nil
-        end)
-        _tweenThread = nil
-    end)
+function IsFlying()
+    return _moveTarget ~= nil
 end
 
--- TweenBlock: blocking SafeMove, chờ đến nơi rồi mới return
-function TweenBlock(targetCF)
-    if not targetCF then return end
-    -- Hủy tween đang chạy
-    if _tweenThread then
-        pcall(function() task.cancel(_tweenThread) end)
-        _tweenThread = nil
-    end
+-- Bay có chờ: return true nếu đã tới nơi, false nếu bị hủy/ghi đè bởi lệnh khác
+function Tween2(p170)
+    if typeof(p170) ~= "CFrame" then return false end
+    local hrp = _getHRP()
+    if not hrp then return false end
+
+    _moveToken = _moveToken + 1
+    local token = _moveToken
+    _moveTarget = p170
     _G.Clip2 = true
-    pcall(function()
-        SafeMove(targetCF, function()
-            return _G.StopTween
-        end)
-    end)
-    _G.Clip2 = false
+
+    local dist = (p170.Position - hrp.Position).Magnitude
+    local deadline = os.clock() + dist / math.max(_G.TweenSpeed or 300, 1) * 2 + 3
+    while _moveToken == token and _moveTarget ~= nil do
+        if os.clock() > deadline then break end   -- chốt an toàn, không bao giờ treo vô hạn
+        RunService.Heartbeat:Wait()
+    end
+    return _moveToken == token
+end
+
+-- Bay không chờ (dùng để bám theo quái): gọi liên tục chỉ cập nhật đích, KHÔNG khởi động lại chuyến bay
+-- Tween(HRP.CFrame hiện tại) = lệnh dừng (giữ tương thích với các nút tắt cũ)
+function Tween(p176)
+    if typeof(p176) ~= "CFrame" then return end
+    local hrp = _getHRP()
+    if not hrp then return end
+    if (p176.Position - hrp.Position).Magnitude < 0.5 then
+        StopMovement()
+        return
+    end
+    _moveToken = _moveToken + 1
+    _moveTarget = p176
+    _G.Clip2 = true
+end
+
+function TweenBlock(targetCF)
+    return Tween2(targetCF)
+end
+
+function BKP(p175)
+    local hrp = _getHRP()
+    if not hrp then return end
+    hrp.CFrame = p175
+    task.wait()
+    hrp = _getHRP()
+    if hrp then hrp.CFrame = p175 end
 end
 function EquipTool(p181)
     if not p181 or p181 == "" then return end
@@ -2909,13 +2956,6 @@ task.defer(function()
 end)
 Tabs.Info:AddSection("Thông Tin")
 Tabs.Info:AddButton({
-    ["Title"] = "Abysslix Community",
-    ["Description"] = "Discord",
-    ["Callback"] = function()
-        setclipboard(tostring("https://dsc.gg/nopermc"))
-    end
-})
-Tabs.Info:AddButton({
     ["Title"] = "Abysslix Hub",
     ["Description"] = "Youtube",
     ["Callback"] = function()
@@ -3094,7 +3134,7 @@ spawn(function()
                 if not questVisible then
                     bringmob = false
                     Tween2(CFrameQ)
-                    repeat task.wait(0.1) until (CFrameQ.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 or not _G.AutoLevel
+                    repeat task.wait(0.1) until (CFrameQ.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 or not _G.AutoLevel or not IsFlying()
                     wait(0.2)
                     if (CFrameQ.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 then
                         __RS.Remotes.CommF_:InvokeServer("StartQuest", NameQuest, QuestLv)
@@ -4457,7 +4497,7 @@ end
 -- bay tới NPC rồi nhận quest. flagFn(): còn bật chức năng không
 local function TakeQuest(qCF, qName, qLv, flagFn)
     Tween2(qCF)
-    repeat task.wait(0.1) until (qCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 or not flagFn()
+    repeat task.wait(0.1) until (qCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 or not flagFn() or not IsFlying()
     wait(0.2)
     if (qCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 then
         __RS.Remotes.CommF_:InvokeServer("StartQuest", qName, qLv)
@@ -4582,7 +4622,7 @@ if Sea3 then
                             if _dist0 > 30 then
                                 Tween2(_bCF0)
                                 repeat task.wait(0.05) until
-                                    ((v434.HumanoidRootPart.CFrame * Pos).Position - __LP.Character.HumanoidRootPart.Position).Magnitude < 30
+                                    not IsFlying() or ((v434.HumanoidRootPart.CFrame * Pos).Position - __LP.Character.HumanoidRootPart.Position).Magnitude < 30
                                     or not _G.AutoBone or not v434.Parent or v434.Humanoid.Health <= 0
                             end
                             -- Bật hiệu ứng tia lửa + tiếng spam liên tục
@@ -4653,7 +4693,7 @@ if Sea3 then
                         if _bnDist0.Magnitude > 30 then
                             Tween2(v439.HumanoidRootPart.CFrame * Pos)
                             repeat task.wait(0.05) until
-                                not v439 or not v439.Parent
+                                not IsFlying() or not v439 or not v439.Parent
                                 or ((v439.HumanoidRootPart.CFrame * Pos).Position - __LP.Character.HumanoidRootPart.Position).Magnitude < 30
                                 or not BoneNoQuestOn()
                         end
@@ -8830,6 +8870,10 @@ v928:OnChanged(function(p929)
     _G.SelectIsland = p929
 end)
 Tabs.Teleport:AddButton({
+    ["Title"] = "Dừng Bay",
+    ["Callback"] = function() StopMovement() end
+})
+Tabs.Teleport:AddButton({
     ["Title"] = "Bay Đến Đảo",
     ["Callback"] = function()
         if _G.SelectIsland ~= "WindMill" then
@@ -11673,7 +11717,7 @@ if Sea3 then
                 if not __WS.Enemies:FindFirstChild("Soul Reaper") then
                     if __LP.Backpack:FindFirstChild("Hallow Essence") or __LP.Character:FindFirstChild("Hallow Essence") then
                         repeat TweenBlock(CFrame.new(-8932.32,146.83,6062.55)); wait()
-                        until (CFrame.new(-8932.32,146.83,6062.55).Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 8
+                        until (CFrame.new(-8932.32,146.83,6062.55).Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 8 or not _G.Hallow
                         EquipTool("Hallow Essence")
                     elseif __RS:FindFirstChild("Soul Reaper") then
                         Tween(__RS:FindFirstChild("Soul Reaper").HumanoidRootPart.CFrame * CFrame.new(2,20,2))
