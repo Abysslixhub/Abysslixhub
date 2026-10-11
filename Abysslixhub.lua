@@ -15,12 +15,32 @@ local CollectionService = game:GetService("CollectionService")
 
 -- PLAYER
 local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui", 5)
+local PlayerGui = Player:FindFirstChild("PlayerGui") or Player:WaitForChild("PlayerGui", 5)
 
 -- CHARACTER
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid", 10)
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart", 10)
+
+local getEnv = function(key, default)
+    local env = (getgenv and getgenv()) or _G
+    if env and rawget(env, key) ~= nil then
+        return env[key]
+    end
+    if env then
+        env[key] = default
+    end
+    return default
+end
+
+if not getgenv then
+    getgenv = function()
+        return _G
+    end
+end
+
+getgenv().ReadyForGuiLoaded = getEnv("ReadyForGuiLoaded", true)
+getgenv().UIToggled = getEnv("UIToggled", false)
 
 -- Tự động cập nhật Character & HumanoidRootPart khi chết / hồi sinh / đổi Sea
 Player.CharacterAdded:Connect(function(newChar)
@@ -63,9 +83,73 @@ local Root = HumanoidRootPart
 -- ==========================================
 local HUB_ICON = "rbxassetid://128438943223471"
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/hdanhhub/UI/main/ui_BananaHub_lua.txt"))()
+local function createFallbackLibrary()
+    local fallback = {}
+
+    function fallback:Notify(data)
+        local title = (data and (data.Title or data.Name)) or "Abysslix Hub"
+        local content = (data and (data.Content or data.Description or data.Text)) or ""
+        print("[" .. tostring(title) .. "] " .. tostring(content))
+    end
+
+    function fallback:ToggleUI()
+        getgenv().UIToggled = not getgenv().UIToggled
+    end
+
+    function fallback:CreateWindow(options)
+        options = options or {}
+        local window = {}
+        function window:AddTab(title, _)
+            local tab = {}
+            function tab:AddLeftGroupbox(name)
+                local section = {}
+                function section:AddToggle(id, cfg)
+                    return { id = id, cfg = cfg, SetValue = function(_, v) end, GetValue = function() return cfg and cfg.Default or false end }
+                end
+                function section:AddButton(cfg)
+                    return { cfg = cfg, SetTitle = function() end }
+                end
+                function section:AddDropdown(id, cfg)
+                    return { id = id, cfg = cfg, SetValue = function() end, GetValue = function() return cfg and cfg.Default or nil end }
+                end
+                function section:AddSlider(cfg)
+                    return { cfg = cfg, SetValue = function() end, GetValue = function() return cfg and cfg.Default or 0 end }
+                end
+                function section:AddInput(id, cfg)
+                    return { id = id, cfg = cfg, SetValue = function() end, GetValue = function() return cfg and cfg.Default or "" end }
+                end
+                function section:AddLabel(text)
+                    return { text = text, SetText = function() end, SetColor = function() end }
+                end
+                function section:AddSeperator(text)
+                    return { text = text }
+                end
+                return section
+            end
+            function tab:AddSection(name)
+                return tab:AddLeftGroupbox(name)
+            end
+            return tab
+        end
+        return window
+    end
+
+    return fallback
+end
+
+local Library = nil
+local ok, result = pcall(function()
+    local uiSource = game:HttpGet("https://raw.githubusercontent.com/hdanhhub/UI/main/ui_BananaHub_lua.txt")
+    return loadstring(uiSource)()
+end)
+
+if ok and result then
+    Library = result
+else
+    warn("[Abysslix] Không tải được UI Banana Hub, đang dùng fallback. " .. tostring(result or "Unknown error"))
+    Library = createFallbackLibrary()
+end
 
 -- ==========================================
 -- CẤU HÌNH THEME XANH ĐEN (Abyss Black & Neon Cyan Glow #00F0FF)
@@ -219,10 +303,23 @@ end)
 
 -- Tự động mở menu khi load script
 task.spawn(function()
-    repeat task.wait() until getgenv().ReadyForGuiLoaded
+    local ready = getEnv("ReadyForGuiLoaded", true)
+    if ready ~= true then
+        local attempts = 0
+        while attempts < 50 and getEnv("ReadyForGuiLoaded", true) ~= true do
+            task.wait(0.1)
+            attempts += 1
+        end
+    end
+
     task.wait(0.1)
+    getgenv().ReadyForGuiLoaded = true
+    getgenv().UIToggled = getEnv("UIToggled", false)
+
     if not getgenv().UIToggled and Library and Library.ToggleUI then
-        Library.ToggleUI()
+        pcall(function()
+            Library.ToggleUI()
+        end)
     end
 end)
 
@@ -719,6 +816,290 @@ Tabs = {
     ["Misc"]     = createTab("Khác", "folder"),
     ["Setting"]  = createTab("Cài Đặt", "settings"),
 }
+
+-- ==========================================
+-- Blox Fruits Compatible Core
+-- ==========================================
+local BF = {
+    AutoJoinTeam = true,
+    JoinTeamTo = "Marines",
+    AutoFarm = false,
+    AutoQuest = false,
+    AutoSea = false,
+    QuestName = "Bandit",
+    SelectMap = "Spawn",
+}
+
+local function getCharacter()
+    return Player.Character or Player.CharacterAdded:Wait()
+end
+
+local function getHumanoid(char)
+    if not char then return nil end
+    return char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid")
+end
+
+local function getRoot(char)
+    if not char then return nil end
+    return char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart")
+end
+
+local function getLevel()
+    local data = Player:FindFirstChild("Data")
+    if data and data:FindFirstChild("Level") then
+        return tonumber(data.Level.Value) or 1
+    end
+    return 1
+end
+
+local function getRemoteByNames(names)
+    local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
+    if not remotesFolder then return nil end
+
+    for _, name in ipairs(names) do
+        local found = remotesFolder:FindFirstChild(name)
+        if found then
+            return found
+        end
+    end
+
+    return nil
+end
+
+local function JoinTeam()
+    if not BF.AutoJoinTeam then return end
+    local target = BF.JoinTeamTo or "Marines"
+    local current = Player.Team and Player.Team.Name or ""
+    if current == target then return end
+
+    local teamRemote = getRemoteByNames({"CommF_", "CommF", "SetTeamRemote"})
+    if teamRemote then
+        pcall(function()
+            teamRemote:InvokeServer("SetTeam", target)
+        end)
+    end
+end
+
+local function StartQuest()
+    if not BF.AutoQuest then return end
+    local quest = BF.QuestName or "Bandit"
+    local questRemote = getRemoteByNames({"CommF_", "CommF", "QuestRemote"})
+    if not questRemote then return end
+
+    for _, name in ipairs({"StartQuest", "requestQuest", "Quest"}) do
+        local found = questRemote:FindFirstChild(name)
+        if found then
+            pcall(function()
+                questRemote:InvokeServer(name, quest)
+            end)
+            return
+        end
+    end
+
+    pcall(function()
+        questRemote:InvokeServer("StartQuest", quest)
+    end)
+end
+
+local function GetNearestEnemy(maxDistance)
+    maxDistance = maxDistance or 220
+    local char = getCharacter()
+    local root = getRoot(char)
+    if not root then return nil end
+
+    local enemiesFolder = Workspace:FindFirstChild("Enemies") or Workspace
+    local nearest = nil
+    local nearestDist = math.huge
+
+    for _, obj in ipairs(enemiesFolder:GetDescendants()) do
+        if obj:IsA("Model") and obj ~= char then
+            local hum = obj:FindFirstChildOfClass("Humanoid")
+            local hrp = obj:FindFirstChild("HumanoidRootPart")
+            if hum and hrp and hum.Health > 0 then
+                local dist = (hrp.Position - root.Position).Magnitude
+                if dist < maxDistance and dist < nearestDist then
+                    nearest = obj
+                    nearestDist = dist
+                end
+            end
+        end
+    end
+
+    if not nearest then
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj ~= char then
+                local hum = obj:FindFirstChildOfClass("Humanoid")
+                local hrp = obj:FindFirstChild("HumanoidRootPart")
+                if hum and hrp and hum.Health > 0 then
+                    local dist = (hrp.Position - root.Position).Magnitude
+                    if dist < maxDistance and dist < nearestDist then
+                        nearest = obj
+                        nearestDist = dist
+                    end
+                end
+            end
+        end
+    end
+
+    return nearest
+end
+
+local function AttackTarget(target)
+    if not target then return end
+    local char = getCharacter()
+    local root = getRoot(char)
+    local enemyRoot = target:FindFirstChild("HumanoidRootPart")
+    if not root or not enemyRoot then return end
+
+    local hum = getHumanoid(char)
+    if hum then
+        hum:MoveTo(enemyRoot.Position)
+    end
+
+    task.wait(0.1)
+    root.CFrame = enemyRoot.CFrame * CFrame.new(0, 0, 7)
+
+    pcall(function()
+        VirtualUser:CaptureController()
+        VirtualUser:Button1Down()
+        task.wait(0.05)
+        VirtualUser:Button1Up()
+    end)
+end
+
+local function AutoFarmLoop()
+    if not BF.AutoFarm then return end
+    local target = GetNearestEnemy(220)
+    if target then
+        AttackTarget(target)
+    end
+end
+
+local function getSeaMapByLevel(level)
+    if level < 700 then return "Spawn" end
+    if level < 1500 then return "Desert" end
+    if level < 2500 then return "Jungle" end
+    return "Sky"
+end
+
+local function AutoSeaLoop()
+    if not BF.AutoSea then return end
+    local level = getLevel()
+    local targetMap = getSeaMapByLevel(level)
+    TeleportToMap(targetMap)
+end
+
+local MapPositions = {
+    Spawn = Vector3.new(0, 5, 0),
+    Desert = Vector3.new(1000, 5, 4490),
+    Jungle = Vector3.new(-1580, 35, 150),
+    Snow = Vector3.new(1390, 90, -1300),
+    Sky = Vector3.new(-4700, 850, -1900),
+    Marine = Vector3.new(-5890, 10, 7100),
+    Pirate = Vector3.new(-1120, 15, 3840),
+}
+
+local function TeleportToMap(mapName)
+    local chosen = mapName or BF.SelectMap or "Spawn"
+    local pos = MapPositions[chosen]
+    if not pos then
+        warn("[Abysslix] Map không tồn tại: " .. tostring(chosen))
+        return
+    end
+
+    local char = getCharacter()
+    local root = getRoot(char)
+    if root then
+        root.CFrame = CFrame.new(pos)
+    end
+end
+
+local function SetupBFUI()
+    if Tabs and Tabs.Main then
+        local mainSec = Tabs.Main:AddSection("Auto")
+        mainSec:AddToggle("Auto Farm", {
+            Title = "Auto Farm",
+            Description = "Tự động tấn công mob gần nhất",
+            Default = false,
+            Callback = function(state)
+                BF.AutoFarm = state
+            end
+        })
+
+        mainSec:AddToggle("Auto Quest", {
+            Title = "Auto Quest",
+            Description = "Tự động nhận quest",
+            Default = false,
+            Callback = function(state)
+                BF.AutoQuest = state
+            end
+        })
+
+        mainSec:AddToggle("Auto Sea", {
+            Title = "Auto Sea",
+            Description = "Tự động vào Sea phù hợp",
+            Default = false,
+            Callback = function(state)
+                BF.AutoSea = state
+            end
+        })
+    end
+
+    if Tabs and Tabs.Teleport then
+        local tpSec = Tabs.Teleport:AddSection("Map")
+        tpSec:AddDropdown("Map Select", {
+            Title = "Chọn Map",
+            Description = "Dịch chuyển theo map",
+            Values = {"Spawn", "Desert", "Jungle", "Snow", "Sky", "Marine", "Pirate"},
+            Default = "Spawn",
+            Callback = function(value)
+                BF.SelectMap = value
+            end
+        })
+
+        tpSec:AddButton("Teleport Now", {
+            Title = "Teleport Now",
+            Description = "Dịch chuyển ngay tới map đã chọn",
+            Callback = function()
+                TeleportToMap(BF.SelectMap)
+            end
+        })
+    end
+
+    if Tabs and Tabs.Setting then
+        local setSec = Tabs.Setting:AddSection("Team")
+        setSec:AddDropdown("Join Team", {
+            Title = "Join Team",
+            Description = "Chọn team muốn vào",
+            Values = {"Marines", "Pirates"},
+            Default = "Marines",
+            Callback = function(value)
+                BF.JoinTeamTo = value
+            end
+        })
+
+        setSec:AddToggle("Auto Join Team", {
+            Title = "Auto Join Team",
+            Description = "Tự động đổi team",
+            Default = true,
+            Callback = function(state)
+                BF.AutoJoinTeam = state
+            end
+        })
+    end
+end
+
+SetupBFUI()
+
+task.spawn(function()
+    while true do
+        task.wait(0.8)
+        JoinTeam()
+        StartQuest()
+        AutoFarmLoop()
+        AutoSeaLoop()
+    end
+end)
 
 task.wait(0.5)
 
@@ -11287,7 +11668,6 @@ spawn(function()
     end
 end)
 
-local Lighting = game:GetService("Lighting")
 local FULLBRIGHT_SAVE_FILE = "fullbright_save.txt"
 
 -- Salvar valores originais
