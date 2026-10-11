@@ -3011,8 +3011,63 @@ local function _alive(m)
     return h and h.Health > 0
 end
 
--- Bật log để biết đòn đánh có chạy không: gõ _G.AttackDebug = true trong executor
+-- ===== Chế độ HỌC ĐÒN ĐÁNH THẬT CỦA GAME =====
+-- Game hay đổi cách gửi đòn đánh lên server. Đoạn này ghi lại đúng gói tin mà game gửi khi
+-- BẠN TỰ ĐÁNH TAY, rồi dùng lại đúng khuôn đó cho quái khác. Cách dùng ở cuối câu trả lời.
 _G.AttackDebug = _G.AttackDebug or false
+_G.AttackLog = _G.AttackLog or false
+local _tmpl = {}              -- khuôn gói tin theo tên remote
+local _inOurCall = false      -- để không học nhầm gói do chính script gửi
+local function _desc(v)
+    local t = typeof(v)
+    if t == "string" then return '"' .. v:sub(1, 40) .. '"' end
+    if t == "number" or t == "boolean" then return tostring(v) end
+    if t == "Instance" then return v.ClassName .. ":" .. v.Name end
+    if t == "table" then return "table(" .. tostring(#v) .. ")" end
+    return t
+end
+pcall(function()
+    if not (hookmetamethod and getnamecallmethod) then return end
+    local old
+    local hook = function(self, ...)
+        local m = getnamecallmethod()
+        if m == "FireServer" and not _inOurCall and typeof(self) == "Instance" and self.ClassName == "RemoteEvent" then
+            local n = self.Name
+            if n:find("Register", 1, true) or n:find("Validator", 1, true) then
+                local args = table.pack(...)
+                if n:find("Register", 1, true) then _tmpl[n] = args end
+                if _G.AttackLog then
+                    local parts = {}
+                    for i = 1, args.n do parts[i] = _desc(args[i]) end
+                    print("[AttackLog] " .. n .. "(" .. table.concat(parts, ", ") .. ")")
+                end
+            end
+        end
+        return old(self, ...)
+    end
+    old = hookmetamethod(game, "__namecall", newcclosure and newcclosure(hook) or hook)
+end)
+
+local function _buildArgs(tmpl, part, hits, fallback)
+    if not tmpl then return fallback end
+    local out = table.pack(table.unpack(tmpl, 1, tmpl.n))
+    for i = 1, out.n do
+        local a = out[i]
+        if typeof(a) == "Instance" and a:IsA("BasePart") then
+            out[i] = part
+        elseif type(a) == "table" then
+            out[i] = hits
+        end
+    end
+    return out
+end
+
+local function _fire(remote, args)
+    _inOurCall = true
+    pcall(function() remote:FireServer(table.unpack(args, 1, args.n)) end)
+    _inOurCall = false
+end
+
 local _lastClick, _lastLog = 0, 0
 
 function AttackNoCoolDown()
@@ -3023,18 +3078,21 @@ function AttackNoCoolDown()
         if not myRoot or not hum or hum.Health <= 0 then return end
         local myPos = myRoot.Position
 
-        -- tool đang cầm
+        -- tool đang cầm (chưa cầm thì tự cầm rồi đợi lượt sau)
         local tool
         for _, c in ipairs(char:GetChildren()) do
             if c:IsA("Tool") then tool = c break end
         end
-        if not tool then return end
+        if not tool then
+            if SelectWeapon then EquipTool(SelectWeapon) end
+            return
+        end
 
         local enemiesFolder = __WS:FindFirstChild("Enemies")
         if not enemiesFolder then return end
 
         -- gom quái trong tầm 60 studs
-        local hits, firstPart, dirs = {}, nil, {}
+        local hits, firstPart, dirs, firstMob = {}, nil, {}, nil
         for _, mob in ipairs(enemiesFolder:GetChildren()) do
             if not mob:GetAttribute("IsBoat") and _alive(mob) then
                 local mhrp = mob:FindFirstChild("HumanoidRootPart")
@@ -3045,6 +3103,7 @@ function AttackNoCoolDown()
                         table.insert(hits, { mob, part })
                         table.insert(dirs, diff.Magnitude > 0 and diff.Unit or Vector3.new(0, 0, 1))
                         firstPart = firstPart or part
+                        firstMob = firstMob or mob
                     end
                 end
             end
@@ -3053,27 +3112,29 @@ function AttackNoCoolDown()
 
         local fired = {}
 
-        -- Cách 1: LeftClickRemote (vũ khí/chiêu kiểu cũ)
+        -- Cách 1: LeftClickRemote (kiểu cũ)
         local lc = tool:FindFirstChild("LeftClickRemote")
         if lc then
             for i, dir in ipairs(dirs) do
+                _inOurCall = true
                 pcall(function() lc:FireServer(dir, i) end)
+                _inOurCall = false
             end
             fired[#fired + 1] = "LeftClickRemote"
         end
 
-        -- Cách 2: RegisterAttack + RegisterHit (kiểu mới)
+        -- Cách 2: RegisterAttack + RegisterHit, ưu tiên dùng khuôn học từ đòn đánh tay của bạn
         local mods = __RS:FindFirstChild("Modules")
         local net  = mods and mods:FindFirstChild("Net")
         local reAtk = net and net:FindFirstChild("RE/RegisterAttack")
         local reHit = net and net:FindFirstChild("RE/RegisterHit")
         if reAtk and reHit then
-            pcall(function() reAtk:FireServer(0) end)
-            pcall(function() reHit:FireServer(firstPart, hits) end)
-            fired[#fired + 1] = "RegisterHit"
+            _fire(reAtk, _buildArgs(_tmpl["RE/RegisterAttack"], firstPart, hits, table.pack(0)))
+            _fire(reHit, _buildArgs(_tmpl["RE/RegisterHit"], firstPart, hits, table.pack(firstPart, hits)))
+            fired[#fired + 1] = _tmpl["RE/RegisterHit"] and "RegisterHit(khuôn học)" or "RegisterHit(mặc định)"
         end
 
-        -- Cách 3 (luôn có): click thật, đảm bảo vẫn gây sát thương dù remote bị game đổi
+        -- Cách 3: click thật
         if os.clock() - _lastClick >= 0.1 then
             _lastClick = os.clock()
             pcall(function() tool:Activate() end)
@@ -3083,7 +3144,10 @@ function AttackNoCoolDown()
 
         if _G.AttackDebug and os.clock() - _lastLog > 1 then
             _lastLog = os.clock()
-            print(("[Attack] tool=%s | quái=%d | dùng: %s"):format(tool.Name, #hits, table.concat(fired, ", ")))
+            local h = firstMob and firstMob:FindFirstChildOfClass("Humanoid")
+            print(("[Attack] tool=%s | quái=%d | máu quái đầu=%s | dùng: %s | đã học khuôn: %s"):format(
+                tool.Name, #hits, h and tostring(math.floor(h.Health)) or "?", table.concat(fired, ", "),
+                tostring(_tmpl["RE/RegisterHit"] ~= nil)))
         end
     end)
     if not ok then warn("[AttackNoCoolDown] " .. tostring(err)) end
