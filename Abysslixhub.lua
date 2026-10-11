@@ -1,5 +1,5 @@
 -- [OPT] Cache service / LocalPlayer 1 lần (trước: ~1700 lần gọi game:GetService(...) / game.Players.LocalPlayer rải rác)
-local __PL  = game:GetService("Players")x`
+local __PL  = game:GetService("Players")`
 local __RS  = game:GetService("ReplicatedStorage")
 local __WS  = game:GetService("Workspace")
 local __VIM = game:GetService("VirtualInputManager")
