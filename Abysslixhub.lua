@@ -61,7 +61,7 @@ local Root = HumanoidRootPart
 -- Giữ nguyên 100% Logo Abysslix & Màu Xanh Đen (Abyss Black & Neon Cyan Glow)
 -- Phím tắt Ctrl (LeftControl / RightControl) & Nút nổi kéo thả
 -- ==========================================
-local HUB_ICON = "rbxassetid://128438943223471"
+local HUB_ICON = "rbxassetid://107755537229053"
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
