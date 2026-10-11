@@ -3016,12 +3016,8 @@ end
 -- BẠN TỰ ĐÁNH TAY, rồi dùng lại đúng khuôn đó cho quái khác. Cách dùng ở cuối câu trả lời.
 _G.AttackDebug = _G.AttackDebug or false
 _G.AttackLog = _G.AttackLog or false
--- Mặc định chỉ dùng đòn đánh THẬT (click như người chơi) vì đây là đường duy nhất game chắc chắn
--- tính damage, thanh damage và kill nhiệm vụ. Muốn bật lại các cách gửi remote: _G.AttackOnly = nil
-if _G.AttackOnly == nil and not _G.AttackOnlyInit then
-    _G.AttackOnly = "Click"
-    _G.AttackOnlyInit = true
-end
+-- Mặc định dùng tất cả các cách đánh (nil). Có thể ép riêng 1 cách bằng _G.AttackOnly = "Click" / "RegisterMau" ...
+_G.AttackOnly = nil
 local _tmpl = {}              -- khuôn gói tin theo tên remote
 local _inOurCall = false      -- để không học nhầm gói do chính script gửi
 local function _desc(v)
@@ -3153,7 +3149,7 @@ function AttackNoCoolDown()
                 -- quay camera về phía quái rồi click vào giữa màn hình như người chơi thật
                 local cam = __WS.CurrentCamera
                 if cam and firstPart then
-                    cam.CFrame = CFrame.new(cam.CFrame.Position, firstPart.Position)
+                    if only == "Click" then cam.CFrame = CFrame.new(cam.CFrame.Position, firstPart.Position) end
                     local vp = cam.ViewportSize
                     local center = Vector2.new(vp.X / 2, vp.Y / 2)
                     VirtualUser:Button1Down(center, cam.CFrame)
@@ -3736,15 +3732,10 @@ local _oneHitConns = {}
 
 -- [OPT] Handler HealthChanged gọn: không pcall/closure, không gọi sethiddenproperty mỗi lần đổi máu,
 -- bỏ biến prevHp không dùng; sethiddenproperty chỉ gọi 1 lần mỗi nhịp thay vì cho từng quái.
-local function _hookMobHp(mob, hum)
-    local cap = hum.MaxHealth * 0.25
-    if hum.Health > cap then hum.Health = cap end
-    _oneHitConns[mob] = hum.HealthChanged:Connect(function(newHp)
-        if not _G.OneHitKill then return end
-        local c = hum.MaxHealth * 0.25
-        if newHp > c then hum.Health = c end
-    end)
-end
+-- [ĐÃ BỎ] Trước đây hàm này tự ghi Humanoid.Health của quái xuống 25% NGAY TRÊN MÁY BẠN.
+-- Server không hề nhận sát thương nên quái chỉ "trông như" mất máu: không hiện số damage,
+-- quest không tính kill, quái không chết thật. Giờ không ghi máu quái nữa, mọi sát thương phải là thật.
+local function _hookMobHp(mob, hum) end
 
 spawn(function()
     while wait(0.1) do
@@ -3757,10 +3748,7 @@ spawn(function()
             pcall(function()
                 pcall(sethiddenproperty, __LP, "SimulationRadius", math.huge)
                 for _, mob in ipairs(__WS.Enemies:GetChildren()) do
-                    if not _oneHitConns[mob] then
-                        local hum = mob:FindFirstChild("Humanoid")
-                        if hum then pcall(_hookMobHp, mob, hum) end
-                    end
+                    -- (không còn hạ máu quái ở phía client)
                 end
                 -- Dọn connection mob đã despawn
                 for mob, conn in pairs(_oneHitConns) do
