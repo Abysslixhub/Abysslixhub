@@ -782,17 +782,15 @@ end
 
 Tabs = {
     ["Info"]     = createTab("Thông Tin"),
-    ["Shop"]     = createTab("Cửa Hàng"),
-    ["Main"]     = createTab("Cày Cấp"),
+    ["Discord"]  = createTab("Discord"),
+    ["Shop"]     = createTab("Shop"),
+    ["Main"]     = createTab("Farm"),
     ["Sea"]      = createTab("Sự Kiện"),
-    ["Item"]     = createTab("Lấy & Nâng Cấp Vật Phẩm"),
     ["Status"]   = createTab("Webhook"),
     ["Stats"]    = createTab("Chỉ Số"),
-    ["Player"]   = createTab("Người Chơi"),
     ["Teleport"] = createTab("Dịch Chuyển"),
-    ["PVP"]      = createTab("Giả Mạo"),
+    ["PVP"]      = createTab("PVP"),
     ["Fruit"]    = createTab("Trái Ác Quỷ"),
-    ["Raid"]     = createTab("Đột Kích"),
     ["Race"]     = createTab("Nâng Cấp Chủng Tộc"),
     ["Misc"]     = createTab("Khác"),
     ["Setting"]  = createTab("Cài Đặt"),
@@ -806,14 +804,32 @@ local BF = {
     JoinTeamTo = "Marines",
     AutoFarm = false,
     AutoFarmSea = false,
+    AutoSeaEvent = false,
     AutoPVP = false,
     AutoAim = false,
     AutoQuest = false,
     AutoSea = false,
+    FarmMode = "Normal",
+    AutoKataOnly = false,
+    AutoBoneOnly = false,
     QuestName = nil,
     SelectMap = "Spawn",
     AutoFarmRange = 220,
     PVPRange = 180,
+    MainLoopDelay = 35,
+    MoveSpeed = 250,
+    PVPRunSpeed = 250,
+    PVPJumpPower = 50,
+    FarmPullSpeed = 150,
+    FarmGroupCount = 3,
+    SeaZone = "Lv 1",
+    SeaMonster = "Bandit",
+    SeaMonsterList = {"Bandit", "Pirate", "Brute", "Monkey", "Gorilla"},
+    SeaFarmMode = "M1 Fruit",
+    RaceFindMysteryIsland = false,
+    RaceGoToHighestPoint = false,
+    RaceMoonV3 = false,
+    RaceAutoGear = false,
     PlayerList = {},
     SelectedTarget = nil,
 }
@@ -831,6 +847,53 @@ local function getRoot(char)
     if not char then return nil end
     return char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart")
 end
+
+local function ApplyMoveSpeed(value)
+    local speed = tonumber(value) or BF.MoveSpeed or 250
+    speed = math.clamp(speed, 10, 500)
+    BF.MoveSpeed = speed
+    getgenv().FlySpeedValue = speed
+
+    local char = getCharacter()
+    local hum = getHumanoid(char)
+    if hum then
+        hum.WalkSpeed = speed
+    end
+end
+
+local function ApplyPVPRunSpeed(value)
+    local speed = tonumber(value) or BF.PVPRunSpeed or 250
+    speed = math.clamp(speed, 10, 500)
+    BF.PVPRunSpeed = speed
+
+    local char = getCharacter()
+    local hum = getHumanoid(char)
+    if hum then
+        hum.WalkSpeed = speed
+    end
+end
+
+local function ApplyPVPJumpPower(value)
+    local jump = tonumber(value) or BF.PVPJumpPower or 50
+    jump = math.clamp(jump, 10, 500)
+    BF.PVPJumpPower = jump
+
+    local char = getCharacter()
+    local hum = getHumanoid(char)
+    if hum then
+        hum.JumpPower = jump
+    end
+end
+
+Player.CharacterAdded:Connect(function(char)
+    task.defer(function()
+        local hum = getHumanoid(char)
+        if hum then
+            hum.WalkSpeed = BF.PVPRunSpeed or BF.MoveSpeed or 250
+            hum.JumpPower = BF.PVPJumpPower or 50
+        end
+    end)
+end)
 
 local function getLevel()
     local data = Player:FindFirstChild("Data")
@@ -919,38 +982,62 @@ local function GetNearestEnemy(maxDistance)
     local root = getRoot(char)
     if not root then return nil end
 
-    local candidates = {}
+    local enemies = {}
     local enemiesFolder = Workspace:FindFirstChild("Enemies")
     if enemiesFolder then
         for _, obj in ipairs(enemiesFolder:GetDescendants()) do
-            table.insert(candidates, obj)
+            if obj:IsA("Model") then
+                table.insert(enemies, obj)
+            end
         end
     end
 
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") then
-            table.insert(candidates, obj)
+        if obj:IsA("Model") and not table.find(enemies, obj) then
+            table.insert(enemies, obj)
         end
     end
 
-    local nearest = nil
-    local nearestDist = math.huge
+    local bestTarget = nil
+    local bestScore = -math.huge
+    local groupCount = math.clamp(tonumber(BF.FarmGroupCount) or 3, 1, 10)
 
-    for _, obj in ipairs(candidates) do
+    for _, obj in ipairs(enemies) do
         if obj ~= char and obj:IsA("Model") then
             local hum = obj:FindFirstChildOfClass("Humanoid")
             local hrp = obj:FindFirstChild("HumanoidRootPart")
             if hum and hrp and hum.Health > 0 then
                 local dist = (hrp.Position - root.Position).Magnitude
-                if dist < maxDistance and dist < nearestDist then
-                    nearest = obj
-                    nearestDist = dist
+                if dist <= maxDistance then
+                    local nearbyCount = 0
+                    for _, other in ipairs(enemies) do
+                        if other ~= obj and other:IsA("Model") then
+                            local otherHum = other:FindFirstChildOfClass("Humanoid")
+                            local otherRoot = other:FindFirstChild("HumanoidRootPart")
+                            if otherHum and otherRoot and otherHum.Health > 0 then
+                                local d = (otherRoot.Position - hrp.Position).Magnitude
+                                if d <= 30 then
+                                    nearbyCount += 1
+                                end
+                            end
+                        end
+                    end
+
+                    local score = (nearbyCount * 20) - dist + (groupCount * 5)
+                    if nearbyCount >= groupCount or score > bestScore then
+                        if score > bestScore then
+                            bestScore = score
+                            bestTarget = obj
+                        elseif not bestTarget and nearbyCount >= groupCount then
+                            bestTarget = obj
+                        end
+                    end
                 end
             end
         end
     end
 
-    return nearest
+    return bestTarget
 end
 
 local function AttackTarget(target)
@@ -965,13 +1052,13 @@ local function AttackTarget(target)
         hum:MoveTo(enemyRoot.Position)
     end
 
-    task.wait(0.08)
+    task.wait(0.04)
     root.CFrame = enemyRoot.CFrame * CFrame.new(0, 0, 7)
 
     pcall(function()
         VirtualUser:CaptureController()
         VirtualUser:Button1Down()
-        task.wait(0.05)
+        task.wait(0.04)
         VirtualUser:Button1Up()
     end)
 end
@@ -982,6 +1069,8 @@ local function AutoFarmLoop()
     if target then
         AttackTarget(target)
     end
+    local pullDelay = math.max(0.05, (tonumber(BF.FarmPullSpeed) or 150) / 1000)
+    task.wait(pullDelay)
 end
 
 local function RefreshPlayerList()
@@ -1087,6 +1176,78 @@ local function AutoSeaLoop()
     TeleportToMap(targetMap)
 end
 
+local function RefreshSeaMonsterList()
+    local list = {
+        "Sea Beast",
+        "Rumbling Waters",
+        "Shark",
+        "Terrortshark",
+        "Piranha",
+        "Ship Raid",
+        "Ghost Ship",
+    }
+
+    BF.SeaMonsterList = list
+    if not table.find(BF.SeaMonsterList, BF.SeaMonster) then
+        BF.SeaMonster = BF.SeaMonsterList[1]
+    end
+    return BF.SeaMonsterList
+end
+
+local function GetNearestSeaEventEnemy()
+    local char = getCharacter()
+    local root = getRoot(char)
+    if not root then return nil end
+
+    local targetName = BF.SeaMonster or "Bandit"
+    local nearest = nil
+    local nearestDist = math.huge
+
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") then
+            local hum = obj:FindFirstChildOfClass("Humanoid")
+            local hrp = obj:FindFirstChild("HumanoidRootPart")
+            if hum and hrp and hum.Health > 0 then
+                local enemyName = obj.Name or ""
+                local isMatch = enemyName == targetName or enemyName:lower():find(targetName:lower(), 1, true) ~= nil
+                if isMatch then
+                    local dist = (hrp.Position - root.Position).Magnitude
+                    if dist < (BF.AutoFarmRange or 220) and dist < nearestDist then
+                        nearest = obj
+                        nearestDist = dist
+                    end
+                end
+            end
+        end
+    end
+
+    return nearest
+end
+
+local function SeaEventFarmLoop()
+    if not BF.AutoSeaEvent then return end
+    local target = GetNearestSeaEventEnemy()
+    if not target then return end
+
+    if BF.SeaFarmMode == "Dragon Storm" then
+        local targetRoot = getRoot(target)
+        local char = getCharacter()
+        local root = getRoot(char)
+        if targetRoot and root then
+            root.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 6)
+            pcall(function()
+                VirtualUser:CaptureController()
+                VirtualUser:Button1Down()
+                task.wait(0.06)
+                VirtualUser:Button1Up()
+            end)
+        end
+        return
+    end
+
+    AttackTarget(target)
+end
+
 local function AutoFarmSeaLoop()
     if not BF.AutoFarmSea then return end
     local level = getLevel()
@@ -1127,15 +1288,202 @@ local function TeleportToMap(mapName)
     end
 end
 
+local function FindMysteryIslandModel()
+    local islandNames = {"Mirage Island", "Mystery Island", "Kitsune Island", "Prehistoric Island", "Treasure Island"}
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") then
+            local name = obj.Name or ""
+            for _, targetName in ipairs(islandNames) do
+                if name == targetName or name:lower():find(targetName:lower(), 1, true) then
+                    return obj
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function GetHighestPointOnIsland(model)
+    if not model then return nil end
+    local highest = nil
+    local highestY = -math.huge
+    for _, part in ipairs(model:GetDescendants()) do
+        if part:IsA("BasePart") then
+            if part.Position.Y > highestY then
+                highestY = part.Position.Y
+                highest = part
+            end
+        end
+    end
+    return highest
+end
+
+local function FlyToHighestPointOnIsland()
+    local island = FindMysteryIslandModel()
+    if not island then return end
+    local highestPart = GetHighestPointOnIsland(island)
+    if not highestPart then return end
+
+    local char = getCharacter()
+    local root = getRoot(char)
+    local hum = getHumanoid(char)
+    if root and hum then
+        local targetPos = highestPart.Position + Vector3.new(0, 18, 0)
+        root.CFrame = CFrame.new(targetPos)
+        hum:MoveTo(targetPos)
+    end
+end
+
+local function ToggleMoonRaceV3()
+    local char = getCharacter()
+    local hum = getHumanoid(char)
+    if not hum then return end
+
+    local raceRemote = getRemoteByNames({"RaceRemote", "CommF_", "CommF", "SetRace"})
+    if raceRemote then
+        pcall(function()
+            raceRemote:InvokeServer("SetRace", "V3")
+        end)
+        return
+    end
+
+    local root = getRoot(char)
+    if root then
+        root.CFrame = root.CFrame + Vector3.new(0, 18, 0)
+    end
+end
+
+local function FindNearbyGear()
+    local char = getCharacter()
+    local root = getRoot(char)
+    if not root then return nil end
+
+    local nearest = nil
+    local nearestDist = math.huge
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        local name = obj.Name or ""
+        if obj:IsA("BasePart") and (name:lower():find("gear", 1, true) or name:lower():find("mystic", 1, true)) then
+            local dist = (obj.Position - root.Position).Magnitude
+            if dist < nearestDist then
+                nearest = obj
+                nearestDist = dist
+            end
+        end
+    end
+
+    return nearest
+end
+
+local function AutoCollectMysticIslandGear()
+    if not BF.RaceAutoGear then return end
+    local gear = FindNearbyGear()
+    if not gear then return end
+
+    local char = getCharacter()
+    local root = getRoot(char)
+    local hum = getHumanoid(char)
+    if root and hum then
+        local target = gear.Position
+        hum:MoveTo(target)
+        root.CFrame = CFrame.new(target + Vector3.new(0, 4, 0))
+    end
+end
+
+local function RaceMysteryIslandLoop()
+    if BF.RaceFindMysteryIsland then
+        local island = FindMysteryIslandModel()
+        if island then
+            local root = getRoot(getCharacter())
+            if root then
+                root.CFrame = island:GetPivot() + Vector3.new(0, 35, 0)
+            end
+        end
+    end
+
+    if BF.RaceGoToHighestPoint then
+        FlyToHighestPointOnIsland()
+    end
+
+    if BF.RaceMoonV3 then
+        ToggleMoonRaceV3()
+    end
+
+    if BF.RaceAutoGear then
+        AutoCollectMysticIslandGear()
+    end
+end
+
 local function SetupBFUI()
+    if Tabs and Tabs.Info then
+        local infoSec = Tabs.Info:AddSection("Info")
+        infoSec:AddParagraph({
+            Title = "Script",
+            Content = "Abysslix Hub"
+        })
+        infoSec:AddParagraph({
+            Title = "Status",
+            Content = "Chạy ổn định, UI đã được sắp xếp lại theo tab."
+        })
+        infoSec:AddParagraph({
+            Title = "Mode",
+            Content = "Blox Fruits compatible automation"
+        })
+    end
+
+    if Tabs and Tabs.Shop then
+        local shopSec = Tabs.Shop:AddSection("Shop & Items")
+        shopSec:AddParagraph({
+            Title = "Shop",
+            Content = "Gộp các chức năng shop & item vào tab Shop."
+        })
+        shopSec:AddParagraph({
+            Title = "Note",
+            Content = "Các tính năng mua / item được gom vào đây để gọn và dễ quản lý."
+        })
+    end
+
     if Tabs and Tabs.Main then
-        local mainSec = Tabs.Main:AddSection("Auto")
+        local mainSec = Tabs.Main:AddSection("Farm")
+        mainSec:AddDropdown("Farm Type", {
+            Title = "Farm Type",
+            Description = "Chọn kiểu farming: Normal, Kata, Bone",
+            Values = {"Normal", "Kata", "Bone"},
+            Default = BF.FarmMode,
+            Callback = function(value)
+                BF.FarmMode = value
+            end
+        })
+
         mainSec:AddToggle("Auto Farm", {
             Title = "Auto Farm",
-            Description = "Tự động đánh quái gần nhất",
+            Description = "Tự động đánh quái gần nhất theo kiểu farm đã chọn",
             Default = false,
             Callback = function(state)
                 BF.AutoFarm = state
+            end
+        })
+
+        mainSec:AddToggle("Auto Kata Only", {
+            Title = "Auto Kata Only",
+            Description = "Chỉ farm mục tiêu kata / quái phù hợp kata",
+            Default = false,
+            Callback = function(state)
+                BF.AutoKataOnly = state
+                if state then
+                    BF.AutoBoneOnly = false
+                end
+            end
+        })
+
+        mainSec:AddToggle("Auto Bone Only", {
+            Title = "Auto Bone Only",
+            Description = "Chỉ farm bone / vật phẩm cần cho bone farming",
+            Default = false,
+            Callback = function(state)
+                BF.AutoBoneOnly = state
+                if state then
+                    BF.AutoKataOnly = false
+                end
             end
         })
 
@@ -1150,15 +1498,6 @@ local function SetupBFUI()
             end
         })
 
-        mainSec:AddToggle("Auto PVP", {
-            Title = "Auto PVP",
-            Description = "Tự động tấn công người chơi gần nhất",
-            Default = false,
-            Callback = function(state)
-                BF.AutoPVP = state
-            end
-        })
-
         mainSec:AddToggle("Auto Quest", {
             Title = "Auto Quest",
             Description = "Tự động nhận quest phù hợp level",
@@ -1170,7 +1509,40 @@ local function SetupBFUI()
     end
 
     if Tabs and Tabs.Sea then
-        local seaSec = Tabs.Sea:AddSection("Sea Auto")
+        local seaSec = Tabs.Sea:AddSection("Sea Event")
+        RefreshSeaMonsterList()
+
+        seaSec:AddDropdown("Sea Zone", {
+            Title = "Sea Zone",
+            Description = "Chọn vùng biển theo level: Lv 1, Lv 2, Lv 3, Lv 4, Lv 5, Lv 6, Infinity",
+            Values = {"Lv 1", "Lv 2", "Lv 3", "Lv 4", "Lv 5", "Lv 6", "Infinity"},
+            Default = BF.SeaZone,
+            Callback = function(value)
+                BF.SeaZone = value
+                RefreshSeaMonsterList()
+            end
+        })
+
+        local monsterDropdown = seaSec:AddDropdown("Sea Monster", {
+            Title = "Sea Monster",
+            Description = "Chọn quái cần farm ở biển",
+            Values = BF.SeaMonsterList,
+            Default = BF.SeaMonster,
+            Callback = function(value)
+                BF.SeaMonster = value
+            end
+        })
+
+        seaSec:AddDropdown("Farm Mode", {
+            Title = "Farm Mode",
+            Description = "M1 Fruit hoặc Dragon Storm",
+            Values = {"M1 Fruit", "Dragon Storm"},
+            Default = BF.SeaFarmMode,
+            Callback = function(value)
+                BF.SeaFarmMode = value
+            end
+        })
+
         seaSec:AddToggle("Auto Sea", {
             Title = "Auto Sea",
             Description = "Tự động di chuyển tới island phù hợp theo level",
@@ -1186,6 +1558,26 @@ local function SetupBFUI()
             Default = false,
             Callback = function(state)
                 BF.AutoFarmSea = state
+            end
+        })
+
+        seaSec:AddToggle("Sea Event Farm", {
+            Title = "Sea Event Farm",
+            Description = "Farm quái biển theo vùng và quái đã chọn",
+            Default = false,
+            Callback = function(state)
+                BF.AutoSeaEvent = state
+            end
+        })
+
+        seaSec:AddButton("Refresh Sea List", {
+            Title = "Refresh Sea List",
+            Description = "Làm mới danh sách quái biển theo vùng đã chọn",
+            Callback = function()
+                local list = RefreshSeaMonsterList()
+                if monsterDropdown and monsterDropdown.SetValue then
+                    monsterDropdown:SetValue(BF.SeaMonster or list[1])
+                end
             end
         })
     end
@@ -1243,6 +1635,89 @@ local function SetupBFUI()
                 BF.PVPRange = value
             end
         })
+
+        pvpSec:AddSlider("PVP Run Speed", {
+            Title = "PVP Run Speed",
+            Description = "Tốc độ chạy nhanh khi PvP. Min 10, Max 500",
+            Min = 10,
+            Max = 500,
+            Default = BF.PVPRunSpeed or 250,
+            Callback = function(value)
+                ApplyPVPRunSpeed(value)
+            end
+        })
+
+        pvpSec:AddSlider("PVP Jump Power", {
+            Title = "PVP Jump Power",
+            Description = "Độ cao nhảy khi PvP. Min 10, Max 500",
+            Min = 10,
+            Max = 500,
+            Default = BF.PVPJumpPower or 50,
+            Callback = function(value)
+                ApplyPVPJumpPower(value)
+            end
+        })
+    end
+
+    if Tabs and Tabs.Race then
+        local raceSec = Tabs.Race:AddSection("Race")
+        raceSec:AddToggle("Find Mystery Island", {
+            Title = "Find Mystery Island",
+            Description = "Tìm đảo bí ẩn và di chuyển tới đó",
+            Default = false,
+            Callback = function(state)
+                BF.RaceFindMysteryIsland = state
+            end
+        })
+
+        raceSec:AddToggle("Go To Highest Point", {
+            Title = "Go To Highest Point",
+            Description = "Bay lên chỗ cao nhất trên đảo bí ẩn",
+            Default = false,
+            Callback = function(state)
+                BF.RaceGoToHighestPoint = state
+            end
+        })
+
+        raceSec:AddToggle("Moon V3", {
+            Title = "Moon V3",
+            Description = "Bật tộc V3 nhìn trăng",
+            Default = false,
+            Callback = function(state)
+                BF.RaceMoonV3 = state
+            end
+        })
+
+        raceSec:AddToggle("Auto Gear", {
+            Title = "Auto Gear",
+            Description = "Nhặt Gear trên đảo bí ẩn",
+            Default = false,
+            Callback = function(state)
+                BF.RaceAutoGear = state
+            end
+        })
+
+        raceSec:AddButton("Find Now", {
+            Title = "Find Now",
+            Description = "Tìm và bay tới đảo bí ẩn ngay",
+            Callback = function()
+                local island = FindMysteryIslandModel()
+                if island then
+                    local root = getRoot(getCharacter())
+                    if root then
+                        root.CFrame = island:GetPivot() + Vector3.new(0, 35, 0)
+                    end
+                end
+            end
+        })
+
+        raceSec:AddButton("Go Top", {
+            Title = "Go Top",
+            Description = "Bay lên chỗ cao nhất đảo bí ẩn",
+            Callback = function()
+                FlyToHighestPointOnIsland()
+            end
+        })
     end
 
     if Tabs and Tabs.Teleport then
@@ -1266,8 +1741,77 @@ local function SetupBFUI()
         })
     end
 
+    if Tabs and Tabs.Discord then
+        local discSec = Tabs.Discord:AddSection("Discord")
+        discSec:AddParagraph({
+            Title = "Server",
+            Content = "discord.gg/abysslix"
+        })
+        discSec:AddParagraph({
+            Title = "Thông báo",
+            Content = "Mở Discord để cập nhật script mới nhất."
+        })
+    end
+
     if Tabs and Tabs.Setting then
-        local setSec = Tabs.Setting:AddSection("Team")
+        local setSec = Tabs.Setting:AddSection("General")
+
+        setSec:AddSlider("Fly Speed", {
+            Title = "Fly Speed",
+            Description = "Điều chỉnh tốc độ bay / di chuyển khi bay: 10 - 500",
+            Min = 10,
+            Max = 500,
+            Default = BF.MoveSpeed or 250,
+            Callback = function(value)
+                ApplyMoveSpeed(value)
+            end
+        })
+
+        setSec:AddInput("Fly Speed Input", {
+            Title = "Nhập tốc độ bay",
+            Description = "Nhập giá trị từ 10 đến 500",
+            Default = tostring(BF.MoveSpeed or 250),
+            Placeholder = "Ví dụ: 250",
+            Callback = function(text)
+                local value = tonumber(text)
+                if value then
+                    ApplyMoveSpeed(value)
+                end
+            end
+        })
+
+        setSec:AddDropdown("Gather Speed", {
+            Title = "Gather Speed",
+            Description = "Tốc độ gom quái: min 50 max 1000",
+            Values = {"50", "100", "150", "200", "300", "500", "750", "1000"},
+            Default = tostring(BF.FarmPullSpeed or 150),
+            Callback = function(value)
+                BF.FarmPullSpeed = tonumber(value) or 150
+            end
+        })
+
+        setSec:AddSlider("Gather Count", {
+            Title = "Gather Count",
+            Description = "Số quái gom nhóm: 1 - 10",
+            Min = 1,
+            Max = 10,
+            Default = BF.FarmGroupCount or 3,
+            Callback = function(value)
+                BF.FarmGroupCount = math.clamp(math.floor(value + 0.5), 1, 10)
+            end
+        })
+
+        setSec:AddSlider("Speed", {
+            Title = "Loop Speed",
+            Description = "Điều chỉnh tốc độ vòng lặp farm/auto. Min 10, Max 500 (ms)",
+            Min = 10,
+            Max = 500,
+            Default = BF.MainLoopDelay or 35,
+            Callback = function(value)
+                BF.MainLoopDelay = tonumber(value) or 35
+            end
+        })
+
         setSec:AddDropdown("Join Team", {
             Title = "Join Team",
             Description = "Chọn team muốn vào",
@@ -1293,11 +1837,14 @@ SetupBFUI()
 
 task.spawn(function()
     while true do
-        task.wait(0.8)
+        local delay = math.max(0.01, (BF.MainLoopDelay or 35) / 1000)
+        task.wait(delay)
         JoinTeam()
         StartQuest()
         AutoFarmLoop()
         AutoFarmSeaLoop()
+        SeaEventFarmLoop()
+        RaceMysteryIslandLoop()
         AutoPVPLoop()
         AutoSeaLoop()
     end
@@ -10967,7 +11514,8 @@ local function FlyTo(pos)
 		end
 
 		local dir = delta.Unit
-		LV.VectorVelocity = dir * math.clamp(dist * 6, 120, 330)
+		local flySpeed = math.clamp(BF.MoveSpeed or 250, 10, 500)
+		LV.VectorVelocity = dir * flySpeed
 		AO.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + dir)
 	end)
 end
