@@ -70,7 +70,7 @@ local Root = HumanoidRootPart
 -- ==========================================
 local HUB_ICON = "rbxassetid://107755537229053"
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+local TweenService = TweenService
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/hdanhhub/UI/main/ui_BananaHub_lua.txt"))()
 
@@ -1975,16 +1975,8 @@ local function vu16(p15)
 end
 Number = math.random(1, 1000000)
 function UpdateIslandESP()
-	-- upvalues: (ref) vu16
-    local v59, v60, v61 = pairs(__WS._WorldOrigin.Locations:GetChildren())
-    while true do
-        local vu62
-        v61, vu62 = v59(v60, v61)
-        if v61 == nil then
-            break
-        end
+    for v61, vu62 in pairs(__WS._WorldOrigin.Locations:GetChildren()) do
         pcall(function()
-			-- upvalues: (ref) vu62, (ref) vu16
             if IslandESP then
                 if vu62.Name ~= "Sea" then
                     if vu62:FindFirstChild("NameEsp") then
@@ -2021,16 +2013,8 @@ local function vu67(p66)
 end
 Number = math.random(1, 1000000)
 function UpdatePlayerChams()
-	-- upvalues: (ref) vu67
-    local v68, v69, v70 = pairs(__PL:GetChildren())
-    while true do
-        local vu71
-        v70, vu71 = v68(v69, v70)
-        if v70 == nil then
-            break
-        end
+    for v70, vu71 in pairs(__PL:GetChildren()) do
         pcall(function()
-			-- upvalues: (ref) vu71, (ref) vu67
             if not isnil(vu71.Character) then
                 if ESPPlayer then
                     if isnil(vu71.Character.Head) or vu71.Character.Head:FindFirstChild("NameEsp" .. Number) then
@@ -2065,16 +2049,8 @@ function UpdatePlayerChams()
     end
 end
 function UpdateChestChams()
-	-- upvalues: (ref) vu67
-    local v74, v75, v76 = pairs(game.Workspace:GetChildren())
-    while true do
-        local vu77
-        v76, vu77 = v74(v75, v76)
-        if v76 == nil then
-            break
-        end
+    for v76, vu77 in pairs(__WS:GetChildren()) do
         pcall(function()
-			-- upvalues: (ref) vu77, (ref) vu67
             if string.find(vu77.Name, "Chest") then
                 if ChestESP then
                     if string.find(vu77.Name, "Chest") then
@@ -2117,16 +2093,8 @@ function UpdateChestChams()
     end
 end
 function UpdateDevilChams()
-	-- upvalues: (ref) vu67
-    local v80, v81, v82 = pairs(game.Workspace:GetChildren())
-    while true do
-        local vu83
-        v82, vu83 = v80(v81, v82)
-        if v82 == nil then
-            break
-        end
+    for v82, vu83 in pairs(__WS:GetChildren()) do
         pcall(function()
-			-- upvalues: (ref) vu83, (ref) vu67
             if DevilFruitESP then
                 if string.find(vu83.Name, "Fruit") then
                     if vu83.Handle:FindFirstChild("NameEsp" .. Number) then
@@ -2157,16 +2125,8 @@ function UpdateDevilChams()
     end
 end
 function UpdateFlowerChams()
-	-- upvalues: (ref) vu67
-    local v86, v87, v88 = pairs(game.Workspace:GetChildren())
-    while true do
-        local vu89
-        v88, vu89 = v86(v87, v88)
-        if v88 == nil then
-            break
-        end
+    for v88, vu89 in pairs(__WS:GetChildren()) do
         pcall(function()
-			-- upvalues: (ref) vu89, (ref) vu67
             if vu89.Name == "Flower2" or vu89.Name == "Flower1" then
                 if FlowerESP then
                     if vu89:FindFirstChild("NameEsp" .. Number) then
@@ -2204,14 +2164,7 @@ function UpdateFlowerChams()
     end
 end
 function UpdateRealFruitChams()
-	-- upvalues: (ref) vu67
-    local v92, v93, v94 = pairs(game.Workspace.AppleSpawner:GetChildren())
-    while true do
-        local v95
-        v94, v95 = v92(v93, v94)
-        if v94 == nil then
-            break
-        end
+    for v94, v95 in pairs(__WS.AppleSpawner:GetChildren()) do
         if v95:IsA("Tool") then
             if RealFruitESP then
                 if v95.Handle:FindFirstChild("NameEsp" .. Number) then
@@ -2239,13 +2192,7 @@ function UpdateRealFruitChams()
             end
         end
     end
-    local v98, v99, v100 = pairs(game.Workspace.PineappleSpawner:GetChildren())
-    while true do
-        local v101
-        v100, v101 = v98(v99, v100)
-        if v100 == nil then
-            break
-        end
+    for v100, v101 in pairs(__WS.PineappleSpawner:GetChildren()) do
         if v101:IsA("Tool") then
             if RealFruitESP then
                 if v101.Handle:FindFirstChild("NameEsp" .. Number) then
@@ -2273,13 +2220,7 @@ function UpdateRealFruitChams()
             end
         end
     end
-    local v104, v105, v106 = pairs(game.Workspace.BananaSpawner:GetChildren())
-    while true do
-        local v107
-        v106, v107 = v104(v105, v106)
-        if v106 == nil then
-            break
-        end
+    for v106, v107 in pairs(__WS.BananaSpawner:GetChildren()) do
         if v107:IsA("Tool") then
             if RealFruitESP then
                 if v107.Handle:FindFirstChild("NameEsp" .. Number) then
@@ -2312,13 +2253,7 @@ spawn(function()
     while wait() do
         pcall(function()
             if MobESP then
-                local v110, v111, v112 = pairs(__WS.Enemies:GetChildren())
-                while true do
-                    local v113
-                    v112, v113 = v110(v111, v112)
-                    if v112 == nil then
-                        break
-                    end
+                for v112, v113 in pairs(__WS.Enemies:GetChildren()) do
                     if v113:FindFirstChild("HumanoidRootPart") then
                         if not v113:FindFirstChild("MobEap") then
                             local v114 = Instance.new("BillboardGui")
@@ -2344,13 +2279,7 @@ spawn(function()
                     end
                 end
             else
-                local v117, v118, v119 = pairs(__WS.Enemies:GetChildren())
-                while true do
-                    local v120
-                    v119, v120 = v117(v118, v119)
-                    if v119 == nil then
-                        break
-                    end
+                for v119, v120 in pairs(__WS.Enemies:GetChildren()) do
                     if v120:FindFirstChild("MobEap") then
                         v120.MobEap:Destroy()
                     end
@@ -2363,13 +2292,7 @@ spawn(function()
     while wait() do
         pcall(function()
             if SeaESP then
-                local v121, v122, v123 = pairs(__WS.SeaBeasts:GetChildren())
-                while true do
-                    local v124
-                    v123, v124 = v121(v122, v123)
-                    if v123 == nil then
-                        break
-                    end
+                for v123, v124 in pairs(__WS.SeaBeasts:GetChildren()) do
                     if v124:FindFirstChild("HumanoidRootPart") then
                         if not v124:FindFirstChild("Seaesps") then
                             local v125 = Instance.new("BillboardGui")
@@ -2395,13 +2318,7 @@ spawn(function()
                     end
                 end
             else
-                local v128, v129, v130 = pairs(__WS.SeaBeasts:GetChildren())
-                while true do
-                    local v131
-                    v130, v131 = v128(v129, v130)
-                    if v130 == nil then
-                        break
-                    end
+                for v130, v131 in pairs(__WS.SeaBeasts:GetChildren()) do
                     if v131:FindFirstChild("Seaesps") then
                         v131.Seaesps:Destroy()
                     end
@@ -2414,13 +2331,7 @@ spawn(function()
     while wait() do
         pcall(function()
             if NpcESP then
-                local v132, v133, v134 = pairs(__WS.NPCs:GetChildren())
-                while true do
-                    local v135
-                    v134, v135 = v132(v133, v134)
-                    if v134 == nil then
-                        break
-                    end
+                for v134, v135 in pairs(__WS.NPCs:GetChildren()) do
                     if v135:FindFirstChild("HumanoidRootPart") then
                         if not v135:FindFirstChild("NpcEspes") then
                             local v136 = Instance.new("BillboardGui")
@@ -2446,13 +2357,7 @@ spawn(function()
                     end
                 end
             else
-                local v139, v140, v141 = pairs(__WS.NPCs:GetChildren())
-                while true do
-                    local v142
-                    v141, v142 = v139(v140, v141)
-                    if v141 == nil then
-                        break
-                    end
+                for v141, v142 in pairs(__WS.NPCs:GetChildren()) do
                     if v142:FindFirstChild("NpcEspes") then
                         v142.NpcEspes:Destroy()
                     end
@@ -2469,16 +2374,8 @@ local function vu145(p144)
 end
 Number = math.random(1, 1000000)
 function UpdateIslandMirageESP()
-	-- upvalues: (ref) vu145
-    local v146, v147, v148 = pairs(__WS._WorldOrigin.Locations:GetChildren())
-    while true do
-        local vu149
-        v148, vu149 = v146(v147, v148)
-        if v148 == nil then
-            break
-        end
+    for v148, vu149 in pairs(__WS._WorldOrigin.Locations:GetChildren()) do
         pcall(function()
-			-- upvalues: (ref) vu149, (ref) vu145
             if MirageIslandESP then
                 if vu149.Name == "Mirage Island" then
                     if vu149:FindFirstChild("NameEsp") then
@@ -2508,16 +2405,8 @@ function UpdateIslandMirageESP()
     end
 end
 function UpdateAuraESP()
-	-- upvalues: (ref) vu145
-    local v152, v153, v154 = pairs(__WS.NPCs:GetChildren())
-    while true do
-        local vu155
-        v154, vu155 = v152(v153, v154)
-        if v154 == nil then
-            break
-        end
+    for v154, vu155 in pairs(__WS.NPCs:GetChildren()) do
         pcall(function()
-			-- upvalues: (ref) vu155, (ref) vu145
             if AuraESP then
                 if vu155.Name == "Master of Enhancement" then
                     if vu155:FindFirstChild("NameEsp") then
@@ -2547,16 +2436,8 @@ function UpdateAuraESP()
     end
 end
 function UpdateLSDESP()
-	-- upvalues: (ref) vu145
-    local v158, v159, v160 = pairs(__WS.NPCs:GetChildren())
-    while true do
-        local vu161
-        v160, vu161 = v158(v159, v160)
-        if v160 == nil then
-            break
-        end
+    for v160, vu161 in pairs(__WS.NPCs:GetChildren()) do
         pcall(function()
-			-- upvalues: (ref) vu161, (ref) vu145
             if LADESP then
                 if vu161.Name == "Legendary Sword Dealer" then
                     if vu161:FindFirstChild("NameEsp") then
@@ -2586,16 +2467,8 @@ function UpdateLSDESP()
     end
 end
 function UpdateGeaESP()
-	-- upvalues: (ref) vu145
-    local v164, v165, v166 = pairs(__WS.Map.MysticIsland:GetChildren())
-    while true do
-        local vu167
-        v166, vu167 = v164(v165, v166)
-        if v166 == nil then
-            break
-        end
+    for v166, vu167 in pairs(__WS.Map.MysticIsland:GetChildren()) do
         pcall(function()
-			-- upvalues: (ref) vu167, (ref) vu145
             if GearESP then
                 if vu167.Name == "MeshPart" then
                     if vu167:FindFirstChild("NameEsp") then
@@ -2628,7 +2501,7 @@ function Tween2(p170)
     local v171 = (p170.Position - __LP.Character.HumanoidRootPart.Position).Magnitude
     local v172 = 350
     local v173 = TweenInfo.new(v171 / v172, Enum.EasingStyle.Linear)
-    local v174 = game:GetService("TweenService"):Create(__LP.Character.HumanoidRootPart, v173, {
+    local v174 = TweenService:Create(__LP.Character.HumanoidRootPart, v173, {
         ["CFrame"] = p170
     })
     v174:Play()
@@ -2738,6 +2611,10 @@ function EquipTool(p181)
     end)
 end
 -- [OPT] Một hàm duy nhất kiểm tra mọi cờ farm/di chuyển (trước đây là 2 chuỗi 'or' lồng 60 tầng chạy mỗi frame)
+-- [NEW] Chế độ "Không nhiệm vụ" của Xương: bật bằng toggle (_G.AutoBoneNoQuest) hoặc bởi tính năng Luyện Tộc (_G.RaceBoneFarm)
+function BoneNoQuestOn() return _G.AutoBoneNoQuest or _G.RaceBoneFarm end
+-- [NEW] Tư Lệnh Bánh: chạy khi bật 1 trong 2 chế độ (có / không nhiệm vụ)
+function CakeOn() return _G.Cake or _G.CakeNoQuest end
 local function IsMoveFlagActive()
     return _G.AutoEvoRace or
         _G.CastleRaid or
@@ -2782,12 +2659,13 @@ local function IsMoveFlagActive()
         _G.Clip2 or
         _G.Auto_Regoku or
         _G.AutoBone or
-        _G.AutoBoneNoQuest or
+        BoneNoQuestOn() or
         _G.AutoBoss or
         AutoFarmMasDevilFruit or
         AutoFarmMasGun or
         AutoHallowSycthe or
         _G.Cake or
+        _G.CakeNoQuest or
         _G.Auto_SkullGuitar or
         _G.AutoFarmSwan or
         _G.AutoEliteor or
@@ -2856,13 +2734,7 @@ task.spawn(function()
     end
 end)
 function CheckMaterial(p188)
-    local v189, v190, v191 = pairs(__RS.Remotes.CommF_:InvokeServer("getInventory"))
-    while true do
-        local v192
-        v191, v192 = v189(v190, v191)
-        if v191 == nil then
-            break
-        end
+    for v191, v192 in pairs(__RS.Remotes.CommF_:InvokeServer("getInventory")) do
         if type(v192) == "table" and (v192.Type == "Material" and v192.Name == p188) then
             return v192.Count
         end
@@ -2870,13 +2742,7 @@ function CheckMaterial(p188)
     return 0
 end
 function GetWeaponInventory(p193)
-    local v194, v195, v196 = pairs(__RS.Remotes.CommF_:InvokeServer("getInventory"))
-    while true do
-        local v197
-        v196, v197 = v194(v195, v196)
-        if v196 == nil then
-            break
-        end
+    for v196, v197 in pairs(__RS.Remotes.CommF_:InvokeServer("getInventory")) do
         if type(v197) == "table" and (v197.Type == "Sword" and v197.Name == p193) then
             return true
         end
@@ -2885,7 +2751,6 @@ function GetWeaponInventory(p193)
 end
 local vu198 = __LP
 function AttackNoCoolDown()
-	-- upvalues: (ref) vu198
     local vu199 = vu198.Character
     if not vu199 then
         return
@@ -2912,7 +2777,6 @@ function AttackNoCoolDown()
             return v206
         end
         local function v217(p208)
-			-- upvalues: (ref) vu199, (ref) vu207
             local v209 = __WS.Enemies:GetChildren()
             local v210 = vu199:GetPivot().Position
             local v211, v212, v213 = ipairs(v209)
@@ -2942,7 +2806,6 @@ function AttackNoCoolDown()
                 end
                 local vu224 = (v223.HumanoidRootPart.Position - vu199:GetPivot().Position).Unit
                 pcall(function()
-					-- upvalues: (ref) vu204, (ref) vu224, (ref) vu222
                     vu204.LeftClickRemote:FireServer(vu224, vu222)
                 end)
                 local v225 = vu222 + 1
@@ -2976,7 +2839,6 @@ function AttackNoCoolDown()
                 return
             end
             pcall(function()
-				-- upvalues: (ref) vu232, (ref) vu233
                 local v237 = __RS
                 local mods = v237:FindFirstChild("Modules")
                 local net = mods and mods:FindFirstChild("Net")
@@ -3178,6 +3040,7 @@ task.spawn(function()
         end)
     end
 end)
+local _MOB_BIG = Vector3.new(60, 60, 60)
 Tabs.Main:AddToggle("ToggleLevel", {
     ["Title"] = "Cày Cấp",
     ["Default"] = false
@@ -3221,7 +3084,7 @@ spawn(function()
                 end)
 
                 -- Nếu đang có quest KHÁC thì bỏ quest
-                if questVisible and QuestTitle ~= "" and not string.find(QuestTitle, NameMon) then
+                if questVisible and QuestTitle ~= "" and not string.find(QuestTitle, NameMon, 1, true) then
                     bringmob = false
                     __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
                     return
@@ -3241,7 +3104,7 @@ spawn(function()
                 end
 
                 -- Đã có quest đúng → farm (dùng BKP để đứng cạnh quái, giống island travel)
-                if questVisible and string.find(QuestTitle, NameMon) then
+                if questVisible and string.find(QuestTitle, NameMon, 1, true) then
                     if __WS.Enemies:FindFirstChild(Ms) then
                         for _, v in pairs(__WS.Enemies:GetChildren()) do
                             if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == Ms then
@@ -3258,19 +3121,25 @@ spawn(function()
                                     if (_mobCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then
                                         BKP(_mobCF)
                                     end
-                                    v.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                                    v.HumanoidRootPart.Transparency = 1
-                                    v.Humanoid.JumpPower = 0
-                                    v.Humanoid.WalkSpeed = 0
-                                    v.HumanoidRootPart.CanCollide = false
-                                    pcall(function() v.Head.CanCollide = false end)
+                                    -- [OPT] chỉ ghi property khi giá trị đang khác (tránh ghi lại mỗi frame)
+                                    local mhrp, mhum = v.HumanoidRootPart, v.Humanoid
+                                    if mhrp.Size ~= _MOB_BIG then mhrp.Size = _MOB_BIG end
+                                    if mhrp.Transparency ~= 1 then mhrp.Transparency = 1 end
+                                    if mhum.JumpPower ~= 0 then mhum.JumpPower = 0 end
+                                    if mhum.WalkSpeed ~= 0 then mhum.WalkSpeed = 0 end
+                                    if mhrp.CanCollide then mhrp.CanCollide = false end
+                                    local mhead = v:FindFirstChild("Head")
+                                    if mhead and mhead.CanCollide then mhead.CanCollide = false end
                                     FarmPos = v.HumanoidRootPart.CFrame
                                     MonFarm = v.Name
+                                    -- [OPT] không tạo closure + pcall mỗi frame
                                     local qv = false
-                                    pcall(function() qv = __LP.PlayerGui.Main.Quest.Visible end)
+                                    local _mg = __LP.PlayerGui:FindFirstChild("Main")
+                                    local _qg = _mg and _mg:FindFirstChild("Quest")
+                                    if _qg then qv = _qg.Visible end
                                 until not _G.AutoLevel or not v.Parent or v.Humanoid.Health <= 0 or not qv
                                 bringmob = false
-                                if not _G.OneHitKill and not _G.AutoBone and not _G.AutoBoneNoQuest and not _G.AutoNear then StopFXLoop() end
+                                if not _G.OneHitKill and not _G.AutoBone and not BoneNoQuestOn() and not _G.AutoNear then StopFXLoop() end
                             end
                         end
                     else
@@ -3295,17 +3164,19 @@ end)
 getgenv().AutoClick = false
 getgenv().ClicksPerSecond = 20
 local _vu = game:GetService("VirtualUser")
+-- [OPT] hàm click tạo 1 lần (trước: tạo closure mới mỗi lần click, 20 lần/giây)
+local function _clickOnce()
+    local cam = workspace.CurrentCamera
+    local vp = cam.ViewportSize
+    local center = Vector2.new(vp.X / 2, vp.Y / 2)
+    _vu:Button1Down(center, cam.CFrame)
+    task.wait(0.02)
+    _vu:Button1Up(center, cam.CFrame)
+end
 task.spawn(function()
     while task.wait(1 / getgenv().ClicksPerSecond) do
         if getgenv().AutoClick then
-            pcall(function()
-                local cam = workspace.CurrentCamera
-                local vp = cam.ViewportSize
-                local center = Vector2.new(vp.X / 2, vp.Y / 2)
-                _vu:Button1Down(center, cam.CFrame)
-                task.wait(0.02)
-                _vu:Button1Up(center, cam.CFrame)
-            end)
+            pcall(_clickOnce)
         end
     end
 end)
@@ -3447,6 +3318,18 @@ end
 -- ============================================================
 local _oneHitConns = {}
 
+-- [OPT] Handler HealthChanged gọn: không pcall/closure, không gọi sethiddenproperty mỗi lần đổi máu,
+-- bỏ biến prevHp không dùng; sethiddenproperty chỉ gọi 1 lần mỗi nhịp thay vì cho từng quái.
+local function _hookMobHp(mob, hum)
+    local cap = hum.MaxHealth * 0.25
+    if hum.Health > cap then hum.Health = cap end
+    _oneHitConns[mob] = hum.HealthChanged:Connect(function(newHp)
+        if not _G.OneHitKill then return end
+        local c = hum.MaxHealth * 0.25
+        if newHp > c then hum.Health = c end
+    end)
+end
+
 spawn(function()
     while wait(0.1) do
         if _G.OneHitKill then
@@ -3456,48 +3339,30 @@ spawn(function()
                 StartFXLoop()
             end
             pcall(function()
-                local localPlayer = __LP
-                for _, mob in pairs(__WS.Enemies:GetChildren()) do
-                    local hum = mob:FindFirstChild("Humanoid")
-                    if hum and not _oneHitConns[mob] then
-                        -- Clamp HP về 25%
-                        pcall(function()
-                            sethiddenproperty(localPlayer, "SimulationRadius", math.huge)
-                            if hum.Health > hum.MaxHealth * 0.25 then
-                                hum.Health = hum.MaxHealth * 0.25
-                            end
-                        end)
-                        -- Hook: khi server restore HP → clamp lại 25%
-                        local prevHp = hum.Health
-                        _oneHitConns[mob] = hum.HealthChanged:Connect(function(newHp)
-                            if not _G.OneHitKill then return end
-                            pcall(function()
-                                sethiddenproperty(localPlayer, "SimulationRadius", math.huge)
-                                if newHp > hum.MaxHealth * 0.25 then
-                                    hum.Health = hum.MaxHealth * 0.25
-                                end
-                                prevHp = newHp
-                            end)
-                        end)
+                pcall(sethiddenproperty, __LP, "SimulationRadius", math.huge)
+                for _, mob in ipairs(__WS.Enemies:GetChildren()) do
+                    if not _oneHitConns[mob] then
+                        local hum = mob:FindFirstChild("Humanoid")
+                        if hum then pcall(_hookMobHp, mob, hum) end
                     end
                 end
                 -- Dọn connection mob đã despawn
                 for mob, conn in pairs(_oneHitConns) do
                     if not mob.Parent then
-                        pcall(function() conn:Disconnect() end)
+                        conn:Disconnect()
                         _oneHitConns[mob] = nil
                     end
                 end
             end)
         else
             -- Tắt FX loop khi OneHitKill off
-            if _fxEnabled and not (_G.AutoBone or _G.AutoBoneNoQuest or _G.AutoLevel or _G.AutoNear) then
+            if _fxEnabled and not (_G.AutoBone or BoneNoQuestOn() or _G.AutoLevel or _G.AutoNear) then
                 StopFXLoop()
             end
-            for mob, conn in pairs(_oneHitConns) do
-                pcall(function() conn:Disconnect() end)
+            if next(_oneHitConns) then
+                for _, conn in pairs(_oneHitConns) do conn:Disconnect() end
+                _oneHitConns = {}
             end
-            _oneHitConns = {}
         end
     end
 end)
@@ -3517,13 +3382,7 @@ spawn(function()
     while wait() do
         if _G.AutoNear then
             pcall(function()
-                local v277, v278, v279 = pairs(game.Workspace.Enemies:GetChildren())
-                while true do
-                    local v280
-                    v279, v280 = v277(v278, v279)
-                    if v279 == nil then
-                        break
-                    end
+                for v279, v280 in pairs(__WS.Enemies:GetChildren()) do
                     if v280:FindFirstChild("Humanoid") and (v280:FindFirstChild("HumanoidRootPart") and (v280.Humanoid.Health > 0 and (v280.Name and (__LP.Character.HumanoidRootPart.Position - v280:FindFirstChild("HumanoidRootPart").Position).Magnitude <= 5000))) then
                         repeat
                             wait(_G.Fast_Delay)
@@ -3541,7 +3400,7 @@ spawn(function()
                             AttackNoCoolDown()
                             FarmPos = v280.HumanoidRootPart.CFrame
                             MonFarm = v280.Name
-                        until not _G.AutoNear or (not v280.Parent or v280.Humanoid.Health <= 0) or not game.Workspace.Enemies:FindFirstChild(v280.Name)
+                        until not _G.AutoNear or (not v280.Parent or v280.Humanoid.Health <= 0) or not __WS.Enemies:FindFirstChild(v280.Name)
                         bringmob = false
                     end
                 end
@@ -3564,13 +3423,7 @@ spawn(function()
                 if (CFrame.new(- 5539.3115234375, 313.800537109375, - 2972.372314453125).Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 500 then
                     Tween2(v282)
                 else
-                    local v283, v284, v285 = pairs(__WS.Enemies:GetChildren())
-                    while true do
-                        local v286
-                        v285, v286 = v283(v284, v285)
-                        if v285 == nil then
-                            break
-                        end
+                    for v285, v286 in pairs(__WS.Enemies:GetChildren()) do
                         if _G.CastleRaid and (v286:FindFirstChild("HumanoidRootPart") and (v286:FindFirstChild("Humanoid") and (v286.Humanoid.Health > 0 and (v286.HumanoidRootPart.Position - __LP.Character.HumanoidRootPart.Position).Magnitude < 2000))) then
                             repeat
                                 wait(_G.Fast_Delay)
@@ -3616,7 +3469,6 @@ local function vu295(p292, p293)
     end
 end
 spawn(function()
-	-- upvalues: (ref) vu291, (ref) vu295
     while true do
         if _G.EnableHakiFortress then
             vu291("Snow White", Vector3.new(- 4971.71826171875, 335.9582214355469, - 3720.0595703125))
@@ -3678,7 +3530,6 @@ Tabs.Main:AddToggle("ToggleCollectBerry", {
     _G.AutoCollectBerry = p307
 end)
 spawn(function()
-	-- upvalues: (ref) vu1
     while wait() do
         if _G.AutoCollectBerry then
             local v308 = __LP
@@ -3689,13 +3540,7 @@ spawn(function()
             local v313 = nil
             for v314 = 1, # v310 do
                 local v315 = v310[v314]
-                local v316, v317, v318 = pairs(v315:GetAttributes())
-                while true do
-                    local v319
-                    v318, v319 = v316(v317, v318)
-                    if v318 == nil then
-                        break
-                    end
+                for v318, v319 in pairs(v315:GetAttributes()) do
                     local v320 = (v315.Parent:GetPivot().Position - v309).Magnitude
                     if v320 < v311 then
                         v313 = v319
@@ -3770,21 +3615,16 @@ spawn(function()
             pcall(function()
 				-- block 48
                 if not _G.UseSkill then
-					-- ::l3::
                     return
                 end
                 local v330, v331, v332 = pairs(__WS.Enemies:GetChildren())
-				-- ::l4::
                 local v333
                 v332, v333 = v330(v331, v332)
                 if v332 == nil then
-					-- goto l3
                 end
                 if v333.Name ~= MonFarm or (not v333:FindFirstChild("Humanoid") or (not v333:FindFirstChild("HumanoidRootPart") or v333.Humanoid.Health > v333.Humanoid.MaxHealth * KillPercent / 100)) then
-					-- goto l4
                 end
-				-- ::l13::
-                game:GetService("RunService").Heartbeat:wait()
+                RunService.Heartbeat:wait()
                 EquipTool(__LP.Data.DevilFruit.Value)
                 local _mc2 = v333.HumanoidRootPart.CFrame * Pos
                 if (v333.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc2) end
@@ -3819,13 +3659,8 @@ spawn(function()
                     end
                 end
                 if AutoFarmMasDevilFruit and (_G.UseSkill and v333.Humanoid.Health ~= 0) then
-					-- goto l13
                 else
-					-- goto l3
                 end
-				-- ::l3::
-				-- ::l2::
-				-- goto l4
             end)
         end
     end
@@ -3834,7 +3669,7 @@ spawn(function()
     while wait() do
         if AutoFarmMasDevilFruit and TypeMastery == "Near Mob" then
             pcall(function()
-                local v335, v336, v337 = pairs(game.Workspace.Enemies:GetChildren())
+                local v335, v336, v337 = pairs(__WS.Enemies:GetChildren())
                 while true do
                     local v338
                     v337, v338 = v335(v336, v337)
@@ -3874,7 +3709,6 @@ spawn(function()
     end
 end)
 spawn(function()
-	-- ::l0::
     repeat
         if not wait() then
             return
@@ -3888,9 +3722,6 @@ spawn(function()
         __RS.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(923.21252441406, 126.9760055542, 32852.83203125))
     end
     local v340, v341, v342 = pairs(__WS.Enemies:GetChildren())
-	-- ::l11::
-	-- ::l7::
-	-- ::l19::
     if true then
         wait(_G.Fast_Delay)
         if v343.Humanoid.Health > v343.Humanoid.MaxHealth * KillPercent / 100 then
@@ -3913,26 +3744,15 @@ spawn(function()
         end
     end
     if AutoFarmMasDevilFruit and (not MasteryType ~= "Ecto" and (v343.Parent and (v343.Humanoid.Health ~= 0 and not TypeMastery ~= "Ecto"))) then
-		-- goto l19
     else
-		-- goto l31
     end
-	-- ::l31::
     bringmob = false
     _G.UseSkill = false
-	-- ::l11::
     local v343
     v342, v343 = v340(v341, v342)
     if v342 ~= nil then
-		-- goto l12
     end
-    local v344, v345, v346 = pairs(__RS:GetChildren())
-    while true do
-        local v347
-        v346, v347 = v344(v345, v346)
-        if v346 == nil then
-            break
-        end
+    for v346, v347 in pairs(__RS:GetChildren()) do
         if v347.Name ~= "Ship Steward" then
             if v347.Name ~= "Ship Engineer" then
                 if v347.Name ~= "Ship Deckhand" then
@@ -3953,19 +3773,11 @@ spawn(function()
             if (v347.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc8) end
         end
     end
-	-- goto l0
-	-- ::l12::
     if v343:FindFirstChild("Humanoid") and (v343:FindFirstChild("HumanoidRootPart") and (v343.Name == "Ship Steward" or (v343.Name == "Ship Engineer" or (v343.Name == "Ship Deckhand" or v343.Name == "Ship Officer")))) then
-		-- goto l11
     else
-		-- goto l16
     end
-	-- ::l16::
-	-- ::l2::
-	-- goto l11
 end)
 spawn(function()
-	-- ::l0::
     repeat
         if not wait() then
             return
@@ -3975,10 +3787,7 @@ spawn(function()
         local v348 = CFrame.new(- 9508.5673828125, 142.1398468017578, 5737.3603515625)
         Tween2(v348)
     end)
-    local v349, v350, v351 = pairs(game.Workspace.Enemies:GetChildren())
-	-- ::l8::
-	-- ::l7::
-	-- ::l16::
+    local v349, v350, v351 = pairs(__WS.Enemies:GetChildren())
     if true then
         wait(_G.Fast_Delay)
         if v352.Humanoid.Health > v352.Humanoid.MaxHealth * KillPercent / 100 then
@@ -4001,26 +3810,15 @@ spawn(function()
         end
     end
     if AutoFarmMasDevilFruit and (not MasteryType ~= "Cake" and (v352.Parent and (v352.Humanoid.Health ~= 0 and not TypeMastery ~= "Cake"))) then
-		-- goto l16
     else
-		-- goto l28
     end
-	-- ::l28::
     bringmob = false
     _G.UseSkill = false
-	-- ::l8::
     local v352
     v351, v352 = v349(v350, v351)
     if v351 ~= nil then
-		-- goto l9
     end
-    local v353, v354, v355 = pairs(__RS:GetChildren())
-    while true do
-        local v356
-        v355, v356 = v353(v354, v355)
-        if v355 == nil then
-            break
-        end
+    for v355, v356 in pairs(__RS:GetChildren()) do
         if v356.Name ~= "Cookie Crafter" then
             if v356.Name ~= "Cake Guard" then
                 if v356.Name ~= "Baking Staff" then
@@ -4041,19 +3839,11 @@ spawn(function()
             if (v356.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc13) end
         end
     end
-	-- goto l0
-	-- ::l9::
     if v352:FindFirstChild("Humanoid") and (v352:FindFirstChild("HumanoidRootPart") and (v352.Name == "Cookie Crafter" or (v352.Name == "Cake Guard" or (v352.Name == "Baking Staff" or v352.Name == "Head Baker")))) then
-		-- goto l8
     else
-		-- goto l13
     end
-	-- ::l13::
-	-- ::l2::
-	-- goto l8
 end)
 spawn(function()
-	-- ::l0::
     repeat
         if not wait() then
             return
@@ -4063,10 +3853,7 @@ spawn(function()
         CheckLevel()
         Tween2(CFrameQ)
     end)
-    local v357, v358, v359 = pairs(game.Workspace.Enemies:GetChildren())
-	-- ::l8::
-	-- ::l7::
-	-- ::l15::
+    local v357, v358, v359 = pairs(__WS.Enemies:GetChildren())
     if true then
         wait(_G.Fast_Delay)
         if v360.Humanoid.Health > v360.Humanoid.MaxHealth * KillPercent / 100 then
@@ -4089,30 +3876,19 @@ spawn(function()
         end
     end
     if AutoFarmMasDevilFruit and (not MasteryType ~= "Level No Quest" and (v360.Parent and (v360.Humanoid.Health ~= 0 and not TypeMastery ~= "Level No Quest"))) then
-		-- goto l15
     else
-		-- goto l22
     end
-	-- ::l22::
     bringmob = false
     _G.UseSkill = false
-	-- ::l8::
     local v360
     v359, v360 = v357(v358, v359)
     if v359 == nil then
-		-- goto l0
     end
     if v360:FindFirstChild("Humanoid") and (v360:FindFirstChild("HumanoidRootPart") and v360.Name == Ms) then
-		-- goto l8
     else
-		-- goto l13
     end
-	-- ::l13::
-	-- ::l2::
-	-- goto l8
 end)
 spawn(function()
-	-- ::l0::
     repeat
         repeat
             if not wait() then
@@ -4131,12 +3907,6 @@ spawn(function()
         end)
     until (string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, NameMon) or __LP.PlayerGui.Main.Quest.Visible == true) and __WS.Enemies:FindFirstChild(Ms)
     local v361, v362, v363 = pairs(__WS.Enemies:GetChildren())
-	-- goto l14
-	-- ::l7::
-	-- goto l21
-	-- ::l13::
-	-- goto l14
-	-- ::l21::
     if true then
         wait(_G.Fast_Delay)
         if v364.Humanoid.Health > v364.Humanoid.MaxHealth * KillPercent / 100 then
@@ -4159,26 +3929,18 @@ spawn(function()
         end
     end
     if AutoFarmMasDevilFruit and (not MasteryType ~= "Level" and (v364.Parent and (v364.Humanoid.Health ~= 0 and not TypeMastery ~= "Level"))) then
-		-- goto l21
     end
     bringmob = false
     _G.UseSkill = false
-	-- ::l14::
     local v364
     v363, v364 = v361(v362, v363)
     if v363 == nil then
-		-- goto l0
     end
     if v364:FindFirstChild("Humanoid") and (v364:FindFirstChild("HumanoidRootPart") and v364.Name == Ms) then
-		-- goto l28
     else
-		-- goto l13
     end
-	-- ::l28::
-	-- goto l7
 end)
 spawn(function()
-	-- ::l0::
     repeat
         if not wait() then
             return
@@ -4188,10 +3950,7 @@ spawn(function()
         local v365 = CFrame.new(- 9508.5673828125, 142.1398468017578, 5737.3603515625)
         Tween2(v365)
     end)
-    local v366, v367, v368 = pairs(game.Workspace.Enemies:GetChildren())
-	-- ::l8::
-	-- ::l7::
-	-- ::l16::
+    local v366, v367, v368 = pairs(__WS.Enemies:GetChildren())
     if true then
         wait(_G.Fast_Delay)
         if v369.Humanoid.Health > v369.Humanoid.MaxHealth * KillPercent / 100 then
@@ -4214,26 +3973,15 @@ spawn(function()
         end
     end
     if AutoFarmMasDevilFruit and (not MasteryType ~= "Bone" and (v369.Parent and (v369.Humanoid.Health ~= 0 and not TypeMastery ~= "Bone"))) then
-		-- goto l16
     else
-		-- goto l28
     end
-	-- ::l28::
     bringmob = false
     _G.UseSkill = false
-	-- ::l8::
     local v369
     v368, v369 = v366(v367, v368)
     if v368 ~= nil then
-		-- goto l9
     end
-    local v370, v371, v372 = pairs(__RS:GetChildren())
-    while true do
-        local v373
-        v372, v373 = v370(v371, v372)
-        if v372 == nil then
-            break
-        end
+    for v372, v373 in pairs(__RS:GetChildren()) do
         if v373.Name ~= "Reborn Skeleton" then
             if v373.Name ~= "Living Zombie" then
                 if v373.Name ~= "Demonic Soul" then
@@ -4254,16 +4002,9 @@ spawn(function()
             if (v373.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc20) end
         end
     end
-	-- goto l0
-	-- ::l9::
     if v369:FindFirstChild("Humanoid") and (v369:FindFirstChild("HumanoidRootPart") and (v369.Name == "Reborn Skeleton" or (v369.Name == "Living Zombie" or (v369.Name == "Demonic Soul" or v369.Name == "Posessed Mummy")))) then
-		-- goto l8
     else
-		-- goto l13
     end
-	-- ::l13::
-	-- ::l2::
-	-- goto l8
 end)
 spawn(function()
     while task.wait() do
@@ -4271,23 +4012,17 @@ spawn(function()
             pcall(function()
 				-- block 36
                 if not _G.UseSkillGun then
-					-- ::l3::
                     return
                 end
                 local v374, v375, v376 = pairs(__WS.Enemies:GetChildren())
-				-- ::l4::
                 local v377
                 v376, v377 = v374(v375, v376)
                 if v376 == nil then
-					-- goto l3
                 end
                 if v377.Name ~= MonFarm or (not v377:FindFirstChild("Humanoid") or (not v377:FindFirstChild("HumanoidRootPart") or v377.Humanoid.Health > v377.Humanoid.MaxHealth * KillPercent / 100)) then
-					-- goto l4
                 else
-					-- goto l13
                 end
-				-- ::l13::
-                game:GetService("RunService").Heartbeat:wait()
+                RunService.Heartbeat:wait()
                 EquipToolGun()
                 local _mc21 = v377.HumanoidRootPart.CFrame * Pos
                 if (v377.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc21) end
@@ -4318,9 +4053,7 @@ spawn(function()
                     __VIM:SendKeyEvent(false, "F", false, game)
                 end
                 if AutoFarmMasGun and (_G.UseSkillGun and v377.Humanoid.Health ~= 0) then
-					-- goto l13
                 else
-					-- goto l4
                 end
             end)
         end
@@ -4330,7 +4063,7 @@ spawn(function()
     while wait() do
         if AutoFarmMasGun and TypeMastery == "Near Mob" then
             pcall(function()
-                local v378, v379, v380 = pairs(game.Workspace.Enemies:GetChildren())
+                local v378, v379, v380 = pairs(__WS.Enemies:GetChildren())
                 while true do
                     local v381
                     v380, v381 = v378(v379, v380)
@@ -4370,7 +4103,6 @@ spawn(function()
     end
 end)
 spawn(function()
-	-- ::l0::
     repeat
         if not wait() then
             return
@@ -4384,9 +4116,6 @@ spawn(function()
         __RS.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(923.21252441406, 126.9760055542, 32852.83203125))
     end
     local v383, v384, v385 = pairs(__WS.Enemies:GetChildren())
-	-- ::l11::
-	-- ::l7::
-	-- ::l19::
     if true then
         wait(_G.Fast_Delay)
         if v386.Humanoid.Health > v386.Humanoid.MaxHealth * KillPercent / 100 then
@@ -4409,26 +4138,15 @@ spawn(function()
         end
     end
     if AutoFarmMasGun and (not MasteryType ~= "Ecto" and (v386.Parent and (v386.Humanoid.Health ~= 0 and not TypeMastery ~= "Ecto"))) then
-		-- goto l19
     else
-		-- goto l31
     end
-	-- ::l31::
     bringmob = false
     _G.UseSkillGun = false
-	-- ::l11::
     local v386
     v385, v386 = v383(v384, v385)
     if v385 ~= nil then
-		-- goto l12
     end
-    local v387, v388, v389 = pairs(__RS:GetChildren())
-    while true do
-        local v390
-        v389, v390 = v387(v388, v389)
-        if v389 == nil then
-            break
-        end
+    for v389, v390 in pairs(__RS:GetChildren()) do
         if v390.Name ~= "Ship Steward" then
             if v390.Name ~= "Ship Engineer" then
                 if v390.Name ~= "Ship Deckhand" then
@@ -4449,19 +4167,11 @@ spawn(function()
             if (v390.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc27) end
         end
     end
-	-- goto l0
-	-- ::l12::
     if v386:FindFirstChild("Humanoid") and (v386:FindFirstChild("HumanoidRootPart") and (v386.Name == "Ship Steward" or (v386.Name == "Ship Engineer" or (v386.Name == "Ship Deckhand" or v386.Name == "Ship Officer")))) then
-		-- goto l11
     else
-		-- goto l16
     end
-	-- ::l16::
-	-- ::l2::
-	-- goto l11
 end)
 spawn(function()
-	-- ::l0::
     repeat
         if not wait() then
             return
@@ -4471,10 +4181,7 @@ spawn(function()
         local v391 = CFrame.new(- 1579.9111328125, 329.7358703613281, - 12310.365234375)
         Tween2(v391)
     end)
-    local v392, v393, v394 = pairs(game.Workspace.Enemies:GetChildren())
-	-- ::l8::
-	-- ::l7::
-	-- ::l16::
+    local v392, v393, v394 = pairs(__WS.Enemies:GetChildren())
     if true then
         wait(_G.Fast_Delay)
         if v395.Humanoid.Health > v395.Humanoid.MaxHealth * KillPercent / 100 then
@@ -4497,26 +4204,15 @@ spawn(function()
         end
     end
     if AutoFarmMasGun and (not MasteryType ~= "Cake" and (v395.Parent and (v395.Humanoid.Health ~= 0 and not TypeMastery ~= "Cake"))) then
-		-- goto l16
     else
-		-- goto l28
     end
-	-- ::l28::
     bringmob = false
     _G.UseSkillGun = false
-	-- ::l8::
     local v395
     v394, v395 = v392(v393, v394)
     if v394 ~= nil then
-		-- goto l9
     end
-    local v396, v397, v398 = pairs(__RS:GetChildren())
-    while true do
-        local v399
-        v398, v399 = v396(v397, v398)
-        if v398 == nil then
-            break
-        end
+    for v398, v399 in pairs(__RS:GetChildren()) do
         if v399.Name ~= "Cookie Crafter" then
             if v399.Name ~= "Cake Guard" then
                 if v399.Name ~= "Baking Staff" then
@@ -4537,19 +4233,11 @@ spawn(function()
             if (v399.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc32) end
         end
     end
-	-- goto l0
-	-- ::l9::
     if v395:FindFirstChild("Humanoid") and (v395:FindFirstChild("HumanoidRootPart") and (v395.Name == "Cookie Crafter" or (v395.Name == "Cake Guard" or (v395.Name == "Baking Staff" or v395.Name == "Head Baker")))) then
-		-- goto l8
     else
-		-- goto l13
     end
-	-- ::l13::
-	-- ::l2::
-	-- goto l8
 end)
 spawn(function()
-	-- ::l0::
     repeat
         repeat
             if not wait() then
@@ -4568,12 +4256,6 @@ spawn(function()
         end)
     until (string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, NameMon) or __LP.PlayerGui.Main.Quest.Visible == true) and __WS.Enemies:FindFirstChild(Ms)
     local v400, v401, v402 = pairs(__WS.Enemies:GetChildren())
-	-- goto l14
-	-- ::l7::
-	-- goto l21
-	-- ::l13::
-	-- goto l14
-	-- ::l21::
     if true then
         wait(_G.Fast_Delay)
         if v403.Humanoid.Health > v403.Humanoid.MaxHealth * KillPercent / 100 then
@@ -4596,26 +4278,18 @@ spawn(function()
         end
     end
     if AutoFarmMasGun and (not MasteryType ~= "Level" and (v403.Parent and (v403.Humanoid.Health ~= 0 and not TypeMastery ~= "Level"))) then
-		-- goto l21
     end
     bringmob = false
     _G.UseSkillGun = false
-	-- ::l14::
     local v403
     v402, v403 = v400(v401, v402)
     if v402 == nil then
-		-- goto l0
     end
     if v403:FindFirstChild("Humanoid") and (v403:FindFirstChild("HumanoidRootPart") and v403.Name == Ms) then
-		-- goto l28
     else
-		-- goto l13
     end
-	-- ::l28::
-	-- goto l7
 end)
 spawn(function()
-	-- ::l0::
     repeat
         if not wait() then
             return
@@ -4625,10 +4299,7 @@ spawn(function()
         CheckLevel()
         Tween2(CFrameQ)
     end)
-    local v404, v405, v406 = pairs(game.Workspace.Enemies:GetChildren())
-	-- ::l8::
-	-- ::l7::
-	-- ::l15::
+    local v404, v405, v406 = pairs(__WS.Enemies:GetChildren())
     if true then
         wait(_G.Fast_Delay)
         if v407.Humanoid.Health > v407.Humanoid.MaxHealth * KillPercent / 100 then
@@ -4651,30 +4322,19 @@ spawn(function()
         end
     end
     if AutoFarmMasGun and (not MasteryType ~= "Level No Quest" and (v407.Parent and (v407.Humanoid.Health ~= 0 and not TypeMastery ~= "Level No Quest"))) then
-		-- goto l15
     else
-		-- goto l22
     end
-	-- ::l22::
     bringmob = false
     _G.UseSkillGun = false
-	-- ::l8::
     local v407
     v406, v407 = v404(v405, v406)
     if v406 == nil then
-		-- goto l0
     end
     if v407:FindFirstChild("Humanoid") and (v407:FindFirstChild("HumanoidRootPart") and v407.Name == Ms) then
-		-- goto l8
     else
-		-- goto l13
     end
-	-- ::l13::
-	-- ::l2::
-	-- goto l8
 end)
 spawn(function()
-	-- ::l0::
     repeat
         if not wait() then
             return
@@ -4684,10 +4344,7 @@ spawn(function()
         local v408 = CFrame.new(- 9508.5673828125, 142.1398468017578, 5737.3603515625)
         Tween2(v408)
     end)
-    local v409, v410, v411 = pairs(game.Workspace.Enemies:GetChildren())
-	-- ::l8::
-	-- ::l7::
-	-- ::l16::
+    local v409, v410, v411 = pairs(__WS.Enemies:GetChildren())
     if true then
         wait(_G.Fast_Delay)
         if v412.Humanoid.Health > v412.Humanoid.MaxHealth * KillPercent / 100 then
@@ -4710,26 +4367,15 @@ spawn(function()
         end
     end
     if AutoFarmMasGun and (not MasteryType ~= "Bone" and (v412.Parent and (v412.Humanoid.Health ~= 0 and not TypeMastery ~= "Bone"))) then
-		-- goto l16
     else
-		-- goto l28
     end
-	-- ::l28::
     bringmob = false
     _G.UseSkillGun = false
-	-- ::l8::
     local v412
     v411, v412 = v409(v410, v411)
     if v411 ~= nil then
-		-- goto l9
     end
-    local v413, v414, v415 = pairs(__RS:GetChildren())
-    while true do
-        local v416
-        v415, v416 = v413(v414, v415)
-        if v415 == nil then
-            break
-        end
+    for v415, v416 in pairs(__RS:GetChildren()) do
         if v416.Name ~= "Reborn Skeleton" then
             if v416.Name ~= "Living Zombie" then
                 if v416.Name ~= "Demonic Soul" then
@@ -4750,26 +4396,13 @@ spawn(function()
             if (v416.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc39) end
         end
     end
-	-- goto l0
-	-- ::l9::
     if v412:FindFirstChild("Humanoid") and (v412:FindFirstChild("HumanoidRootPart") and (v412.Name == "Reborn Skeleton" or (v412.Name == "Living Zombie" or (v412.Name == "Demonic Soul" or v412.Name == "Posessed Mummy")))) then
-		-- goto l8
     else
-		-- goto l13
     end
-	-- ::l13::
-	-- ::l2::
-	-- goto l8
 end)
 function EquipToolGun()
     pcall(function()
-        local v417, v418, v419 = pairs(__LP.Backpack:GetChildren())
-        while true do
-            local v420
-            v419, v420 = v417(v418, v419)
-            if v419 == nil then
-                break
-            end
+        for v419, v420 in pairs(__LP.Backpack:GetChildren()) do
             if v420.ToolTip == "Gun" and v420:IsA("Tool") then
                 local v421 = __LP.Backpack:FindFirstChild(v420.Name)
                 __LP.Character.Humanoid:EquipTool(v421)
@@ -4782,7 +4415,6 @@ spawn(function()
     local vu423 = v422.__namecall
     setreadonly(v422, false)
     v422.__namecall = newcclosure(function(...)
-		-- upvalues: (ref) vu423
         local v424 = getnamecallmethod()
         local v425 = {
             ...
@@ -4808,45 +4440,141 @@ spawn(function()
         return vu423(...)
     end)
 end)
+-- ======================================================================
+-- [NEW] Helper dùng chung cho Cày Xương / Cày Tư Lệnh Bánh (chế độ CÓ nhiệm vụ)
+-- ======================================================================
+local CAKE_MOBS = {["Cookie Crafter"] = true, ["Cake Guard"] = true, ["Baking Staff"] = true, ["Head Baker"] = true}
+
+-- trả về: đang hiện quest?, tiêu đề quest
+local function GetQuestGui()
+    local main = __LP.PlayerGui:FindFirstChild("Main")
+    local q = main and main:FindFirstChild("Quest")
+    if not q or not q.Visible then return false, "" end
+    local ok, t = pcall(function() return q.Container.QuestTitle.Title.Text end)
+    return true, (ok and t) or ""
+end
+
+-- bay tới NPC rồi nhận quest. flagFn(): còn bật chức năng không
+local function TakeQuest(qCF, qName, qLv, flagFn)
+    Tween2(qCF)
+    repeat task.wait(0.1) until (qCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 or not flagFn()
+    wait(0.2)
+    if (qCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 then
+        __RS.Remotes.CommF_:InvokeServer("StartQuest", qName, qLv)
+        wait(0.3)
+    end
+end
+
+local QUEST_HAUNTED1 = CFrame.new(-9480.80762, 142.130661, 5566.37305)
+local QUEST_HAUNTED2 = CFrame.new(-9516.9931640625, 178.00651550293, 6078.4653320313)
+-- dữ liệu quest xương theo cấp (khớp bảng CheckLevel). Dưới cấp 1975 → nil (farm không quest)
+local function GetBoneQuest()
+    local lv = __LP.Data.Level.Value
+    if lv < 1975 then return nil end
+    if lv < 2000 then return "HauntedQuest1", 1, "Reborn Skeleton", QUEST_HAUNTED1 end
+    if lv < 2025 then return "HauntedQuest1", 2, "Living Zombie", QUEST_HAUNTED1 end
+    if lv < 2050 then return "HauntedQuest2", 1, "Demonic Soul", QUEST_HAUNTED2 end
+    return "HauntedQuest2", 2, "Posessed Mummy", QUEST_HAUNTED2
+end
+
+local QUEST_CAKE1 = CFrame.new(-2022.29858, 36.9275894, -12030.9766)
+local QUEST_CAKE2 = CFrame.new(-1928.31763, 37.7296638, -12840.626)
+-- dữ liệu quest Cake theo cấp. Dưới cấp 2200 → nil (farm không quest)
+local function GetCakeQuest()
+    local lv = __LP.Data.Level.Value
+    if lv < 2200 then return nil end
+    if lv < 2225 then return "CakeQuest1", 1, "Cookie Crafter", QUEST_CAKE1 end
+    if lv < 2250 then return "CakeQuest1", 2, "Cake Guard", QUEST_CAKE1 end
+    if lv < 2275 then return "CakeQuest2", 1, "Baking Staff", QUEST_CAKE2 end
+    return "CakeQuest2", 2, "Head Baker", QUEST_CAKE2
+end
+
 if Sea3 then
     Tabs.Main:AddSection("Xương")
     local vu426 = Tabs.Main:AddParagraph({
         ["Title"] = "Trạng Thái Xương",
     })
     spawn(function()
-		-- upvalues: (ref) vu426
         pcall(function()
-			-- upvalues: (ref) vu426
-            while wait() do
+            while wait(1) do -- [OPT] nhãn trạng thái: 1 lần/giây thay vì gọi server mỗi frame
                 local v427 = __RS.Remotes.CommF_:InvokeServer("Bones", "Check")
                 vu426:SetDesc("Mày Có: " .. tostring(v427) .. " Xương")
             end
         end)
     end)
-    Tabs.Main:AddToggle("ToggleBone", {
-        ["Title"] = "Cày Xương",
+    local boneQuestToggle, boneFreeToggle
+    boneQuestToggle = Tabs.Main:AddToggle("ToggleBone", {
+        ["Title"] = "Cày Xương (Có Nhiệm Vụ)",
         ["Default"] = false
     }):OnChanged(function(p428)
         _G.AutoBone = p428
-        if p428 == false then
+        if p428 then
+            _G.AutoBoneNoQuest = false -- 2 chế độ không chạy cùng lúc
+            if boneFreeToggle then boneFreeToggle:SetValue(false) end
+        else
+            wait()
+            Tween(__LP.Character.HumanoidRootPart.CFrame)
+            wait()
+        end
+    end)
+    boneFreeToggle = Tabs.Main:AddToggle("ToggleBoneNoQuest", {
+        ["Title"] = "Cày Xương (Không Nhiệm Vụ)",
+        ["Default"] = false
+    }):OnChanged(function(p428)
+        _G.AutoBoneNoQuest = p428
+        if p428 then
+            _G.AutoBone = false
+            if boneQuestToggle then boneQuestToggle:SetValue(false) end
+        else
             wait()
             Tween(__LP.Character.HumanoidRootPart.CFrame)
             wait()
         end
     end)
     -- [SetValue skipped - Library không cần]
+    -- [OPT] Dùng chung cho 2 chế độ cày xương: tập tên quái (tra bảng thay vì 4 phép so sánh chuỗi)
+    -- và hàm chuẩn bị quái (chỉ ghi property khi giá trị khác, guard Head).
+    local BONE_MOBS = {["Reborn Skeleton"] = true, ["Living Zombie"] = true, ["Demonic Soul"] = true, ["Posessed Mummy"] = true}
+    local function PrepBoneMob(mob)
+        pcall(function()
+            local hrp, hum = mob.HumanoidRootPart, mob.Humanoid
+            if hrp.Size ~= _MOB_BIG then hrp.Size = _MOB_BIG end
+            if hrp.Transparency ~= 1 then hrp.Transparency = 1 end
+            if hum.JumpPower ~= 0 then hum.JumpPower = 0 end
+            if hum.WalkSpeed ~= 0 then hum.WalkSpeed = 0 end
+            if hrp.CanCollide then hrp.CanCollide = false end
+            local head = mob:FindFirstChild("Head")
+            if head and head.CanCollide then head.CanCollide = false end
+            hum:ChangeState(11)
+            hum:ChangeState(14)
+        end)
+    end
     local vu429 = CFrame.new(-9515.75, 174.8521728515625, 6079.40625)
     spawn(function()
         while wait(0.05) do
             if _G.AutoBone then
                 pcall(function()
+                    -- [NEW] Chế độ CÓ nhiệm vụ: nhận quest theo cấp, chỉ đánh đúng quái của quest
+                    local qName, qLv, qMob, qCF = GetBoneQuest()
+                    if qName then
+                        local vis, title = GetQuestGui()
+                        if vis and not string.find(title, qMob, 1, true) then
+                            bringmob = false
+                            __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
+                            return
+                        end
+                        if not vis then
+                            bringmob = false
+                            TakeQuest(qCF, qName, qLv, function() return _G.AutoBone end)
+                            return
+                        end
+                    end
                     -- Tìm quái xương và đánh
                     local found = false
                     for _, v434 in pairs(__WS.Enemies:GetChildren()) do
                         if v434:FindFirstChild("HumanoidRootPart") and v434:FindFirstChild("Humanoid")
                             and v434.Humanoid.Health > 0
-                            and (v434.Name == "Reborn Skeleton" or v434.Name == "Living Zombie"
-                                or v434.Name == "Demonic Soul" or v434.Name == "Posessed Mummy") then
+                            and ((qMob and v434.Name == qMob) or (not qMob and BONE_MOBS[v434.Name])) then
                             found = true
                             -- Bay mượt đến quái trước (Tween2 không giật)
                             local _bCF0 = v434.HumanoidRootPart.CFrame * Pos
@@ -4870,31 +4598,22 @@ if Sea3 then
                                 if (_bCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then
                                     BKP(_bCF)
                                 end
-                                pcall(function()
-                                    v434.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                                    v434.HumanoidRootPart.Transparency = 1
-                                    v434.Humanoid.JumpPower = 0
-                                    v434.Humanoid.WalkSpeed = 0
-                                    v434.HumanoidRootPart.CanCollide = false
-                                    v434.Head.CanCollide = false
-                                    v434.Humanoid:ChangeState(11)
-                                    v434.Humanoid:ChangeState(14)
-                                end)
+                                PrepBoneMob(v434)
                                 FarmPos = v434.HumanoidRootPart.CFrame
                                 MonFarm = v434.Name
-                            until not _G.AutoBone or not v434.Parent or v434.Humanoid.Health <= 0
+                            until not _G.AutoBone or not v434.Parent or v434.Humanoid.Health <= 0 or (qMob and not GetQuestGui())
                             bringmob = false
                             break
                         end
                     end
                     if not found then
-                        if not _G.OneHitKill and not _G.AutoBoneNoQuest then StopFXLoop() end
+                        if not _G.OneHitKill and not BoneNoQuestOn() then StopFXLoop() end
                         -- Tween2 mượt về điểm spawn, không giật
                         Tween2(vu429)
                     end
                 end)
             else
-                if not _G.OneHitKill and not _G.AutoBoneNoQuest and not _G.AutoLevel and not _G.AutoNear then
+                if not _G.OneHitKill and not BoneNoQuestOn() and not _G.AutoLevel and not _G.AutoNear then
                     StopFXLoop()
                 end
             end
@@ -4903,7 +4622,7 @@ if Sea3 then
     local vu435 = CFrame.new(-9515.75, 174.8521728515625, 6079.40625)
     spawn(function()
         while wait(0.05) do
-            if _G.AutoBoneNoQuest then
+            if BoneNoQuestOn() then
                 pcall(function()
                     -- Hủy quest nếu đang có
                     pcall(function()
@@ -4918,8 +4637,7 @@ if Sea3 then
                     for _, v439 in pairs(__WS.Enemies:GetChildren()) do
                         if v439:FindFirstChild("HumanoidRootPart") and v439:FindFirstChild("Humanoid")
                             and v439.Humanoid.Health > 0
-                            and (v439.Name == "Reborn Skeleton" or v439.Name == "Living Zombie"
-                                or v439.Name == "Demonic Soul" or v439.Name == "Posessed Mummy") then
+                            and BONE_MOBS[v439.Name] then
                             local d = (v439.HumanoidRootPart.Position - vu435.Position).Magnitude
                             if d < nearestDist then
                                 nearestDist = d
@@ -4937,7 +4655,7 @@ if Sea3 then
                             repeat task.wait(0.05) until
                                 not v439 or not v439.Parent
                                 or ((v439.HumanoidRootPart.CFrame * Pos).Position - __LP.Character.HumanoidRootPart.Position).Magnitude < 30
-                                or not _G.AutoBoneNoQuest
+                                or not BoneNoQuestOn()
                         end
                         -- Bật hiệu ứng tia lửa + tiếng spam liên tục
                         if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
@@ -4953,19 +4671,10 @@ if Sea3 then
                             if (_bnCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then
                                 BKP(_bnCF)
                             end
-                            pcall(function()
-                                v439.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                                v439.HumanoidRootPart.Transparency = 1
-                                v439.Humanoid.JumpPower = 0
-                                v439.Humanoid.WalkSpeed = 0
-                                v439.HumanoidRootPart.CanCollide = false
-                                v439.Head.CanCollide = false
-                                v439.Humanoid:ChangeState(11)
-                                v439.Humanoid:ChangeState(14)
-                            end)
+                            PrepBoneMob(v439)
                             FarmPos = v439.HumanoidRootPart.CFrame
                             MonFarm = v439.Name
-                        until not _G.AutoBoneNoQuest or v439.Humanoid.Health <= 0 or not v439.Parent
+                        until not BoneNoQuestOn() or v439.Humanoid.Health <= 0 or not v439.Parent
                         bringmob = false
                     else
                         if not _G.OneHitKill and not _G.AutoBone then StopFXLoop() end
@@ -5006,7 +4715,7 @@ if Sea3 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-        while wait() do
+        while wait(0.1) do -- [OPT] trước: gọi mua mỗi frame
             if _G.AutoRandomBone then
                 __RS.Remotes.CommF_:InvokeServer(unpack({
                     "Bones",
@@ -5024,32 +4733,46 @@ if Sea3 then
         ["Title"] = "Trạng Thái Nó Ra",
     })
     spawn(function()
-		-- upvalues: (ref) vu441
-        while wait() do
+        while wait(1) do -- [OPT] trước: tới 4 lần InvokeServer("CakePrinceSpawner") MỖI FRAME
             pcall(function()
-				-- upvalues: (ref) vu441
-                if string.len(__RS.Remotes.CommF_:InvokeServer("CakePrinceSpawner")) ~= 88 then
-                    if string.len(__RS.Remotes.CommF_:InvokeServer("CakePrinceSpawner")) ~= 87 then
-                        if string.len(__RS.Remotes.CommF_:InvokeServer("CakePrinceSpawner")) ~= 86 then
-                            vu441:SetDesc("Tư Lệnh Bánh : \226\156\133\239\184\143")
-                        else
-                            vu441:SetDesc("C\195\178n: " .. string.sub(__RS.Remotes.CommF_:InvokeServer("CakePrinceSpawner"), 39, 39) .. " ")
-                        end
-                    else
-                        vu441:SetDesc("C\195\178n: " .. string.sub(__RS.Remotes.CommF_:InvokeServer("CakePrinceSpawner"), 39, 40) .. "")
-                    end
+                local r = __RS.Remotes.CommF_:InvokeServer("CakePrinceSpawner")
+                local n = string.len(r)
+                if n == 88 then
+                    vu441:SetDesc("C\195\178n: " .. string.sub(r, 39, 41) .. "")
+                elseif n == 87 then
+                    vu441:SetDesc("C\195\178n: " .. string.sub(r, 39, 40) .. "")
+                elseif n == 86 then
+                    vu441:SetDesc("C\195\178n: " .. string.sub(r, 39, 39) .. " ")
                 else
-                    vu441:SetDesc("C\195\178n: " .. string.sub(__RS.Remotes.CommF_:InvokeServer("CakePrinceSpawner"), 39, 41) .. "")
+                    vu441:SetDesc("Tư Lệnh Bánh : \226\156\133\239\184\143")
                 end
             end)
         end
     end)
-    Tabs.Main:AddToggle("ToggleCake", {
-        ["Title"] = "Cày Tư Lệnh Bánh",
+    local cakeQuestToggle, cakeFreeToggle
+    cakeQuestToggle = Tabs.Main:AddToggle("ToggleCake", {
+        ["Title"] = "Cày Tư Lệnh Bánh (Có Nhiệm Vụ)",
         ["Default"] = false
     }):OnChanged(function(p442)
         _G.Cake = p442
-        if p442 == false then
+        if p442 then
+            _G.CakeNoQuest = false -- 2 chế độ không chạy cùng lúc
+            if cakeFreeToggle then cakeFreeToggle:SetValue(false) end
+        else
+            wait()
+            Tween(__LP.Character.HumanoidRootPart.CFrame)
+            wait()
+        end
+    end)
+    cakeFreeToggle = Tabs.Main:AddToggle("ToggleCakeNoQuest", {
+        ["Title"] = "Cày Tư Lệnh Bánh (Không Nhiệm Vụ)",
+        ["Default"] = false
+    }):OnChanged(function(p442)
+        _G.CakeNoQuest = p442
+        if p442 then
+            _G.Cake = false
+            if cakeQuestToggle then cakeQuestToggle:SetValue(false) end
+        else
             wait()
             Tween(__LP.Character.HumanoidRootPart.CFrame)
             wait()
@@ -5058,17 +4781,13 @@ if Sea3 then
     -- [SetValue skipped - Library không cần]
     spawn(function()
         while wait() do
-            if _G.Cake then
+            if CakeOn() then
                 pcall(function()
-                    if game.ReplicatedStorage:FindFirstChild("Cake Prince") or (__WS.Enemies:FindFirstChild("Cake Prince") or (game.ReplicatedStorage:FindFirstChild("Dough King") or __WS.Enemies:FindFirstChild("Dough King"))) then
-                        if __WS.Enemies:FindFirstChild("Cake Prince") or __WS.Enemies:FindFirstChild("Dough King") then
-                            local v443, v444, v445 = pairs(__WS.Enemies:GetChildren())
-                            while true do
-                                local v446
-                                v445, v446 = v443(v444, v445)
-                                if v445 == nil then
-                                    break
-                                end
+                    local enemies = __WS.Enemies
+                    if __RS:FindFirstChild("Cake Prince") or (enemies:FindFirstChild("Cake Prince") or (__RS:FindFirstChild("Dough King") or enemies:FindFirstChild("Dough King"))) then
+                        -- ===== Giai đoạn Boss (giữ nguyên) =====
+                        if enemies:FindFirstChild("Cake Prince") or enemies:FindFirstChild("Dough King") then
+                            for _, v446 in pairs(enemies:GetChildren()) do
                                 if v446.Name == "Cake Prince" or v446.Name == "Dough King" then
                                     repeat
                                         wait(_G.Fast_Delay)
@@ -5080,53 +4799,71 @@ if Sea3 then
                                         local _mc40 = v446.HumanoidRootPart.CFrame * Pos
                                         if (v446.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc40) end
                                         AttackNoCoolDown()
-                                    until _G.Cake == false or (not v446.Parent or v446.Humanoid.Health <= 0)
+                                    until not CakeOn() or (not v446.Parent or v446.Humanoid.Health <= 0)
                                 end
                             end
                         else
                             Tween2(CFrame.new(- 2009.2802734375, 4532.97216796875, - 14937.3076171875))
                         end
-                    elseif game.Workspace.Enemies:FindFirstChild("Baking Staff") or (game.Workspace.Enemies:FindFirstChild("Head Baker") or (game.Workspace.Enemies:FindFirstChild("Cake Guard") or game.Workspace.Enemies:FindFirstChild("Cookie Crafter"))) then
-                        local v447, v448, v449 = pairs(__WS.Enemies:GetChildren())
-                        while true do
-                            local v450
-                            v449, v450 = v447(v448, v449)
-                            if v449 == nil then
-                                break
+                    else
+                        -- ===== Giai đoạn quái phụ =====
+                        -- [NEW] Chế độ CÓ nhiệm vụ: nhận quest theo cấp, chỉ đánh đúng quái của quest
+                        local qName, qLv, qMob, qCF
+                        if _G.Cake then qName, qLv, qMob, qCF = GetCakeQuest() end
+                        if qName then
+                            local vis, title = GetQuestGui()
+                            if vis and not string.find(title, qMob, 1, true) then
+                                bringmob = false
+                                __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
+                                return
                             end
-                            if (v450.Name == "Baking Staff" or (v450.Name == "Head Baker" or (v450.Name == "Cake Guard" or v450.Name == "Cookie Crafter"))) and v450.Humanoid.Health > 0 then
-                                repeat
-                                    wait(_G.Fast_Delay)
-                                    AutoHaki()
-                                    EquipTool(SelectWeapon)
-                                    bringmob = true
-                                    v450.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                                    POSCAKE = v450.HumanoidRootPart.CFrame
-                                    local _mc41 = v450.HumanoidRootPart.CFrame * Pos
-                                    if (v450.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc41) end
-                                    AttackNoCoolDown()
-                                until _G.Cake == false or (__RS:FindFirstChild("Cake Prince") or (__RS:FindFirstChild("Dough King") or (not v450.Parent or v450.Humanoid.Health <= 0)))
+                            if not vis then
+                                bringmob = false
+                                TakeQuest(qCF, qName, qLv, function() return _G.Cake end)
+                                return
                             end
                         end
-                    else
-                        bringmob = false
-                        Tween2(CFrame.new(- 1579.9111328125, 329.7358703613281, - 12310.365234375))
+                        local function isTarget(m)
+                            if qMob then return m.Name == qMob end
+                            return CAKE_MOBS[m.Name] == true
+                        end
+                        local has = false
+                        for _, m in ipairs(enemies:GetChildren()) do
+                            if isTarget(m) then has = true break end
+                        end
+                        if has then
+                            for _, v450 in pairs(enemies:GetChildren()) do
+                                local hum450 = v450:FindFirstChild("Humanoid")
+                                if isTarget(v450) and hum450 and hum450.Health > 0 then
+                                    repeat
+                                        wait(_G.Fast_Delay)
+                                        AutoHaki()
+                                        EquipTool(SelectWeapon)
+                                        bringmob = true
+                                        v450.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                                        POSCAKE = v450.HumanoidRootPart.CFrame
+                                        local _mc41 = v450.HumanoidRootPart.CFrame * Pos
+                                        if (v450.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc41) end
+                                        AttackNoCoolDown()
+                                    until not CakeOn() or (__RS:FindFirstChild("Cake Prince") or (__RS:FindFirstChild("Dough King") or (not v450.Parent or hum450.Health <= 0 or (qMob and not GetQuestGui()))))
+                                end
+                            end
+                        else
+                            bringmob = false
+                            Tween2(CFrame.new(- 1579.9111328125, 329.7358703613281, - 12310.365234375))
+                        end
                     end
                 end)
             end
         end
     end)
     spawn(function()
-        game:GetService("RunService").Heartbeat:Connect(function()
+        local CAKE_MOBS = {["Cookie Crafter"] = true, ["Cake Guard"] = true, ["Baking Staff"] = true, ["Head Baker"] = true}
+        RunService.Heartbeat:Connect(function()
+            if not (CakeOn() and bringmob and POSCAKE) then return end -- [OPT] thoát sớm: không quét Enemies khi không cần
             pcall(function()
-                local v451, v452, v453 = pairs(__WS.Enemies:GetChildren())
-                while true do
-                    local v454
-                    v453, v454 = v451(v452, v453)
-                    if v453 == nil then
-                        break
-                    end
-                    if _G.Cake and (bringmob and (v454.Name == "Cookie Crafter" or (v454.Name == "Cake Guard" or (v454.Name == "Baking Staff" or v454.Name == "Head Baker")))) and (v454.HumanoidRootPart.Position - POSCAKE.Position).magnitude <= 350 then
+                for v453, v454 in pairs(__WS.Enemies:GetChildren()) do
+                    if CAKE_MOBS[v454.Name] and (v454.HumanoidRootPart.Position - POSCAKE.Position).Magnitude <= 350 then
                         v454.HumanoidRootPart.CFrame = POSCAKE
                         v454.HumanoidRootPart.CanCollide = false
                         v454.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
@@ -5139,66 +4876,7 @@ if Sea3 then
             end)
         end)
     end)
-    spawn(function()
-        while wait() do
-            if _G.Cake then
-                pcall(function()
-                    if game.ReplicatedStorage:FindFirstChild("Cake Prince") or (__WS.Enemies:FindFirstChild("Cake Prince") or (game.ReplicatedStorage:FindFirstChild("Dough King") or __WS.Enemies:FindFirstChild("Dough King"))) then
-                        if __WS.Enemies:FindFirstChild("Cake Prince") or __WS.Enemies:FindFirstChild("Dough King") then
-                            local v455, v456, v457 = pairs(__WS.Enemies:GetChildren())
-                            while true do
-                                local v458
-                                v457, v458 = v455(v456, v457)
-                                if v457 == nil then
-                                    break
-                                end
-                                if v458.Name == "Cake Prince" or v458.Name == "Dough King" then
-                                    repeat
-                                        wait(_G.Fast_Delay)
-                                        AutoHaki()
-                                        EquipTool(SelectWeapon)
-                                        v458.HumanoidRootPart.CanCollide = false
-                                        v458.Humanoid.WalkSpeed = 0
-                                        v458.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                                        local _mc42 = v458.HumanoidRootPart.CFrame * Pos
-                                        if (v458.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc42) end
-                                        AttackNoCoolDown()
-                                    until _G.Cake == false or (not v458.Parent or v458.Humanoid.Health <= 0)
-                                end
-                            end
-                        else
-                            Tween2(CFrame.new(- 2009.2802734375, 4532.97216796875, - 14937.3076171875))
-                        end
-                    elseif game.Workspace.Enemies:FindFirstChild("Baking Staff") or (game.Workspace.Enemies:FindFirstChild("Head Baker") or (game.Workspace.Enemies:FindFirstChild("Cake Guard") or game.Workspace.Enemies:FindFirstChild("Cookie Crafter"))) then
-                        local v459, v460, v461 = pairs(__WS.Enemies:GetChildren())
-                        while true do
-                            local v462
-                            v461, v462 = v459(v460, v461)
-                            if v461 == nil then
-                                break
-                            end
-                            if (v462.Name == "Baking Staff" or (v462.Name == "Head Baker" or (v462.Name == "Cake Guard" or v462.Name == "Cookie Crafter"))) and v462.Humanoid.Health > 0 then
-                                repeat
-                                    wait(_G.Fast_Delay)
-                                    AutoHaki()
-                                    EquipTool(SelectWeapon)
-                                    bringmob = true
-                                    v462.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                                    POSCAKE = v462.HumanoidRootPart.CFrame
-                                    local _mc43 = v462.HumanoidRootPart.CFrame * Pos
-                                    if (v462.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc43) end
-                                    AttackNoCoolDown()
-                                until _G.Cake == false or (__RS:FindFirstChild("Cake Prince") or (__RS:FindFirstChild("Dough King") or (not v462.Parent or v462.Humanoid.Health <= 0)))
-                            end
-                        end
-                    else
-                        bringmob = false
-                        Tween2(CFrame.new(- 1579.9111328125, 329.7358703613281, - 12310.365234375))
-                    end
-                end)
-            end
-        end
-    end)
+    -- [OPT] đã xóa vòng lặp farm Cake bị nhân đôi y hệt (2 vòng cùng đánh 1 quái)
     Tabs.Main:AddToggle("ToggleSpawnCake", {
         ["Title"] = "Triệu Hồi Tư Lệnh Bánh",
         ["Default"] = true
@@ -5208,7 +4886,7 @@ if Sea3 then
     -- [SetValue skipped - Library không cần]
 end
 spawn(function()
-    while wait() do
+    while wait(0.25) do -- [OPT] trước: 2 InvokeServer mỗi frame, kể cả khi không ở Sea 3
         if _G.SpawnCakePrince then
             __RS.Remotes.CommF_:InvokeServer(unpack({
                 "CakePrinceSpawner",
@@ -5234,13 +4912,7 @@ if Sea2 then
             pcall(function()
                 if _G.Ectoplasm then
                     if __WS.Enemies:FindFirstChild("Ship Deckhand") or (__WS.Enemies:FindFirstChild("Ship Engineer") or (__WS.Enemies:FindFirstChild("Ship Steward") or __WS.Enemies:FindFirstChild("Ship Officer"))) then
-                        local v465, v466, v467 = pairs(__WS.Enemies:GetChildren())
-                        while true do
-                            local v468
-                            v467, v468 = v465(v466, v467)
-                            if v467 == nil then
-                                break
-                            end
+                        for v467, v468 in pairs(__WS.Enemies:GetChildren()) do
                             if (v468.Name == "Ship Steward" or (v468.Name == "Ship Engineer" or (v468.Name == "Ship Deckhand" or v468.Name == "Ship Officer" and v468:FindFirstChild("Humanoid")))) and v468.Humanoid.Health > 0 then
                                 repeat
                                     wait(_G.Fast_Delay)
@@ -5338,13 +5010,7 @@ spawn(function()
         if _G.AutoBoss then
             pcall(function()
                 if __WS.Enemies:FindFirstChild(_G.SelectBoss) then
-                    local v472, v473, v474 = pairs(__WS.Enemies:GetChildren())
-                    while true do
-                        local v475
-                        v474, v475 = v472(v473, v474)
-                        if v474 == nil then
-                            break
-                        end
+                    for v474, v475 in pairs(__WS.Enemies:GetChildren()) do
                         if v475.Name == _G.SelectBoss and (v475:FindFirstChild("Humanoid") and (v475:FindFirstChild("HumanoidRootPart") and v475.Humanoid.Health > 0)) then
                             repeat
                                 wait(_G.Fast_Delay)
@@ -5431,13 +5097,7 @@ spawn(function()
                 MaterialMon(SelectMaterial)
                 Tween2(MPos)
                 if __WS.Enemies:FindFirstChild(MMon) then
-                    local v479, v480, v481 = pairs(game.Workspace.Enemies:GetChildren())
-                    while true do
-                        local v482
-                        v481, v482 = v479(v480, v481)
-                        if v481 == nil then
-                            break
-                        end
+                    for v481, v482 in pairs(__WS.Enemies:GetChildren()) do
                         if v482:FindFirstChild("Humanoid") and (v482:FindFirstChild("HumanoidRootPart") and (v482.Humanoid.Health > 0 and v482.Name == MMon)) then
                             repeat
                                 wait(_G.Fast_Delay)
@@ -5459,13 +5119,7 @@ spawn(function()
                         end
                     end
                 else
-                    local v483, v484, v485 = pairs(__WS._WorldOrigin.EnemySpawns:GetChildren())
-                    while true do
-                        local v486
-                        v485, v486 = v483(v484, v485)
-                        if v485 == nil then
-                            break
-                        end
+                    for v485, v486 in pairs(__WS._WorldOrigin.EnemySpawns:GetChildren()) do
                         if string.find(v486.Name, Mon) and (__LP.Character.HumanoidRootPart.Position - v486.Position).Magnitude >= 10 then
                             local _mc47 = v486.HumanoidRootPart.CFrame * Pos
                             if (v486.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc47) end
@@ -5482,8 +5136,7 @@ if Sea3 then
         ["Title"] = "Trạng Thái Đảo Cáo",
     })
     function UpdateKitsune()
-		-- upvalues: (ref) vu487
-        if game.Workspace._WorldOrigin.Locations:FindFirstChild("Kitsune Island") then
+        if __WS._WorldOrigin.Locations:FindFirstChild("Kitsune Island") then
             vu487:SetDesc("Đảo Cáo : \226\156\133\239\184\143")
         else
             vu487:SetDesc("Đảo Cáo : \226\157\140\239\184\143")
@@ -5491,7 +5144,7 @@ if Sea3 then
     end
     spawn(function()
         pcall(function()
-            while wait() do
+            while wait(1) do -- [OPT]
                 UpdateKitsune()
             end
         end)
@@ -5513,13 +5166,7 @@ if Sea3 then
             if _G.TweenToKitsune then
                 local v490 = v489:FindFirstChild("ShrineActive")
                 if v490 then
-                    local v491, v492, v493 = pairs(v490:GetDescendants())
-                    while true do
-                        local v494
-                        v493, v494 = v491(v492, v493)
-                        if v493 == nil then
-                            break
-                        end
+                    for v493, v494 in pairs(v490:GetDescendants()) do
                         if v494:IsA("BasePart") and v494.Name:find("NeonShrinePart") then
                             Tween2(v494.CFrame)
                         end
@@ -5554,7 +5201,7 @@ if Sea3 then
     })
     Tabs.Sea:AddSection("Biển")
     local vu496 = __PL
-    local vu497 = game:GetService("RunService")
+    local vu497 = RunService
     local vu498 = __VIM
     local vu499 = __WS
     local v500 = vu496.LocalPlayer
@@ -5570,14 +5217,7 @@ if Sea3 then
     }
     local vu506 = 1
     local function vu513()
-		-- upvalues: (ref) vu499, (ref) vu501
-        local v507, v508, v509 = pairs(vu499.Boats:GetChildren())
-        while true do
-            local v510
-            v509, v510 = v507(v508, v509)
-            if v509 == nil then
-                break
-            end
+        for v509, v510 in pairs(vu499.Boats:GetChildren()) do
             local v511 = v510:FindFirstChild("VehicleSeat")
             if v511 then
                 local v512 = vu501
@@ -5589,7 +5229,6 @@ if Sea3 then
         return nil
     end
     vu497.RenderStepped:Connect(function()
-		-- upvalues: (ref) vu501, (ref) vu504, (ref) vu503, (ref) vu513, (ref) vu505, (ref) vu506
         if vu501 and vu501.PrimaryPart then
             local v514 = (vu501.PrimaryPart.Position - vu504).Magnitude
             if vu503 <= math.floor(v514 / 10) then
@@ -5639,34 +5278,24 @@ if Sea3 then
         }
     }
     local function v555(p521, pu522, pu523, pu524, pu525)
-		-- upvalues: (ref) vu3, (ref) vu4, (ref) vu497, (ref) vu519, (ref) vu501, (ref) vu518, (ref) vu517, (ref) vu499, (ref) vu502, (ref) vu498, (ref) vu1
         local v526 = Tabs.Sea:AddToggle(pu522, {
             ["Title"] = p521,
             ["Default"] = false
         })
         -- toggle default is false
         v526:OnChanged(function(p527)
-			-- upvalues: (ref) pu522
             _G[pu522] = p527
         end)
         vu497.RenderStepped:Connect(function()
-			-- upvalues: (ref) pu522, (ref) vu519, (ref) vu501, (ref) vu518, (ref) vu517, (ref) vu499, (ref) vu502, (ref) vu498, (ref) pu523, (ref) pu524, (ref) vu1, (ref) pu525
             if _G[pu522] then
                 local v528 = vu501:FindFirstChild("Humanoid")
                 if v528 then
                     local function v533()
-						-- upvalues: (ref) vu518, (ref) vu517
                         if vu518 then
                             return
                         end
                         vu518 = true
-                        local v529, v530, v531 = pairs(vu517)
-                        while true do
-                            local v532
-                            v531, v532 = v529(v530, v531)
-                            if v531 == nil then
-                                break
-                            end
+                        for v531, v532 in pairs(vu517) do
                             if v532 and (v532.Parent and (v532.Name == "VehicleSeat" and not v532.Occupant)) then
                                 Tween2(v532.CFrame)
                                 break
@@ -5700,36 +5329,18 @@ if Sea3 then
                         v538.MaxSpeed = vu502
                         v538.CFrame = CFrame.new(v538.Position) * v538.CFrame.Rotation
                         vu498:SendKeyEvent(true, "W", false, game)
-                        local v541, v542, v543 = pairs(vu499.Boats:GetDescendants())
-                        while true do
-                            local v544
-                            v543, v544 = v541(v542, v543)
-                            if v543 == nil then
-                                break
-                            end
+                        for v543, v544 in pairs(vu499.Boats:GetDescendants()) do
                             if v544:IsA("BasePart") then
                                 v544.CanCollide = false
                             end
                         end
                         local v545 = vu501
-                        local v546, v547, v548 = pairs(v545:GetDescendants())
-                        while true do
-                            local v549
-                            v548, v549 = v546(v547, v548)
-                            if v548 == nil then
-                                break
-                            end
+                        for v548, v549 in pairs(v545:GetDescendants()) do
                             if v549:IsA("BasePart") then
                                 v549.CanCollide = false
                             end
                         end
-                        local v550, v551, v552 = ipairs(pu523)
-                        while true do
-                            local v553
-                            v552, v553 = v550(v551, v552)
-                            if v552 == nil then
-                                break
-                            end
+                        for v552, v553 in ipairs(pu523) do
                             local v554 = vu499.Map:FindFirstChild(v553)
                             if v554 and v554:IsA("Model") then
                                 v554:Destroy()
@@ -5767,7 +5378,6 @@ if Sea3 then
         _G.AutoComeTiki = p556
     end)
     vu497.RenderStepped:Connect(function()
-		-- upvalues: (ref) vu496, (ref) vu499, (ref) vu502, (ref) vu497, (ref) vu498
         if not _G.AutoComeTiki then
             return
         end
@@ -5812,7 +5422,6 @@ if Sea3 then
         _G.AutoComeHydra = p569
     end)
     vu497.RenderStepped:Connect(function()
-		-- upvalues: (ref) vu496, (ref) vu499, (ref) vu502, (ref) vu497, (ref) vu498
         if not _G.AutoComeHydra then
             return
         end
@@ -5882,20 +5491,12 @@ if Sea3 then
         selectedBoat = p584
     end)
     local function vu591(pu585)
-		-- upvalues: (ref) vu499, (ref) vu582
         __RS.Remotes.CommF_:InvokeServer(unpack({
             "BuyBoat",
             pu585
         }))
         task.delay(2, function()
-			-- upvalues: (ref) vu499, (ref) pu585, (ref) vu582
-            local v586, v587, v588 = pairs(vu499.Boats:GetChildren())
-            while true do
-                local v589
-                v588, v589 = v586(v587, v588)
-                if v588 == nil then
-                    break
-                end
+            for v588, v589 in pairs(vu499.Boats:GetChildren()) do
                 if v589:IsA("Model") and v589.Name == pu585 then
                     local v590 = v589:FindFirstChild("VehicleSeat")
                     if v590 and not v590.Occupant then
@@ -5906,28 +5507,14 @@ if Sea3 then
         end)
     end
     local function vu596()
-		-- upvalues: (ref) vu582
-        local v592, v593, v594 = pairs(vu582)
-        while true do
-            local v595
-            v594, v595 = v592(v593, v594)
-            if v594 == nil then
-                break
-            end
+        for v594, v595 in pairs(vu582) do
             if v595 and (v595.Parent and (v595.Name == "VehicleSeat" and not v595.Occupant)) then
                 Tween2(v595.CFrame)
             end
         end
     end
-    game:GetService("RunService").RenderStepped:Connect(function()
-		-- upvalues: (ref) vu582
-        local v597, v598, v599 = pairs(vu582)
-        while true do
-            local v600
-            v599, v600 = v597(v598, v599)
-            if v599 == nil then
-                break
-            end
+    RunService.RenderStepped:Connect(function()
+        for v599, v600 in pairs(vu582) do
             if v600 and (v600.Parent and (v600.Name == "VehicleSeat" and not v600.Occupant)) then
                 vu582[v599] = v600
             end
@@ -5936,7 +5523,6 @@ if Sea3 then
     Tabs.Sea:AddButton({
         ["Title"] = "Mua Thuyền",
         ["Callback"] = function()
-			-- upvalues: (ref) vu591
             vu591(selectedBoat)
         end
     })
@@ -5944,7 +5530,6 @@ if Sea3 then
         ["Title"] = "Bay Đến Thuyền",
         ["Description"] = "Duy Nhất Thuyền Bạn Mua \225\187\158 Chợ Chồn",
         ["Callback"] = function()
-			-- upvalues: (ref) vu596
             vu596()
         end
     })
@@ -6302,13 +5887,7 @@ if Sea3 then
                         end
                         if not _G.IsFlying and v602.Humanoid.Health >= 8000 then
                             if __WS.Enemies:FindFirstChild("Terrorshark") then
-                                local v603, v604, v605 = pairs(__WS.Enemies:GetChildren())
-                                while true do
-                                    local v606
-                                    v605, v606 = v603(v604, v605)
-                                    if v605 == nil then
-                                        break
-                                    end
+                                for v605, v606 in pairs(__WS.Enemies:GetChildren()) do
                                     if v606.Name == "Terrorshark" and (v606:FindFirstChild("Humanoid") and (v606:FindFirstChild("HumanoidRootPart") and v606.Humanoid.Health > 0)) then
                                         while true do
                                             wait(_G.Fast_Delay)
@@ -6353,13 +5932,7 @@ if Sea3 then
             if _G.farmpiranya then
                 pcall(function()
                     if __WS.Enemies:FindFirstChild("Piranha") then
-                        local v608, v609, v610 = pairs(__WS.Enemies:GetChildren())
-                        while true do
-                            local v611
-                            v610, v611 = v608(v609, v610)
-                            if v610 == nil then
-                                break
-                            end
+                        for v610, v611 in pairs(__WS.Enemies:GetChildren()) do
                             if v611.Name == "Piranha" and (v611:FindFirstChild("Humanoid") and (v611:FindFirstChild("HumanoidRootPart") and v611.Humanoid.Health > 0)) then
                                 repeat
                                     wait(_G.Fast_Delay)
@@ -6394,13 +5967,7 @@ if Sea3 then
             if _G.AutoShark then
                 pcall(function()
                     if __WS.Enemies:FindFirstChild("Shark") then
-                        local v613, v614, v615 = pairs(__WS.Enemies:GetChildren())
-                        while true do
-                            local v616
-                            v615, v616 = v613(v614, v615)
-                            if v615 == nil then
-                                break
-                            end
+                        for v615, v616 in pairs(__WS.Enemies:GetChildren()) do
                             if v616.Name == "Shark" and (v616:FindFirstChild("Humanoid") and (v616:FindFirstChild("HumanoidRootPart") and v616.Humanoid.Health > 0)) then
                                 repeat
                                     wait(_G.Fast_Delay)
@@ -6439,13 +6006,7 @@ if Sea3 then
             if _G.AutoFishCrew then
                 pcall(function()
                     if __WS.Enemies:FindFirstChild("Fish Crew Member") then
-                        local v618, v619, v620 = pairs(__WS.Enemies:GetChildren())
-                        while true do
-                            local v621
-                            v620, v621 = v618(v619, v620)
-                            if v620 == nil then
-                                break
-                            end
+                        for v620, v621 in pairs(__WS.Enemies:GetChildren()) do
                             if v621.Name == "Fish Crew Member" and (v621:FindFirstChild("Humanoid") and (v621:FindFirstChild("HumanoidRootPart") and v621.Humanoid.Health > 0)) then
                                 repeat
                                     wait(_G.Fast_Delay)
@@ -6574,13 +6135,7 @@ if Sea3 then
                         AutoHaki()
                         game:GetService("VirtualUser"):CaptureController()
                         game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
-                        local v636, v637, v638 = pairs(__LP.Backpack:GetChildren())
-                        while true do
-                            local v639
-                            v638, v639 = v636(v637, v638)
-                            if v638 == nil then
-                                break
-                            end
+                        for v638, v639 in pairs(__LP.Backpack:GetChildren()) do
                             if v639:IsA("Tool") and v639.ToolTip == "Melee" then
                                 __LP.Character.Humanoid:EquipTool(v639)
                             end
@@ -6595,13 +6150,7 @@ if Sea3 then
                         __VIM:SendKeyEvent(false, 99, false, __LP.Character.HumanoidRootPart)
                         wait(0.2)
                         __VIM:SendKeyEvent(false, "C", false, __LP.Character.HumanoidRootPart)
-                        local v640, v641, v642 = pairs(__LP.Backpack:GetChildren())
-                        while true do
-                            local v643
-                            v642, v643 = v640(v641, v642)
-                            if v642 == nil then
-                                break
-                            end
+                        for v642, v643 in pairs(__LP.Backpack:GetChildren()) do
                             if v643:IsA("Tool") and v643.ToolTip == "Blox Fruit" then
                                 __LP.Character.Humanoid:EquipTool(v643)
                             end
@@ -6618,13 +6167,7 @@ if Sea3 then
                         __VIM:SendKeyEvent(true, "V", false, __LP.Character.HumanoidRootPart)
                         __VIM:SendKeyEvent(false, "V", false, __LP.Character.HumanoidRootPart)
                         wait()
-                        local v644, v645, v646 = pairs(__LP.Backpack:GetChildren())
-                        while true do
-                            local v647
-                            v646, v647 = v644(v645, v646)
-                            if v646 == nil then
-                                break
-                            end
+                        for v646, v647 in pairs(__LP.Backpack:GetChildren()) do
                             if v647:IsA("Tool") and v647.ToolTip == "Sword" then
                                 __LP.Character.Humanoid:EquipTool(v647)
                             end
@@ -6638,13 +6181,7 @@ if Sea3 then
                         __VIM:SendKeyEvent(true, 99, false, __LP.Character.HumanoidRootPart)
                         __VIM:SendKeyEvent(false, 99, false, __LP.Character.HumanoidRootPart)
                         wait()
-                        local v648, v649, v650 = pairs(__LP.Backpack:GetChildren())
-                        while true do
-                            local v651
-                            v650, v651 = v648(v649, v650)
-                            if v650 == nil then
-                                break
-                            end
+                        for v650, v651 in pairs(__LP.Backpack:GetChildren()) do
                             if v651:IsA("Tool") and v651.ToolTip == "Gun" then
                                 __LP.Character.Humanoid:EquipTool(v651)
                             end
@@ -6667,10 +6204,8 @@ if Sea3 then
         ["Title"] = "Trạng Thái Elite",
     })
     spawn(function()
-		-- upvalues: (ref) vu652
         while wait() do
             pcall(function()
-				-- upvalues: (ref) vu652
                 if __RS:FindFirstChild("Diablo") or (__RS:FindFirstChild("Deandre") or (__RS:FindFirstChild("Urban") or (__WS.Enemies:FindFirstChild("Diablo") or (__WS.Enemies:FindFirstChild("Deandre") or __WS.Enemies:FindFirstChild("Urban"))))) then
                     vu652:SetDesc("Elite Boss: \226\156\133\239\184\143 | Killed:  " .. __RS.Remotes.CommF_:InvokeServer("EliteHunter", "Progress"))
                 else
@@ -6695,13 +6230,7 @@ if Sea3 then
                         __RS.Remotes.CommF_:InvokeServer("EliteHunter")
                     elseif string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Diablo") or (string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Deandre") or string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Urban")) then
                         if __WS.Enemies:FindFirstChild("Diablo") or (__WS.Enemies:FindFirstChild("Deandre") or __WS.Enemies:FindFirstChild("Urban")) then
-                            local v654, v655, v656 = pairs(__WS.Enemies:GetChildren())
-                            while true do
-                                local v657
-                                v656, v657 = v654(v655, v656)
-                                if v656 == nil then
-                                    break
-                                end
+                            for v656, v657 in pairs(__WS.Enemies:GetChildren()) do
                                 if v657:FindFirstChild("Humanoid") and (v657:FindFirstChild("HumanoidRootPart") and (v657.Humanoid.Health > 0 and (v657.Name == "Diablo" or (v657.Name == "Deandre" or v657.Name == "Urban")))) then
                                     repeat
                                         wait(_G.Fast_Delay)
@@ -6849,7 +6378,7 @@ if Sea3 then
     task.spawn(function()
         while task.wait() do
             pcall(function()
-                if game.Workspace.Map:FindFirstChild("MysticIsland") then
+                if __WS.Map:FindFirstChild("MysticIsland") then
                     MirageStatus = "\239\191\189\239\191\189\239\184\143"
                 else
                     MirageStatus = "\239\191\189\239\191\189\239\184\143"
@@ -6858,10 +6387,8 @@ if Sea3 then
         end
     end)
     spawn(function()
-		-- upvalues: (ref) vu658
         pcall(function()
-			-- upvalues: (ref) vu658
-            while wait() do
+            while wait(1) do -- [OPT]
                 vu658:SetDesc("Đảo Bí Ẩn: " .. MirageStatus .. " | Trăng Tr\195\178n: " .. FullMoonStatus)
             end
         end)
@@ -6879,16 +6406,10 @@ if Sea3 then
         end
     end
     function getHighestPoint()
-        if not game.Workspace.Map:FindFirstChild("MysticIsland") then
+        if not __WS.Map:FindFirstChild("MysticIsland") then
             return nil
         end
-        local v661, v662, v663 = pairs(__WS.Map.MysticIsland:GetDescendants())
-        while true do
-            local v664
-            v663, v664 = v661(v662, v663)
-            if v663 == nil then
-                break
-            end
+        for v663, v664 in pairs(__WS.Map.MysticIsland:GetDescendants()) do
             if v664:IsA("MeshPart") and v664.MeshId == "rbxassetid://6745037796" then
                 return v664
             end
@@ -6904,7 +6425,7 @@ end)
 spawn(function()
     while wait() do
         if _G.AutoTpAdvanced then
-            local v666 = game.ReplicatedStorage.NPCs:FindFirstChild("Advanced Fruit Dealer")
+            local v666 = __RS.NPCs:FindFirstChild("Advanced Fruit Dealer")
             if v666 and v666:IsA("Model") then
                 local v667 = v666.PrimaryPart
                 if v667 then
@@ -6928,13 +6449,7 @@ spawn(function()
     pcall(function()
         while wait() do
             if _G.TweenToGear and __WS.Map:FindFirstChild("MysticIsland") then
-                local v669, v670, v671 = pairs(__WS.Map.MysticIsland:GetChildren())
-                while true do
-                    local v672
-                    v671, v672 = v669(v670, v671)
-                    if v671 == nil then
-                        break
-                    end
+                for v671, v672 in pairs(__WS.Map.MysticIsland:GetChildren()) do
                     if v672:IsA("MeshPart") and v672.Material == Enum.Material.Neon then
                         Tween2(v672.CFrame)
                     end
@@ -6955,8 +6470,8 @@ spawn(function()
         pcall(function()
             if _G.AutoLockMoon then
                 local v674 = game.Lighting:GetMoonDirection()
-                local v675 = game.Workspace.CurrentCamera.CFrame.p + v674 * 100
-                game.Workspace.CurrentCamera.CFrame = CFrame.lookAt(game.Workspace.CurrentCamera.CFrame.p, v675)
+                local v675 = __WS.CurrentCamera.CFrame.p + v674 * 100
+                __WS.CurrentCamera.CFrame = CFrame.lookAt(__WS.CurrentCamera.CFrame.p, v675)
             end
         end)
     end
@@ -6984,13 +6499,7 @@ spawn(function()
             pcall(function()
                 if __WS.Map.Jungle.Final.Part.Transparency ~= 0 then
                     if __WS.Enemies:FindFirstChild("Saber Expert") or __RS:FindFirstChild("Saber Expert") then
-                        local v677, v678, v679 = pairs(__WS.Enemies:GetChildren())
-                        while true do
-                            local v680
-                            v679, v680 = v677(v678, v679)
-                            if v679 == nil then
-                                break
-                            end
+                        for v679, v680 in pairs(__WS.Enemies:GetChildren()) do
                             if v680:FindFirstChild("Humanoid") and (v680:FindFirstChild("HumanoidRootPart") and (v680.Humanoid.Health > 0 and v680.Name == "Saber Expert")) then
                                 repeat
                                     task.wait(_G.Fast_Delay)
@@ -7028,13 +6537,7 @@ spawn(function()
                                     end
                                 elseif __WS.Enemies:FindFirstChild("Mob Leader") or __RS:FindFirstChild("Mob Leader") then
                                     Tween2(CFrame.new(- 2967.59521, - 4.91089821, 5328.70703, 0.342208564, - 0.0227849055, 0.939347804, 0.0251603816, 0.999569714, 0.0150796166, - 0.939287126, 0.0184739735, 0.342634559))
-                                    local v681, v682, v683 = pairs(__WS.Enemies:GetChildren())
-                                    while true do
-                                        local v684
-                                        v683, v684 = v681(v682, v683)
-                                        if v683 == nil then
-                                            break
-                                        end
+                                    for v683, v684 in pairs(__WS.Enemies:GetChildren()) do
                                         if v684.Name == "Mob Leader" then
                                             if __WS.Enemies:FindFirstChild("Mob Leader [Lv. 120] [Boss]") and (v684:FindFirstChild("Humanoid") and (v684:FindFirstChild("HumanoidRootPart") and v684.Humanoid.Health > 0)) then
                                                 repeat
@@ -7103,19 +6606,11 @@ end)
 -- [SetValue removed]
 local vu686 = CFrame.new(- 7748.0185546875, 5606.80615234375, - 2305.898681640625)
 spawn(function()
-	-- upvalues: (ref) vu686
     while wait() do
         if _G.Auto_PoleV1 then
             pcall(function()
-				-- upvalues: (ref) vu686
                 if __WS.Enemies:FindFirstChild("Thunder God") then
-                    local v687, v688, v689 = pairs(__WS.Enemies:GetChildren())
-                    while true do
-                        local v690
-                        v689, v690 = v687(v688, v689)
-                        if v689 == nil then
-                            break
-                        end
+                    for v689, v690 in pairs(__WS.Enemies:GetChildren()) do
                         if v690.Name == "Thunder God" and (v690:FindFirstChild("Humanoid") and (v690:FindFirstChild("HumanoidRootPart") and v690.Humanoid.Health > 0)) then
                             repeat
                                 task.wait(_G.Fast_Delay)
@@ -7151,19 +6646,11 @@ end)
 -- [SetValue skipped - Library không cần]
 local vu692 = CFrame.new(- 690.33081054688, 15.09425163269, 1582.2380371094)
 spawn(function()
-	-- upvalues: (ref) vu692
     while wait() do
         if _G.Auto_Saw then
             pcall(function()
-				-- upvalues: (ref) vu692
                 if __WS.Enemies:FindFirstChild("The Saw") then
-                    local v693, v694, v695 = pairs(__WS.Enemies:GetChildren())
-                    while true do
-                        local v696
-                        v695, v696 = v693(v694, v695)
-                        if v695 == nil then
-                            break
-                        end
+                    for v695, v696 in pairs(__WS.Enemies:GetChildren()) do
                         if v696.Name == "The Saw" and (v696:FindFirstChild("Humanoid") and (v696:FindFirstChild("HumanoidRootPart") and v696.Humanoid.Health > 0)) then
                             repeat
                                 task.wait(_G.Fast_Delay)
@@ -7199,19 +6686,11 @@ end)
 -- [SetValue skipped - Library không cần]
 local vu698 = CFrame.new(5186.14697265625, 24.86684226989746, 832.1885375976562)
 spawn(function()
-	-- upvalues: (ref) vu698
     while wait() do
         if _G.Auto_Warden then
             pcall(function()
-				-- upvalues: (ref) vu698
                 if __WS.Enemies:FindFirstChild("Chief Warden") then
-                    local v699, v700, v701 = pairs(__WS.Enemies:GetChildren())
-                    while true do
-                        local v702
-                        v701, v702 = v699(v700, v701)
-                        if v701 == nil then
-                            break
-                        end
+                    for v701, v702 in pairs(__WS.Enemies:GetChildren()) do
                         if v702.Name == "Chief Warden" and (v702:FindFirstChild("Humanoid") and (v702:FindFirstChild("HumanoidRootPart") and v702.Humanoid.Health > 0)) then
                             repeat
                                 task.wait(_G.Fast_Delay)
@@ -7251,13 +6730,7 @@ if Sea3 then
             if AutoHallowSycthe then
                 pcall(function()
                     if __WS.Enemies:FindFirstChild("Soul Reaper") then
-                        local v704, v705, v706 = pairs(__WS.Enemies:GetChildren())
-                        while true do
-                            local v707
-                            v706, v707 = v704(v705, v706)
-                            if v706 == nil then
-                                break
-                            end
+                        for v706, v707 in pairs(__WS.Enemies:GetChildren()) do
                             if string.find(v707.Name, "Soul Reaper") then
                                 repeat
                                     wait(_G.Fast_Delay)
@@ -7325,7 +6798,6 @@ if Sea3 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-		-- ::l0::
         while true do
             repeat
                 if not wait() then
@@ -7338,21 +6810,13 @@ if Sea3 then
             Tween2(CFrame.new(- 10238.875976563, 389.7912902832, - 9549.7939453125))
         end
         local v710, v711, v712 = pairs(__WS.Enemies:GetChildren())
-		-- ::l9::
         local v713
         v712, v713 = v710(v711, v712)
         if v712 ~= nil then
-			-- goto l10
         end
-		-- goto l0
-		-- ::l10::
         if v713.Name == ("Longma" or v713.Name == "Longma") and (v713.Humanoid.Health > 0 and (v713:IsA("Model") and (v713:FindFirstChild("Humanoid") and v713:FindFirstChild("HumanoidRootPart")))) then
-			-- goto l5
         else
-			-- goto l9
         end
-		-- ::l5::
-		-- ::l26::
         wait(_G.Fast_Delay)
         AttackNoCoolDown()
         AutoHaki()
@@ -7369,9 +6833,7 @@ if Sea3 then
         local _mc58 = v713.HumanoidRootPart.CFrame * Pos
         if (v713.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc58) end
         if AutoTushita and (v713.Parent and v713.Humanoid.Health > 0) then
-			-- goto l26
         else
-			-- goto l9
         end
     end)
     Tabs.Item:AddToggle("ToggleHoly", {
@@ -7424,19 +6886,11 @@ end)
 -- [SetValue skipped - Library không cần]
 local vu716 = CFrame.new(5311.07421875, 426.0243835449219, 165.12762451171875)
 spawn(function()
-	-- upvalues: (ref) vu716
     while wait() do
         if _G.Auto_Canvander then
             pcall(function()
-				-- upvalues: (ref) vu716
                 if __WS.Enemies:FindFirstChild("Beautiful Pirate") then
-                    local v717, v718, v719 = pairs(__WS.Enemies:GetChildren())
-                    while true do
-                        local v720
-                        v719, v720 = v717(v718, v719)
-                        if v719 == nil then
-                            break
-                        end
+                    for v719, v720 in pairs(__WS.Enemies:GetChildren()) do
                         if v720.Name == "Beautiful Pirate" and (v720:FindFirstChild("Humanoid") and (v720:FindFirstChild("HumanoidRootPart") and v720.Humanoid.Health > 0)) then
                             repeat
                                 task.wait(_G.Fast_Delay)
@@ -7481,19 +6935,12 @@ spawn(function()
                         end
                     elseif __LP.PlayerGui.Main.Quest.Visible and (string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Captain Elephant") and __LP.PlayerGui.Main.Quest.Visible == true) then
                         if __WS.Enemies:FindFirstChild("Captain Elephant") then
-                            local v722, v723, v724 = pairs(__WS.Enemies:GetChildren())
-                            while true do
-                                local vu725
-                                v724, vu725 = v722(v723, v724)
-                                if v724 == nil then
-                                    break
-                                end
+                            for v724, vu725 in pairs(__WS.Enemies:GetChildren()) do
                                 if vu725.Name == "Captain Elephant" then
                                     OldCFrameElephant = vu725.HumanoidRootPart.CFrame
                                     repeat
                                         task.wait(_G.Fast_Delay)
                                         pcall(function()
-											-- upvalues: (ref) vu725
                                             EquipTool(SelectWeapon)
                                             AutoHaki()
                                             vu725.HumanoidRootPart.CanCollide = false
@@ -7519,18 +6966,11 @@ spawn(function()
                     end
                 elseif string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Forest Pirate") and (string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "50") and __LP.PlayerGui.Main.Quest.Visible == true) then
                     if __WS.Enemies:FindFirstChild("Forest Pirate") then
-                        local v726, v727, v728 = pairs(__WS.Enemies:GetChildren())
-                        while true do
-                            local vu729
-                            v728, vu729 = v726(v727, v728)
-                            if v728 == nil then
-                                break
-                            end
+                        for v728, vu729 in pairs(__WS.Enemies:GetChildren()) do
                             if vu729.Name == "Forest Pirate" then
                                 repeat
                                     task.wait(_G.Fast_Delay)
                                     pcall(function()
-										-- upvalues: (ref) vu729
                                         EquipTool(SelectWeapon)
                                         AutoHaki()
                                         vu729.HumanoidRootPart.Size = Vector3.new(50, 50, 50)
@@ -7593,13 +7033,7 @@ spawn(function()
                         wait(1)
                         __RS.Remotes.CommF_:InvokeServer("KenTalk2", "Buy")
                     else
-                        local v731, v732, v733 = pairs(__WS:GetDescendants())
-                        while true do
-                            local v734
-                            v733, v734 = v731(v732, v733)
-                            if v733 == nil then
-                                break
-                            end
+                        for v733, v734 in pairs(__WS:GetDescendants()) do
                             if v734.Name == "Apple" or (v734.Name == "Banana" or v734.Name == "Pineapple") then
                                 v734.Handle.CFrame = __LP.Character.HumanoidRootPart.CFrame * CFrame.new(0, 1, 10)
                                 wait()
@@ -7627,13 +7061,7 @@ spawn(function()
                 if __LP.PlayerGui.Main.Quest.Visible then
                     if __LP.PlayerGui.Main.Quest.Visible and string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Stone") then
                         if __WS.Enemies:FindFirstChild("Stone") then
-                            local v736, v737, v738 = pairs(__WS.Enemies:GetChildren())
-                            while true do
-                                local v739
-                                v738, v739 = v736(v737, v738)
-                                if v738 == nil then
-                                    break
-                                end
+                            for v738, v739 in pairs(__WS.Enemies:GetChildren()) do
                                 if v739.Name == "Stone" then
                                     OldCFrameRainbow = v739.HumanoidRootPart.CFrame
                                     repeat
@@ -7653,13 +7081,7 @@ spawn(function()
                         end
                     elseif __LP.PlayerGui.Main.Quest.Visible and string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Hydra Leader") then
                         if __WS.Enemies:FindFirstChild("Hydra Leader") then
-                            local v740, v741, v742 = pairs(__WS.Enemies:GetChildren())
-                            while true do
-                                local v743
-                                v742, v743 = v740(v741, v742)
-                                if v742 == nil then
-                                    break
-                                end
+                            for v742, v743 in pairs(__WS.Enemies:GetChildren()) do
                                 if v743.Name == "Hydra Leader" then
                                     OldCFrameRainbow = v743.HumanoidRootPart.CFrame
                                     repeat
@@ -7679,13 +7101,7 @@ spawn(function()
                         end
                     elseif string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Kilo Admiral") then
                         if __WS.Enemies:FindFirstChild("Kilo Admiral") then
-                            local v744, v745, v746 = pairs(__WS.Enemies:GetChildren())
-                            while true do
-                                local v747
-                                v746, v747 = v744(v745, v746)
-                                if v746 == nil then
-                                    break
-                                end
+                            for v746, v747 in pairs(__WS.Enemies:GetChildren()) do
                                 if v747.Name == "Kilo Admiral" then
                                     OldCFrameRainbow = v747.HumanoidRootPart.CFrame
                                     repeat
@@ -7705,13 +7121,7 @@ spawn(function()
                         end
                     elseif string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Captain Elephant") then
                         if __WS.Enemies:FindFirstChild("Captain Elephant") then
-                            local v748, v749, v750 = pairs(__WS.Enemies:GetChildren())
-                            while true do
-                                local v751
-                                v750, v751 = v748(v749, v750)
-                                if v750 == nil then
-                                    break
-                                end
+                            for v750, v751 in pairs(__WS.Enemies:GetChildren()) do
                                 if v751.Name == "Captain Elephant" then
                                     OldCFrameRainbow = v751.HumanoidRootPart.CFrame
                                     repeat
@@ -7731,13 +7141,7 @@ spawn(function()
                         end
                     elseif string.find(__LP.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Beautiful Pirate") then
                         if __WS.Enemies:FindFirstChild("Beautiful Pirate") then
-                            local v752, v753, v754 = pairs(__WS.Enemies:GetChildren())
-                            while true do
-                                local v755
-                                v754, v755 = v752(v753, v754)
-                                if v754 == nil then
-                                    break
-                                end
+                            for v754, v755 in pairs(__WS.Enemies:GetChildren()) do
                                 if v755.Name == "Beautiful Pirate" then
                                     OldCFrameRainbow = v755.HumanoidRootPart.CFrame
                                     repeat
@@ -7844,14 +7248,8 @@ spawn(function()
                                 "Ghost"
                             }))
                         end
-                        if game.Workspace.Enemies:FindFirstChild("Living Zombie") then
-                            local v757, v758, v759 = pairs(game.Workspace.Enemies:GetChildren())
-                            while true do
-                                local v760
-                                v759, v760 = v757(v758, v759)
-                                if v759 == nil then
-                                    break
-                                end
+                        if __WS.Enemies:FindFirstChild("Living Zombie") then
+                            for v759, v760 in pairs(__WS.Enemies:GetChildren()) do
                                 if v760:FindFirstChild("HumanoidRootPart") and (v760:FindFirstChild("Humanoid") and (v760.Humanoid.Health > 0 and v760.Name == "Living Zombie")) then
                                     EquipTool(SelectWeapon)
                                     v760.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
@@ -7904,19 +7302,11 @@ end)
 -- [SetValue skipped - Library không cần]
 local vu762 = CFrame.new(- 731.2034301757812, 381.5658874511719, - 11198.4951171875)
 spawn(function()
-	-- upvalues: (ref) vu762
     while wait() do
         if _G.Auto_Buddy then
             pcall(function()
-				-- upvalues: (ref) vu762
                 if __WS.Enemies:FindFirstChild("Cake Queen") then
-                    local v763, v764, v765 = pairs(__WS.Enemies:GetChildren())
-                    while true do
-                        local v766
-                        v765, v766 = v763(v764, v765)
-                        if v765 == nil then
-                            break
-                        end
+                    for v765, v766 in pairs(__WS.Enemies:GetChildren()) do
                         if v766.Name == "Cake Queen" and (v766:FindFirstChild("Humanoid") and (v766:FindFirstChild("HumanoidRootPart") and v766.Humanoid.Health > 0)) then
                             repeat
                                 task.wait(_G.Fast_Delay)
@@ -7988,13 +7378,7 @@ spawn(function()
                                                 Auto_Quest_Tushita_2 = false
                                                 Auto_Quest_Tushita_3 = false
                                                 if __WS.Enemies:FindFirstChild("Cursed Skeleton Boss [Lv. 2025] [Boss]") or __WS.Enemies:FindFirstChild("Cursed Skeleton [Lv. 2200]") then
-                                                    local v768, v769, v770 = pairs(__WS.Enemies:GetChildren())
-                                                    while true do
-                                                        local v771
-                                                        v770, v771 = v768(v769, v770)
-                                                        if v770 == nil then
-                                                            break
-                                                        end
+                                                    for v770, v771 in pairs(__WS.Enemies:GetChildren()) do
                                                         if (v771.Name == "Cursed Skeleton Boss" or v771.Name == "Cursed Skeleton") and v771.Humanoid.Health > 0 then
                                                             EquipTool(Sword)
                                                             local _mc771 = v771.HumanoidRootPart.CFrame * pos
@@ -8094,13 +7478,7 @@ spawn(function()
         if Auto_Quest_Yama_1 then
             pcall(function()
                 if __WS.Enemies:FindFirstChild("Mythological Pirate") then
-                    local v772, v773, v774 = pairs(__WS.Enemies:GetChildren())
-                    while true do
-                        local v775
-                        v774, v775 = v772(v773, v774)
-                        if v774 == nil then
-                            break
-                        end
+                    for v774, v775 in pairs(__WS.Enemies:GetChildren()) do
                         if v775.Name == "Mythological Pirate" then
                             repeat
                                 wait()
@@ -8120,25 +7498,13 @@ spawn(function()
     while wait() do
         pcall(function()
             if Auto_Quest_Yama_2 then
-                local v776, v777, v778 = pairs(__WS.Enemies:GetChildren())
-                while true do
-                    local v779
-                    v778, v779 = v776(v777, v778)
-                    if v778 == nil then
-                        break
-                    end
+                for v778, v779 in pairs(__WS.Enemies:GetChildren()) do
                     if v779:FindFirstChild("HazeESP") then
                         v779.HazeESP.Size = UDim2.new(50, 50, 50, 50)
                         v779.HazeESP.MaxDistance = "inf"
                     end
                 end
-                local v780, v781, v782 = pairs(__RS:GetChildren())
-                while true do
-                    local v783
-                    v782, v783 = v780(v781, v782)
-                    if v782 == nil then
-                        break
-                    end
+                for v782, v783 in pairs(__RS:GetChildren()) do
                     if v783:FindFirstChild("HazeESP") then
                         v783.HazeESP.Size = UDim2.new(50, 50, 50, 50)
                         v783.HazeESP.MaxDistance = "inf"
@@ -8151,13 +7517,7 @@ end)
 spawn(function()
     while wait() do
         pcall(function()
-            local v784, v785, v786 = pairs(__WS.Enemies:GetChildren())
-            while true do
-                local v787
-                v786, v787 = v784(v785, v786)
-                if v786 == nil then
-                    break
-                end
+            for v786, v787 in pairs(__WS.Enemies:GetChildren()) do
                 if Auto_Quest_Yama_2 and (v787:FindFirstChild("HazeESP") and (v787.HumanoidRootPart.Position - FarmPossEsp.Position).magnitude <= 300) then
                     v787.HumanoidRootPart.CFrame = FarmPossEsp
                     v787.HumanoidRootPart.CanCollide = false
@@ -8187,13 +7547,7 @@ spawn(function()
                         if v792:FindFirstChild("HazeESP") then
                             break
                         end
-                        local v793, v794, v795 = pairs(__RS:GetChildren())
-                        while true do
-                            local v796
-                            v795, v796 = v793(v794, v795)
-                            if v795 == nil then
-                                break
-                            end
+                        for v795, v796 in pairs(__RS:GetChildren()) do
                             if v796:FindFirstChild("HazeESP") then
                                 if (v796.HumanoidRootPart.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 2000 then
                                     local _mc68 = v796.HumanoidRootPart.CFrame * Pos
@@ -8242,19 +7596,11 @@ spawn(function()
 				-- block 65
                 if __LP.Backpack:FindFirstChild("Hallow Essence") then
                     Tween2(__WS.Map["Haunted Castle"].Summoner.Detection.CFrame)
-					-- goto l4
                 end
                 if not __WS.Map:FindFirstChild("HellDimension") then
-					-- ::l7::
-                    if __WS.Enemies:FindFirstChild("Soul Reaper") or game.ReplicatedStorage:FindFirstChild("Soul Reaper [Lv. 2100] [Raid Boss]") then
+                    if __WS.Enemies:FindFirstChild("Soul Reaper") or __RS:FindFirstChild("Soul Reaper [Lv. 2100] [Raid Boss]") then
                         if __WS.Enemies:FindFirstChild("Soul Reaper") then
-                            local v797, v798, v799 = pairs(__WS.Enemies:GetChildren())
-                            while true do
-                                local v800
-                                v799, v800 = v797(v798, v799)
-                                if v799 == nil then
-                                    break
-                                end
+                            for v799, v800 in pairs(__WS.Enemies:GetChildren()) do
                                 if v800.Name == "Soul Reaper" and v800.Humanoid.Health > 0 then
                                     repeat
                                         wait()
@@ -8269,7 +7615,6 @@ spawn(function()
                     else
                         __RS.Remotes.CommF_:InvokeServer("Bones", "Buy", 1, 1)
                     end
-					-- ::l4::
                     return
                 end
                 wait()
@@ -8288,25 +7633,16 @@ spawn(function()
                     __VIM:SendKeyEvent(true, "E", false, game)
                     wait(1.5)
                     Tween2(__WS.Map.HellDimension.Exit.CFrame)
-					-- ::l37::
                     if _G.Auto_DualKatana ~= false and (Auto_Quest_Yama_3 ~= false and GetMaterial("Alucard Fragment") ~= 3) then
-						-- goto l7
                     end
-					-- goto l4
                 end
                 local v801, v802, v803 = pairs(__WS.Enemies:GetChildren())
-				-- goto l15
-				-- ::l7::
-				-- ::l15::
                 local v804
                 v803, v804 = v801(v802, v803)
                 if v803 == nil then
-					-- goto l37
                 end
                 if v804.Name ~= "Cursed Skeleton" and (v804.Name ~= "Cursed Skeleton" and v804.Name ~= "Hell\'s Messenger") or v804.Humanoid.Health <= 0 then
-					-- goto l15
                 end
-				-- ::l24::
                 wait()
                 EquipTool(Sword)
                 local _mc72 = v804.HumanoidRootPart.CFrame * Pos
@@ -8323,9 +7659,7 @@ spawn(function()
                     v804.Humanoid.Animator:Destroy()
                 end
                 if v804.Humanoid.Health <= 0 or (not v804.Parent or Auto_Quest_Yama_3 == false) then
-					-- goto l7
                 else
-					-- goto l24
                 end
             end)
         end
@@ -8349,14 +7683,9 @@ spawn(function()
 				-- block 30
                 if (CFrame.new(- 5539.3115234375, 313.800537109375, - 2972.372314453125).Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 500 then
                     Tween2(CFrame.new(- 5545.1240234375, 313.800537109375, - 2976.616455078125))
-					-- ::l28::
                     return
                 end
                 local v805, v806, v807 = pairs(__WS.Enemies:GetChildren())
-				-- goto l4
-				-- ::l2::
-				-- goto l15
-				-- ::l15::
                 wait()
                 EquipTool(Sword)
                 local _mc73 = v808.HumanoidRootPart.CFrame * Pos
@@ -8373,18 +7702,13 @@ spawn(function()
                     v808.Humanoid.Animator:Destroy()
                 end
                 if v808.Humanoid.Health > 0 and (v808.Parent and Auto_Quest_Tushita_2 ~= false) then
-					-- goto l15
                 end
-				-- ::l4::
                 local v808
                 v807, v808 = v805(v806, v807)
                 if v807 == nil then
-					-- goto l28
                 end
                 if Auto_Quest_Tushita_2 and (v808:FindFirstChild("HumanoidRootPart") and (v808:FindFirstChild("Humanoid") and (v808.Humanoid.Health > 0 and (v808.HumanoidRootPart.Position - __LP.Character.HumanoidRootPart.Position).Magnitude < 2000))) then
-					-- goto l2
                 else
-					-- goto l4
                 end
             end)
         end
@@ -8395,22 +7719,17 @@ spawn(function()
         if Auto_Quest_Tushita_3 then
             pcall(function()
 				-- block 66
-                if not (__WS.Enemies:FindFirstChild("Cake Queen") or game.ReplicatedStorage:FindFirstChild("Cake Queen [Lv. 2175] [Boss]")) then
-					-- goto l5
+                if not (__WS.Enemies:FindFirstChild("Cake Queen") or __RS:FindFirstChild("Cake Queen [Lv. 2175] [Boss]")) then
                 end
                 if not __WS.Enemies:FindFirstChild("Cake Queen") then
                     Tween2(CFrame.new(- 709.3132934570312, 381.6005859375, - 11011.396484375))
-					-- goto l27
                 end
                 local v809, v810, v811 = pairs(__WS.Enemies:GetChildren())
-				-- ::l9::
                 local v812
                 v811, v812 = v809(v810, v811)
                 if v811 == nil then
-					-- goto l27
                 end
                 if v812.Name ~= "Cake Queen" or v812.Humanoid.Health <= 0 then
-					-- goto l9
                 end
                 while true do
                     wait()
@@ -8429,20 +7748,13 @@ spawn(function()
                         v812.Humanoid.Animator:Destroy()
                     end
                     if _G.Auto_DualKatana == false or Auto_Quest_Tushita_3 == false or __WS.Map:FindFirstChild("HeavenlyDimension") then
-						-- goto l9
                     end
                 end
-				-- ::l9::
-				-- ::l14::
-				-- ::l37::
                 local v813, v814 = v815(v816, v813)
                 if v813 == nil then
-					-- goto l59
                 end
                 if v814.Name ~= "Cursed Skeleton" and (v814.Name ~= "Cursed Skeleton" and v814.Name ~= "Heaven\'s Guardian") or v814.Humanoid.Health <= 0 then
-					-- goto l37
                 end
-				-- ::l46::
                 wait()
                 EquipTool(Sword)
                 local _mc75 = v814.HumanoidRootPart.CFrame * Pos
@@ -8459,21 +7771,13 @@ spawn(function()
                     v814.Humanoid.Animator:Destroy()
                 end
                 if v814.Humanoid.Health <= 0 or (not v814.Parent or Auto_Quest_Tushita_3 == false) then
-					-- goto l9
                 else
-					-- goto l46
                 end
-				-- ::l59::
                 if not _G.Auto_DualKatana or (not Auto_Quest_Tushita_3 or GetMaterial("Alucard Fragment") == 6) then
-					-- goto l27
                 end
-				-- ::l29::
                 if true then
-					-- goto l41
                 else
-					-- goto l59
                 end
-				-- ::l41::
                 wait()
                 if not (__WS.Enemies:FindFirstChild("Cursed Skeleton [Lv. 2200]") or (__WS.Enemies:FindFirstChild("Cursed Skeleton [Lv. 2200] [Boss]") or __WS.Enemies:FindFirstChild("Heaven\'s Guardian [Lv. 2200] [Boss]"))) then
                     wait(5)
@@ -8490,17 +7794,12 @@ spawn(function()
                     __VIM:SendKeyEvent(true, "E", false, game)
                     wait(1.5)
                     Tween2(__WS.Map.HeavenlyDimension.Exit.CFrame)
-					-- goto l59
                 end
                 local v815, v816
                 v815, v816, v813 = pairs(__WS.Enemies:GetChildren())
-				-- goto l37
-				-- ::l5::
                 if not __WS.Map:FindFirstChild("HeavenlyDimension") then
-					-- ::l27::
                     return
                 end
-				-- goto l29
             end)
         end
     end
@@ -8514,17 +7813,16 @@ if Sea2 then
     end)
     -- [SetValue skipped - Library không cần]
     spawn(function()
-		-- ::l0::
         while true do
             repeat
                 if not wait() then
                     return
                 end
             until _G.Factory
-            if game.Workspace.Enemies:FindFirstChild("Core") then
+            if __WS.Enemies:FindFirstChild("Core") then
                 break
             end
-            if game.ReplicatedStorage:FindFirstChild("Core") then
+            if __RS:FindFirstChild("Core") then
                 Tween2(CFrame.new(448.46756, 199.356781, - 441.389252))
                 wait()
                 if _G.Factory and (__LP.Character.HumanoidRootPart.Position - Vector3.new(448.46756, 199.356781, - 441.389252)).Magnitude > 10 then
@@ -8532,22 +7830,13 @@ if Sea2 then
                 end
             end
         end
-        local v818, v819, v820 = pairs(game.Workspace.Enemies:GetChildren())
-		-- goto l9
-		-- ::l7::
-		-- goto l14
-		-- ::l10::
+        local v818, v819, v820 = pairs(__WS.Enemies:GetChildren())
         if v821.Name == "Core" and v821.Humanoid.Health > 0 then
-			-- goto l19
         end
-		-- ::l9::
         local v821
         v820, v821 = v818(v819, v820)
         if v820 ~= nil then
-			-- goto l10
         end
-		-- goto l0
-		-- ::l14::
         wait(_G.Fast_Delay)
         AttackNoCoolDown()
         repeat
@@ -8566,11 +7855,7 @@ if Sea2 then
         FarmPos = v821.HumanoidRootPart.CFrame
         MonFarm = v821.Name
         if v821.Parent and (v821.Humanoid.Health > 0 and _G.Factory ~= false) then
-			-- goto l14
         end
-		-- goto l9
-		-- ::l19::
-		-- goto l7
     end)
 end
 Tabs.Item:AddToggle("ToggleAutoFarmSwan", {
@@ -8585,18 +7870,11 @@ spawn(function()
         while wait() do
             if _G.AutoFarmSwan then
                 if __WS.Enemies:FindFirstChild("Don Swan") then
-                    local v823, v824, v825 = pairs(__WS.Enemies:GetChildren())
-                    while true do
-                        local vu826
-                        v825, vu826 = v823(v824, v825)
-                        if v825 == nil then
-                            break
-                        end
+                    for v825, vu826 in pairs(__WS.Enemies:GetChildren()) do
                         if vu826.Name == "Don Swan" and (vu826.Humanoid.Health > 0 and (vu826:IsA("Model") and (vu826:FindFirstChild("Humanoid") and vu826:FindFirstChild("HumanoidRootPart")))) then
                             repeat
                                 task.wait()
                                 pcall(function()
-									-- upvalues: (ref) vu826
                                     AutoHaki()
                                     EquipTool(SelectWeapon)
                                     vu826.HumanoidRootPart.CanCollide = false
@@ -8633,13 +7911,7 @@ spawn(function()
                     EquipTool("Hidden Key")
                     Tween2(CFrame.new(6571.1201171875, 299.23028564453, - 6967.841796875))
                 elseif __WS.Enemies:FindFirstChild("Snow Lurker") or __WS.Enemies:FindFirstChild("Arctic Warrior") then
-                    local v828, v829, v830 = pairs(__WS.Enemies:GetChildren())
-                    while true do
-                        local v831
-                        v830, v831 = v828(v829, v830)
-                        if v830 == nil then
-                            break
-                        end
+                    for v830, v831 in pairs(__WS.Enemies:GetChildren()) do
                         if (v831.Name == "Snow Lurker" or v831.Name == "Arctic Warrior") and v831.Humanoid.Health > 0 then
                             repeat
                                 task.wait(_G.Fast_Delay)
@@ -8730,13 +8002,7 @@ if Sea2 then
                                     if __LP.Backpack:FindFirstChild("Flower 2") or __LP.Character:FindFirstChild("Flower 2") then
                                         if not (__LP.Backpack:FindFirstChild("Flower 3") or __LP.Character:FindFirstChild("Flower 3")) then
                                             if __WS.Enemies:FindFirstChild("Zombie") then
-                                                local v835, v836, v837 = pairs(__WS.Enemies:GetChildren())
-                                                while true do
-                                                    local v838
-                                                    v837, v838 = v835(v836, v837)
-                                                    if v837 == nil then
-                                                        break
-                                                    end
+                                                for v837, v838 in pairs(__WS.Enemies:GetChildren()) do
                                                     if v838.Name == "Zombie" then
                                                         repeat
                                                             task.wait(_G.Fast_Delay)
@@ -8898,13 +8164,7 @@ Tabs.Setting:AddButton({
                 v851.TextureID = 1.0385902758728956e16
             end
         end
-        local v852, v853, v854 = pairs(v845:GetChildren())
-        while true do
-            local v855
-            v854, v855 = v852(v853, v854)
-            if v854 == nil then
-                break
-            end
+        for v854, v855 in pairs(v845:GetChildren()) do
             if v855:IsA("BlurEffect") or (v855:IsA("SunRaysEffect") or (v855:IsA("ColorCorrectionEffect") or (v855:IsA("BloomEffect") or v855:IsA("DepthOfFieldEffect")))) then
                 v855.Enabled = false
             end
@@ -8919,46 +8179,47 @@ Tabs.Setting:AddToggle("ToggleBringMob", {
 end)
 _G.BringMob = true
 -- [SetValue skipped - Library không cần]
+-- [OPT] Gom quái: trước đó mỗi frame đều GetChildren() cả thư mục Enemies dù không farm,
+-- gọi sethiddenproperty cho từng quái, và 1 quái thiếu Head làm hỏng cả vòng lặp (lỗi bị pcall nuốt).
+-- Nay: thoát sớm khi không cần, chỉ lọc đúng loại quái, sethiddenproperty 1 lần/frame, guard Head/Animator.
 spawn(function()
     while wait() do
-        pcall(function()
-            local v857, v858, v859 = pairs(__WS.Enemies:GetChildren())
-            while true do
-                local v860
-                v859, v860 = v857(v858, v859)
-                if v859 == nil then
-                    break
-                end
-                if _G.BringMob and (bringmob and (v860.Name == MonFarm and (v860:FindFirstChild("Humanoid") and v860.Humanoid.Health > 0))) then
-                    if v860.Name ~= "Factory Staff" then
-                        if v860.Name == MonFarm and (v860.HumanoidRootPart.Position - FarmPos.Position).Magnitude <= 1000000000 then
-                            v860.HumanoidRootPart.CFrame = FarmPos
-                            v860.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                            v860.HumanoidRootPart.Transparency = 1
-                            v860.Humanoid.JumpPower = 0
-                            v860.Humanoid.WalkSpeed = 0
-                            if v860.Humanoid:FindFirstChild("Animator") then
-                                v860.Humanoid.Animator:Destroy()
+        if _G.BringMob and bringmob and MonFarm and FarmPos then
+            pcall(function()
+                local big = Vector3.new(60, 60, 60)
+                local moved = false
+                for _, mob in ipairs(__WS.Enemies:GetChildren()) do
+                    if mob.Name == MonFarm then
+                        local hum = mob:FindFirstChild("Humanoid")
+                        local mhrp = mob:FindFirstChild("HumanoidRootPart")
+                        if hum and mhrp and hum.Health > 0 then
+                            local head = mob:FindFirstChild("Head")
+                            local animator = hum:FindFirstChild("Animator")
+                            if mob.Name ~= "Factory Staff" then
+                                mhrp.CFrame = FarmPos
+                                mhrp.Size = big
+                                mhrp.Transparency = 1
+                                hum.JumpPower = 0
+                                hum.WalkSpeed = 0
+                                if animator then animator:Destroy() end
+                                mhrp.CanCollide = false
+                                if head then head.CanCollide = false end
+                                hum:ChangeState(11)
+                                hum:ChangeState(14)
+                            else
+                                if head then head.CanCollide = false end
+                                mhrp.CanCollide = false
+                                mhrp.Size = big
+                                mhrp.CFrame = FarmPos
+                                if animator then animator:Destroy() end
                             end
-                            v860.HumanoidRootPart.CanCollide = false
-                            v860.Head.CanCollide = false
-                            v860.Humanoid:ChangeState(11)
-                            v860.Humanoid:ChangeState(14)
-                            sethiddenproperty(__LP, "SimulationRadius", math.huge)
+                            moved = true
                         end
-                    elseif (v860.HumanoidRootPart.Position - FarmPos.Position).Magnitude <= 1000000000 then
-                        v860.Head.CanCollide = false
-                        v860.HumanoidRootPart.CanCollide = false
-                        v860.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                        v860.HumanoidRootPart.CFrame = FarmPos
-                        if v860.Humanoid:FindFirstChild("Animator") then
-                            v860.Humanoid.Animator:Destroy()
-                        end
-                        sethiddenproperty(__LP, "SimulationRadius", math.huge)
                     end
                 end
-            end
-        end)
+                if moved then sethiddenproperty(__LP, "SimulationRadius", math.huge) end
+            end)
+        end
     end
 end)
 Tabs.Setting:AddToggle("ToggleRemoveNotify", {
@@ -8970,11 +8231,9 @@ end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     while wait() do
-        if RemoveNotify then
-            __LP.PlayerGui.Notifications.Enabled = false
-        else
-            __LP.PlayerGui.Notifications.Enabled = true
-        end
+        local _n = __LP.PlayerGui:FindFirstChild("Notifications")
+        local _want = not RemoveNotify
+        if _n and _n.Enabled ~= _want then _n.Enabled = _want end -- [OPT] chỉ ghi khi đổi
     end
 end)
 Tabs.Setting:AddToggle("ToggleWhite", {
@@ -8984,10 +8243,10 @@ Tabs.Setting:AddToggle("ToggleWhite", {
     _G.WhiteScreen = p862
     if _G.WhiteScreen ~= true then
         if _G.WhiteScreen == false then
-            game:GetService("RunService"):Set3dRenderingEnabled(true)
+            RunService:Set3dRenderingEnabled(true)
         end
     else
-        game:GetService("RunService"):Set3dRenderingEnabled(false)
+        RunService:Set3dRenderingEnabled(false)
     end
 end)
 -- [SetValue skipped - Library không cần]
@@ -9035,34 +8294,31 @@ Tabs.Status:AddParagraph({
 local vu868 = Tabs.Status:AddParagraph({
     ["Title"] = "Thời Gian",
 })
+local _regionOk, _regionVal
 local function vu878()
-	-- upvalues: (ref) vu868
     local v869 = os.date("*t")
     local v870 = v869.hour % 24
     local v871 = v870 < 12 and "AM" or "PM"
     local v872 = string.format("%02i:%02i:%02i %s", (v870 - 1) % 12 + 1, v869.min, v869.sec, v871)
     local v873 = string.format("%02d/%02d/%04d", v869.day, v869.month, v869.year)
-    local vu874 = game:GetService("LocalizationService")
-    local vu875 = __LP
-    local _ = vu875.Name
-    local v876, v877 = pcall(function()
-		-- upvalues: (ref) vu874, (ref) vu875
-        return vu874:GetCountryRegionForPlayerAsync(vu875)
-    end)
+    if _regionOk == nil then -- [OPT] vùng quốc gia chỉ hỏi 1 lần rồi cache
+        _regionOk, _regionVal = pcall(function()
+            return game:GetService("LocalizationService"):GetCountryRegionForPlayerAsync(__LP)
+        end)
+    end
+    local v876, v877 = _regionOk, _regionVal
     vu868:SetDesc(v873 .. "-" .. v872 .. " [ " .. (not v876 and "Unknown" or v877) .. " ]")
 end
 spawn(function()
-	-- upvalues: (ref) vu878
     while true do
         vu878()
-        game:GetService("RunService").RenderStepped:Wait()
+        task.wait(1) -- [OPT] đồng hồ hiển thị giây, không cần cập nhật mỗi frame hiển thị
     end
 end)
 local vu879 = Tabs.Status:AddParagraph({
     ["Title"] = "Thời Gian Máy Ch\225\187\167",
 })
 local function vu884()
-	-- upvalues: (ref) vu879
     local v880 = math.floor(workspace.DistributedGameTime + 0.5)
     local v881 = math.floor(v880 / 3600) % 24
     local v882 = math.floor(v880 / 60) % 60
@@ -9070,8 +8326,7 @@ local function vu884()
     vu879:SetDesc(string.format("%02d Tiđếng-%02d Phút-%02d Giây", v881, v882, v883))
 end
 spawn(function()
-	-- upvalues: (ref) vu884
-    while task.wait() do
+    while task.wait(1) do -- [OPT]
         pcall(vu884)
     end
 end)
@@ -9079,9 +8334,7 @@ local vu885 = Tabs.Status:AddParagraph({
     ["Title"] = "Đảo Leviathan",
 })
 spawn(function()
-	-- upvalues: (ref) vu885
     pcall(function()
-		-- upvalues: (ref) vu885
         while wait() do
             if __WS.Map:FindFirstChild("FrozenDimension") then
                 vu885:SetDesc("\239\191\189\239\191\189")
@@ -9242,15 +8495,8 @@ end)
 Tabs.Player:AddButton({
     ["Title"] = "Tải Lại Người Chơi",
     ["Callback"] = function()
-		-- upvalues: (ref) vu897
         table.clear(vu897)
-        local v901, v902, v903 = pairs(__PL:GetChildren())
-        while true do
-            local v904
-            v903, v904 = v901(v902, v903)
-            if v903 == nil then
-                break
-            end
+        for v903, v904 in pairs(__PL:GetChildren()) do
             table.insert(vu897, v904.Name)
         end
     end
@@ -9272,8 +8518,8 @@ spawn(function()
     while wait() do
         if _G.TeleportPly then
             pcall(function()
-                if game.Players:FindFirstChild(_G.SelectPly) then
-                    Tween2(game.Players[_G.SelectPly].Character.HumanoidRootPart.CFrame)
+                if __PL:FindFirstChild(_G.SelectPly) then
+                    Tween2(__PL[_G.SelectPly].Character.HumanoidRootPart.CFrame)
                 end
             end)
         end
@@ -9357,18 +8603,12 @@ end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     pcall(function()
-        game:GetService("RunService").Stepped:Connect(function()
+        RunService.Stepped:Connect(function()
             if _G.LOf then
-                local v911, v912, v913 = pairs(__LP.Character:GetDescendants())
-                while true do
-                    local v914
-                    v913, v914 = v911(v912, v913)
-                    if v913 == nil then
-                        break
-                    end
-                    if v914:IsA("BasePart") then
-                        v914.CanCollide = false
-                    end
+                local ch = __LP.Character
+                if ch and ch ~= _ncChar then _ncTrack(ch) end -- [OPT] dùng chung danh sách part đã cache
+                for part in pairs(_ncParts) do
+                    if part.CanCollide then part.CanCollide = false end
                 end
             end
         end)
@@ -9418,22 +8658,13 @@ spawn(function()
                             wait()
                         until (Vector3.new(1347.7124, 37.3751602, - 1325.6488) - __LP.Character.HumanoidRootPart.Position).Magnitude <= 3 or _G.Auto_Sea2 == false
                         wait(0.5)
-						-- goto l3
                     end
                     if __WS.Map.Ice.Door.CanCollide ~= false or __WS.Map.Ice.Door.Transparency ~= 1 then
-						-- goto l3
                     end
                     if __WS.Enemies:FindFirstChild("Ice Admiral") then
-                        local v919, v920, v921 = pairs(__WS.Enemies:GetChildren())
-                        while true do
-                            local v922
-                            v921, v922 = v919(v920, v921)
-                            if v921 == nil then
-                                break
-                            end
+                        for v921, v922 in pairs(__WS.Enemies:GetChildren()) do
                             if v922.Name == "Ice Admiral" then
                                 if not v922.Humanoid.Health > 0 then
-									-- ::l34::
                                     __RS.Remotes.CommF_:InvokeServer("TravelDressrosa")
                                 elseif v922:FindFirstChild("Humanoid") and (v922:FindFirstChild("HumanoidRootPart") and v922.Humanoid.Health > 0) then
                                     OldCFrameSecond = v922.HumanoidRootPart.CFrame
@@ -9450,7 +8681,6 @@ spawn(function()
                                     AttackNoCoolDown()
                                     sethiddenproperty(__LP, "SimulationRadius", math.huge)
                                     if _G.Auto_Sea2 and (v922.Parent and v922.Humanoid.Health > 0) then
-										-- goto l34
                                     end
                                 end
                             end
@@ -9460,7 +8690,6 @@ spawn(function()
                         if _mc_rs and (_mc_rs.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc_rs) end
                     end
                 end
-				-- ::l3::
             end)
         end
     end
@@ -9486,13 +8715,7 @@ spawn(function()
                         end
                         wait(1.8)
                         if __WS.Enemies:FindFirstChild("rip_indra") then
-                            local v924, v925, v926 = pairs(__WS.Enemies:GetChildren())
-                            while true do
-                                local v927
-                                v926, v927 = v924(v925, v926)
-                                if v926 == nil then
-                                    break
-                                end
+                            for v926, v927 in pairs(__WS.Enemies:GetChildren()) do
                                 if v927.Name == "rip_indra" then
                                     OldCFrameThird = v927.HumanoidRootPart.CFrame
                                     repeat
@@ -9815,7 +9038,7 @@ Tabs.Visual:AddButton({
         local v930 = __LP
         local v931 = require(__RS.Notification)
         local v932 = v930:WaitForChild("Data")
-        local v933 = require(game.ReplicatedStorage:WaitForChild("EXPFunction"))
+        local v933 = require(__RS:WaitForChild("EXPFunction"))
         local v934 = require(__RS.Effect.Container.LevelUp)
         local v935 = require(__RS.Util.Sound)
         local v936 = __RS.Util.Sound.Storage.Other:FindFirstChild("LevelUp_Proxy") or __RS.Util.Sound.Storage.Other:FindFirstChild("LevelUp")
@@ -9891,7 +9114,7 @@ Tabs.Visual:AddInput("Input_Fragments", {
         __LP.Data.Fragments.Value = tonumber(p942)
     end
 })
-local v943 = game.ReplicatedStorage:FindFirstChild("Remotes").CommF_:InvokeServer("GetFruits")
+local v943 = __RS:FindFirstChild("Remotes").CommF_:InvokeServer("GetFruits")
 Table_DevilFruitSniper = {}
 ShopDevilSell = {}
 local v944 = next
@@ -10109,13 +9332,7 @@ end)
 spawn(function()
     while wait() do
         if _G.CollectFruitTP then
-            local v957, v958, v959 = pairs(game.Workspace:GetChildren())
-            while true do
-                local v960
-                v959, v960 = v957(v958, v959)
-                if v959 == nil then
-                    break
-                end
+            for v959, v960 in pairs(__WS:GetChildren()) do
                 if string.find(v960.Name, "Fruit") then
                     __LP.Character.HumanoidRootPart.CFrame = v960.Handle.CFrame
                 end
@@ -10133,13 +9350,7 @@ end)
 spawn(function()
     while wait() do
         if _G.Tweenfruit then
-            local v962, v963, v964 = pairs(game.Workspace:GetChildren())
-            while true do
-                local v965
-                v964, v965 = v962(v963, v964)
-                if v964 == nil then
-                    break
-                end
+            for v964, v965 in pairs(__WS:GetChildren()) do
                 if string.find(v965.Name, "Fruit") then
                     Tween2(v965.Handle.CFrame)
                 end
@@ -10214,14 +9425,7 @@ Tabs.Fruit:AddToggle("ToggleEspRealFruit", {
 end)
 -- [SetValue skipped - Library không cần]
 function UpdateRealFruitEsp()
-	-- upvalues: (ref) vu896
-    local v971, v972, v973 = pairs(game.Workspace.AppleSpawner:GetChildren())
-    while true do
-        local v974
-        v973, v974 = v971(v972, v973)
-        if v973 == nil then
-            break
-        end
+    for v973, v974 in pairs(__WS.AppleSpawner:GetChildren()) do
         if v974:IsA("Tool") then
             if RealFruitEsp then
                 if v974.Handle:FindFirstChild("NameEsp" .. Number) then
@@ -10249,13 +9453,7 @@ function UpdateRealFruitEsp()
             end
         end
     end
-    local v977, v978, v979 = pairs(game.Workspace.PineappleSpawner:GetChildren())
-    while true do
-        local v980
-        v979, v980 = v977(v978, v979)
-        if v979 == nil then
-            break
-        end
+    for v979, v980 in pairs(__WS.PineappleSpawner:GetChildren()) do
         if v980:IsA("Tool") then
             if RealFruitEsp then
                 if v980.Handle:FindFirstChild("NameEsp" .. Number) then
@@ -10283,13 +9481,7 @@ function UpdateRealFruitEsp()
             end
         end
     end
-    local v983, v984, v985 = pairs(game.Workspace.BananaSpawner:GetChildren())
-    while true do
-        local v986
-        v985, v986 = v983(v984, v985)
-        if v985 == nil then
-            break
-        end
+    for v985, v986 in pairs(__WS.BananaSpawner:GetChildren()) do
         if v986:IsA("Tool") then
             if RealFruitEsp then
                 if v986.Handle:FindFirstChild("NameEsp" .. Number) then
@@ -10337,16 +9529,8 @@ local function vu992(p991)
 end
 Number = math.random(1, 1000000)
 function UpdateIslandMirageEsp()
-	-- upvalues: (ref) vu992
-    local v993, v994, v995 = pairs(__WS._WorldOrigin.Locations:GetChildren())
-    while true do
-        local vu996
-        v995, vu996 = v993(v994, v995)
-        if v995 == nil then
-            break
-        end
+    for v995, vu996 in pairs(__WS._WorldOrigin.Locations:GetChildren()) do
         pcall(function()
-			-- upvalues: (ref) vu996, (ref) vu992
             if MirageIslandESP then
                 if vu996.Name == "Mirage Island" then
                     if vu996:FindFirstChild("NameEsp") then
@@ -10464,7 +9648,6 @@ spawn(function()
     while task.wait() do
         if AutoNextIsland then
             pcall(function()
-				-- upvalues: (ref) vu1005
                 local v1006 = __LP.Character
                 if v1006 and v1006:FindFirstChild("HumanoidRootPart") then
                     local v1007 = __WS._WorldOrigin.Locations
@@ -10647,13 +9830,7 @@ spawn(function()
                 end
                 if __RS:FindFirstChild("Order") or __WS.Enemies:FindFirstChild("Order") then
                     if __WS.Enemies:FindFirstChild("Order") then
-                        local v1012, v1013, v1014 = pairs(__WS.Enemies:GetChildren())
-                        while true do
-                            local v1015
-                            v1014, v1015 = v1012(v1013, v1014)
-                            if v1014 == nil then
-                                break
-                            end
+                        for v1014, v1015 in pairs(__WS.Enemies:GetChildren()) do
                             if v1015.Name == "Order" then
                                 repeat
                                     wait(_G.Fast_Delay)
@@ -10750,29 +9927,16 @@ spawn(function()
                             if __LP.Data.Race.Value ~= "Cyborg" then
                                 if __LP.Data.Race.Value ~= "Ghoul" then
                                     if __LP.Data.Race.Value == "Mink" then
-                                        local v1018, v1019, v1020 = pairs(__WS:GetDescendants())
-                                        while true do
-                                            local v1021
-                                            v1020, v1021 = v1018(v1019, v1020)
-                                            if v1020 == nil then
-                                                break
-                                            end
+                                        for v1020, v1021 in pairs(__WS:GetDescendants()) do
                                             if v1021.Name == "StartPoint" then
                                                 Tween2(v1021.CFrame * CFrame.new(0, 10, 0))
                                             end
                                         end
                                     end
                                 else
-                                    local v1022, v1023, v1024 = pairs(game.Workspace.Enemies:GetDescendants())
-                                    while true do
-                                        local vu1025
-                                        v1024, vu1025 = v1022(v1023, v1024)
-                                        if v1024 == nil then
-                                            break
-                                        end
+                                    for v1024, vu1025 in pairs(__WS.Enemies:GetChildren()) do
                                         if vu1025:FindFirstChild("Humanoid") and (vu1025:FindFirstChild("HumanoidRootPart") and vu1025.Humanoid.Health > 0) then
                                             pcall(function()
-												-- upvalues: (ref) vu1025
                                                 repeat
                                                     wait()
                                                     vu1025.Humanoid.Health = 0
@@ -10787,13 +9951,7 @@ spawn(function()
                                 Tween2(CFrame.new(28654, 14898.7832, - 30, 1, 0, 0, 0, 1, 0, 0, 0, 1))
                             end
                         else
-                            local v1026, v1027, v1028 = pairs(__WS.SeaBeasts.SeaBeast1:GetDescendants())
-                            while true do
-                                local v1029
-                                v1028, v1029 = v1026(v1027, v1028)
-                                if v1028 == nil then
-                                    break
-                                end
+                            for v1028, v1029 in pairs(__WS.SeaBeasts.SeaBeast1:GetDescendants()) do
                                 if v1029.Name == "HumanoidRootPart" then
                                     local _mc_v1029 = v1029.CFrame * Pos
                                     if (v1029.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc_v1029) end
@@ -10879,29 +10037,16 @@ spawn(function()
                             end
                         end
                     else
-                        local v1046, v1047, v1048 = pairs(__WS.Map.SkyTrial.Model:GetDescendants())
-                        while true do
-                            local v1049
-                            v1048, v1049 = v1046(v1047, v1048)
-                            if v1048 == nil then
-                                break
-                            end
+                        for v1048, v1049 in pairs(__WS.Map.SkyTrial.Model:GetDescendants()) do
                             if v1049.Name == "snowisland_Cylinder.081" then
                                 BKP(v1049.CFrame * CFrame.new(0, 0, 0))
                             end
                         end
                     end
                 else
-                    local v1050, v1051, v1052 = pairs(game.Workspace.Enemies:GetDescendants())
-                    while true do
-                        local vu1053
-                        v1052, vu1053 = v1050(v1051, v1052)
-                        if v1052 == nil then
-                            break
-                        end
+                    for v1052, vu1053 in pairs(__WS.Enemies:GetChildren()) do
                         if vu1053:FindFirstChild("Humanoid") and (vu1053:FindFirstChild("HumanoidRootPart") and vu1053.Humanoid.Health > 0) then
                             pcall(function()
-								-- upvalues: (ref) vu1053
                                 repeat
                                     wait()
                                     vu1053.Humanoid.Health = 0
@@ -10927,13 +10072,7 @@ spawn(function()
     while wait() do
         pcall(function()
             if _G.AutoKillTrial then
-                local v1055, v1056, v1057 = pairs(__PL:GetChildren())
-                while true do
-                    local v1058
-                    v1057, v1058 = v1055(v1056, v1057)
-                    if v1057 == nil then
-                        break
-                    end
+                for v1057, v1058 in pairs(__PL:GetChildren()) do
                     if v1058.Name and (v1058.Name ~= __LP.Name and ((v1058.Character.HumanoidRootPart.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 100 and v1058.Character.Humanoid.Health > 0)) then
                         repeat
                             wait(_G.Fast_Delay)
@@ -10957,31 +10096,29 @@ local v1059 = Tabs.Race:AddToggle("ToggleFarmRace", {
 })
 local vu1060 = false
 v1059:OnChanged(function(p1061)
-	-- upvalues: (ref) vu1060
     vu1060 = p1061
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-	-- upvalues: (ref) vu1060
     while wait() do
         if vu1060 then
             pcall(function()
                 if __LP.Character:FindFirstChild("RaceTransformed") then
                     if __LP.Character.RaceTransformed.Value ~= true then
                         if __LP.Character.RaceTransformed.Value == false then
-                            _G.AutoBoneNoQuest = true
+                            _G.RaceBoneFarm = true
                             __VIM:SendKeyEvent(true, "Y", false, game)
                             wait()
                             __VIM:SendKeyEvent(false, "Y", false, game)
                         end
                     else
-                        _G.AutoBoneNoQuest = false
+                        _G.RaceBoneFarm = false
                         Tween2(CFrame.new(- 9698.4736328125, 445.09442138671875, 6545.8525390625))
                     end
                 end
             end)
         else
-            _G.AutoBoneNoQuest = false
+            _G.RaceBoneFarm = false
         end
     end
 end)
@@ -11161,7 +10298,7 @@ Tabs.Shop:AddButton({
 Tabs.Shop:AddButton({
     ["Title"] = "Pole V2",
     ["Callback"] = function()
-        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ThunderGodTalk")
+        __RS.Remotes.CommF_:InvokeServer("ThunderGodTalk")
     end
 })
 Tabs.Shop:AddSection("Súng")
@@ -11367,13 +10504,11 @@ Tabs.Misc:AddButton({
     end
 })
 function Hop()
-	-- upvalues: (ref) vu916
     local vu1067 = game.PlaceId
     local vu1068 = {}
     local vu1069 = ""
     local vu1070 = os.date("!*t").hour
     function TPReturner()
-		-- upvalues: (ref) vu1069, (ref) vu1067, (ref) vu1068, (ref) vu1070
         local v1071
         if vu1069 ~= "" then
             v1071 = game.HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. vu1067 .. "/servers/Public?sortOrder=Asc&limit=100&cursor=" .. vu1069))
@@ -11394,17 +10529,10 @@ function Hop()
             local v1077 = true
             local vu1078 = tostring(v1076.id)
             if tonumber(v1076.maxPlayers) > tonumber(v1076.playing) then
-                local v1079, v1080, v1081 = pairs(vu1068)
-                while true do
-                    local v1082
-                    v1081, v1082 = v1079(v1080, v1081)
-                    if v1081 == nil then
-                        break
-                    end
+                for v1081, v1082 in pairs(vu1068) do
                     if v1075 == 0 then
                         if tonumber(vu1070) ~= tonumber(v1082) then
                             pcall(function()
-								-- upvalues: (ref) vu1068, (ref) vu1070
                                 vu1068 = {}
                                 table.insert(vu1068, vu1070)
                             end)
@@ -11418,7 +10546,6 @@ function Hop()
                     table.insert(vu1068, vu1078)
                     wait()
                     pcall(function()
-						-- upvalues: (ref) vu1067, (ref) vu1078
                         wait()
                         game:GetService("TeleportService"):TeleportToPlaceInstance(vu1067, vu1078, __LP)
                     end)
@@ -11428,10 +10555,8 @@ function Hop()
         end
     end
     vu916 = function()
-		-- upvalues: (ref) vu1069
         while wait() do
             pcall(function()
-				-- upvalues: (ref) vu1069
                 TPReturner()
                 if vu1069 ~= "" then
                     TPReturner()
@@ -11503,14 +10628,7 @@ local vu1083 = {
 Tabs.Misc:AddButton({
     ["Title"] = "Nhắp Hết",
     ["Callback"] = function()
-		-- upvalues: (ref) vu1083
-        local v1084, v1085, v1086 = ipairs(vu1083)
-        while true do
-            local v1087
-            v1086, v1087 = v1084(v1085, v1086)
-            if v1086 == nil then
-                break
-            end
+        for v1086, v1087 in ipairs(vu1083) do
             RedeemCode(v1087)
         end
     end
@@ -11525,7 +10643,7 @@ Tabs.Misc:AddButton({
         __RS.Remotes.CommF_:InvokeServer(unpack({
             "getTitles"
         }))
-        game.Players.localPlayer.PlayerGui.Main.Titles.Visible = true
+        __PL.localPlayer.PlayerGui.Main.Titles.Visible = true
     end
 })
 Tabs.Misc:AddSection("Thủc Tỉnh")
@@ -11577,7 +10695,6 @@ end
 Tabs.Misc:AddButton({
     ["Title"] = "Xóa Sương Mù",
     ["Callback"] = function()
-		-- upvalues: (ref) vu1092
         vu1092()
     end
 })
@@ -11593,16 +10710,9 @@ local vu1094 = {
     912348
 }
 spawn(function()
-	-- upvalues: (ref) vu1094
     while wait() do
         if _G.AntiBand then
-            local v1095, v1096, v1097 = pairs(__PL:GetPlayers())
-            while true do
-                local v1098
-                v1097, v1098 = v1095(v1096, v1097)
-                if v1097 == nil then
-                    break
-                end
+            for v1097, v1098 in pairs(__PL:GetPlayers()) do
                 if table.find(vu1094, v1098.UserId) then
                     Hop()
                 end
@@ -11642,10 +10752,8 @@ if Sea3 then
         ["Title"] = "Trạng Thái Chip Leviathan",
     })
     spawn(function()
-		-- upvalues: (ref) vu1102
         pcall(function()
-			-- upvalues: (ref) vu1102
-            while wait() do
+            while wait(1) do -- [OPT]
                 local v1103 = __RS.Remotes.CommF_:InvokeServer("InfoLeviathan", "1")
                 if v1103 == 5 then
                     vu1102:SetDesc("Leviathan Is Out There")
@@ -11800,13 +10908,7 @@ spawn(function()
             pcall(function()
                 local v1106 = __WS.Enemies
                 if v1106:FindFirstChild("Hydra Enforcer") or v1106:FindFirstChild("Venomous Assailant") then
-                    local v1107, v1108, v1109 = pairs(v1106:GetChildren())
-                    while true do
-                        local v1110
-                        v1109, v1110 = v1107(v1108, v1109)
-                        if v1109 == nil then
-                            break
-                        end
+                    for v1109, v1110 in pairs(v1106:GetChildren()) do
                         if (v1110.Name == "Hydra Enforcer" or v1110.Name == "Venomous Assailant") and (v1110:FindFirstChild("Humanoid") and (v1110:FindFirstChild("HumanoidRootPart") and v1110.Humanoid.Health > 0)) then
                             repeat
                                 wait(_G.Fast_Delay)
@@ -11843,7 +10945,7 @@ Tabs.Sea:AddToggle("ToggleReceiveQuest", {
         Tween2(CFrame.new(5814.42724609375, 1208.3267822265625, 884.5785522460938))
         spawn(function()
             pcall(function()
-                while wait() do
+                while wait(0.25) and _G.AutoReceiveQuest do -- [OPT] dừng khi tắt toggle (trước: chạy mãi + chồng vòng lặp mỗi lần bật)
                     __RS.Modules.Net:FindFirstChild("RF/DragonHunter"):InvokeServer(unpack({
                         {
                             ["Context"] = "RequestQuest"
@@ -11863,23 +10965,15 @@ local vu1112 = Tabs.Sea:AddParagraph({
     ["Title"] = "Trạng Thái Nhiệm V\225\187\165 Lứa Đố",
 })
 spawn(function()
-	-- upvalues: (ref) vu1112
     pcall(function()
-		-- upvalues: (ref) vu1112
-        while wait() do
+        while wait(1) do -- [OPT]
             local v1113 = __RS.Modules.Net:FindFirstChild("RF/DragonHunter"):InvokeServer(unpack({
                 {
                     ["Context"] = "Check"
                 }
             }))
             if typeof(v1113) == "table" then
-                local v1114, v1115, v1116 = pairs(v1113)
-                while true do
-                    local v1117
-                    v1116, v1117 = v1114(v1115, v1116)
-                    if v1116 == nil then
-                        break
-                    end
+                for v1116, v1117 in pairs(v1113) do
                     if v1117 == "Defeat 3 Venomous Assailants on Hydra Island." then
                         vu1112:SetDesc("Defeat 3 Venomous Assailants on Hydra Island.")
                     elseif v1117 == "Defeat 3 Hydra Enforcers on Hydra Island." then
@@ -11904,16 +10998,9 @@ local function vu1121(p1119)
     v1120:SendKeyEvent(false, p1119, false, game)
 end
 local function vu1133(p1122)
-	-- upvalues: (ref) vu1121
     local v1123 = __LP
     local v1124 = v1123.Backpack
-    local v1125, v1126, v1127 = pairs(v1124:GetChildren())
-    while true do
-        local v1128
-        v1127, v1128 = v1125(v1126, v1127)
-        if v1127 == nil then
-            break
-        end
+    for v1127, v1128 in pairs(v1124:GetChildren()) do
         if v1128:IsA("Tool") and v1128.ToolTip == p1122 then
             v1128.Parent = v1123.Character
             local v1129, v1130, v1131 = ipairs({
@@ -11931,7 +11018,6 @@ local function vu1133(p1122)
                 end
                 wait()
                 pcall(function()
-					-- upvalues: (ref) vu1121, (ref) vu1132
                     vu1121(vu1132)
                 end)
             end
@@ -11948,7 +11034,6 @@ local vu1134 = {
     CFrame.new(5258.96484375, 1004.1998901367188, 345.5052490234375)
 }
 spawn(function()
-	-- upvalues: (ref) vu1134, (ref) vu1133
     while wait() do
         if _G.AutoHydraTree then
             AutoHaki()
@@ -12021,13 +11106,7 @@ spawn(function()
     while wait() do
         local v1141 = _G.AutoCollectFireFlowers and workspace:FindFirstChild("FireFlowers")
         if v1141 then
-            local v1142, v1143, v1144 = pairs(v1141:GetChildren())
-            while true do
-                local v1145
-                v1144, v1145 = v1142(v1143, v1144)
-                if v1144 == nil then
-                    break
-                end
+            for v1144, v1145 in pairs(v1141:GetChildren()) do
                 if v1145:IsA("Model") and v1145.PrimaryPart then
                     local v1146 = v1145.PrimaryPart.Position
                     if (v1146 - __LP.Character.HumanoidRootPart.Position).Magnitude > 1 then
@@ -12094,9 +11173,7 @@ local vu1150 = Tabs.Sea:AddParagraph({
     ["Title"] = "Trạng Thái Đảo Dung Nham",
 })
 spawn(function()
-	-- upvalues: (ref) vu1150
     pcall(function()
-		-- upvalues: (ref) vu1150
         while wait() do
             if __WS.Map:FindFirstChild("PrehistoricIsland") then
                 vu1150:SetDesc("Đảo Dung Nham: \226\156\133\239\184\143")
@@ -12165,33 +11242,21 @@ local function vu1160(p1159)
     __VIM:SendKeyEvent(false, p1159, false, game)
 end
 local function vu1176()
-    local v1161 = game.Workspace.Map.PrehistoricIsland.Core:FindFirstChild("InteriorLava")
+    local v1161 = __WS.Map.PrehistoricIsland.Core:FindFirstChild("InteriorLava")
     if v1161 and v1161:IsA("Model") then
         v1161:Destroy()
     end
-    local v1162 = game.Workspace.Map:FindFirstChild("PrehistoricIsland")
+    local v1162 = __WS.Map:FindFirstChild("PrehistoricIsland")
     if v1162 then
-        local v1163, v1164, v1165 = pairs(v1162:GetDescendants())
-        while true do
-            local v1166
-            v1165, v1166 = v1163(v1164, v1165)
-            if v1165 == nil then
-                break
-            end
+        for v1165, v1166 in pairs(v1162:GetDescendants()) do
             if v1166:IsA("Part") and v1166.Name:lower():find("lava") then
                 v1166:Destroy()
             end
         end
     end
-    local v1167 = game.Workspace.Map:FindFirstChild("PrehistoricIsland")
+    local v1167 = __WS.Map:FindFirstChild("PrehistoricIsland")
     if v1167 then
-        local v1168, v1169, v1170 = pairs(v1167:GetDescendants())
-        while true do
-            local v1171
-            v1170, v1171 = v1168(v1169, v1170)
-            if v1170 == nil then
-                break
-            end
+        for v1170, v1171 in pairs(v1167:GetDescendants()) do
             if v1171:IsA("Model") then
                 local v1172, v1173, v1174 = pairs(v1171:GetDescendants())
                 while true do
@@ -12209,14 +11274,8 @@ local function vu1176()
     end
 end
 local function vu1184()
-    local v1177 = game.Workspace.Map.PrehistoricIsland.Core.VolcanoRocks
-    local v1178, v1179, v1180 = pairs(v1177:GetChildren())
-    while true do
-        local v1181
-        v1180, v1181 = v1178(v1179, v1180)
-        if v1180 == nil then
-            break
-        end
+    local v1177 = __WS.Map.PrehistoricIsland.Core.VolcanoRocks
+    for v1180, v1181 in pairs(v1177:GetChildren()) do
         if v1181:IsA("Model") then
             local v1182 = v1181:FindFirstChild("volcanorock")
             if v1182 and v1182:IsA("MeshPart") then
@@ -12230,16 +11289,9 @@ local function vu1184()
     return nil
 end
 local function vu1196(p1185)
-	-- upvalues: (ref) vu1160
     local v1186 = __LP
     local v1187 = v1186.Backpack
-    local v1188, v1189, v1190 = pairs(v1187:GetChildren())
-    while true do
-        local v1191
-        v1190, v1191 = v1188(v1189, v1190)
-        if v1190 == nil then
-            break
-        end
+    for v1190, v1191 in pairs(v1187:GetChildren()) do
         if v1191:IsA("Tool") and v1191.ToolTip == p1185 then
             v1191.Parent = v1186.Character
             local v1192, v1193, v1194 = ipairs({
@@ -12257,7 +11309,6 @@ local function vu1196(p1185)
                 end
                 wait()
                 pcall(function()
-					-- upvalues: (ref) vu1160, (ref) vu1195
                     vu1160(vu1195)
                 end)
             end
@@ -12267,7 +11318,6 @@ local function vu1196(p1185)
     end
 end
 spawn(function()
-	-- upvalues: (ref) vu1176, (ref) vu1184, (ref) vu1196
     while wait() do
         if _G.AutoDefendVolcano then
             AutoHaki()
@@ -12310,13 +11360,7 @@ spawn(function()
     while wait() do
         if KillAura then
             pcall(function()
-                local v1201, v1202, v1203 = pairs(game.Workspace.Enemies:GetDescendants())
-                while true do
-                    local v1204
-                    v1203, v1204 = v1201(v1202, v1203)
-                    if v1203 == nil then
-                        break
-                    end
+                for v1203, v1204 in pairs(__WS.Enemies:GetChildren()) do
                     if v1204:FindFirstChild("Humanoid") and (v1204:FindFirstChild("HumanoidRootPart") and v1204.Humanoid.Health > 0) then
                         repeat
                             task.wait()
@@ -12337,15 +11381,9 @@ Tabs.Sea:AddToggle("ToggleCollectBone", {
     _G.AutoCollectBone = p1205
 end)
 spawn(function()
-    while wait() do
+    while wait(0.5) do -- [OPT] quét cả workspace: 2 lần/giây thay vì mỗi frame
         if _G.AutoCollectBone then
-            local v1206, v1207, v1208 = pairs(workspace:GetDescendants())
-            while true do
-                local v1209
-                v1208, v1209 = v1206(v1207, v1208)
-                if v1208 == nil then
-                    break
-                end
+            for v1208, v1209 in pairs(workspace:GetDescendants()) do
                 if v1209:IsA("BasePart") and v1209.Name == "DinoBone" then
                     Tween2(CFrame.new(v1209.Position))
                 end
@@ -12399,7 +11437,7 @@ spawn(function()
             local cf = getSummerPos()
             if not cf then return end
             Tween(cf * CFrame.new(0, 50, 0))
-            for _, mob in pairs(game.Workspace.Enemies:GetChildren()) do
+            for _, mob in pairs(__WS.Enemies:GetChildren()) do
                 local hum = mob:FindFirstChild("Humanoid")
                 local hrp = mob:FindFirstChild("HumanoidRootPart")
                 if hum and hrp and hum.Health > 0 and hum.DisplayName and hum.DisplayName:find("%[Electrified%]") then
@@ -12439,13 +11477,13 @@ if #_bossPainList > 0 then
     task.spawn(function()
         while task.wait() do
             if _G.BossPain and _G.SelectBoss then pcall(function()
-                if not game.Workspace.Enemies:FindFirstChild(_G.SelectBoss) then
+                if not __WS.Enemies:FindFirstChild(_G.SelectBoss) then
                     local rs = __RS
                     if rs:FindFirstChild(_G.SelectBoss) then
                         Tween(rs:FindFirstChild(_G.SelectBoss).HumanoidRootPart.CFrame * CFrame.new(5, 10, 2))
                     end
                 else
-                    for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                    for _, v in pairs(__WS.Enemies:GetChildren()) do
                         if v.Name == _G.SelectBoss and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
                             repeat
                                 task.wait(); AutoHaki(); EquipTool(SelectWeapon)
@@ -12476,7 +11514,7 @@ spawn(function()
             local raidPos = CFrame.new(-5496.17432, 313.768921, -2841.53027)
             local center = Vector3.new(-5539.31, 313.80, -2972.37)
             if (center - __LP.Character.HumanoidRootPart.Position).Magnitude <= 500 then
-                for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                for _, v in pairs(__WS.Enemies:GetChildren()) do
                     if _G.AutoRaidPirate and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and (v.HumanoidRootPart.Position - __LP.Character.HumanoidRootPart.Position).Magnitude < 2000 then
                         repeat
                             wait(); AutoHaki(); EquipTool(SelectWeapon); bringmob = true
@@ -12513,13 +11551,13 @@ if Sea3 then
     task.spawn(function()
         while task.wait() do
             if _G.FarmDaiBan then pcall(function()
-                if not game.Workspace.Enemies:FindFirstChild("Tyrant of the Skies") then
+                if not __WS.Enemies:FindFirstChild("Tyrant of the Skies") then
                     local hasMob = false
                     for _, name in pairs({"Isle Outlaw","Island Boy","Isle Champion","Serpent Hunter","Skull Slayer"}) do
-                        if game.Workspace.Enemies:FindFirstChild(name) then hasMob=true; break end
+                        if __WS.Enemies:FindFirstChild(name) then hasMob=true; break end
                     end
                     if hasMob then
-                        for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                        for _, v in pairs(__WS.Enemies:GetChildren()) do
                             if (v.Name=="Isle Outlaw" or v.Name=="Island Boy" or v.Name=="Isle Champion" or v.Name=="Serpent Hunter" or v.Name=="Skull Slayer") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
                                 repeat
                                     task.wait(); AutoHaki(); EquipTool(SelectWeapon)
@@ -12528,13 +11566,13 @@ if Sea3 then
                                     FarmPos = v.HumanoidRootPart.CFrame; MonFarm = v.Name; bringmob = true
                                     pcall(function() v.Head.CanCollide = false end)
                                     Tween(v.HumanoidRootPart.CFrame * Pos); AttackNoCoolDown()
-                                until not _G.FarmDaiBan or not v.Parent or v.Humanoid.Health <= 0 or game.Workspace.Enemies:FindFirstChild("Tyrant of the Skies")
+                                until not _G.FarmDaiBan or not v.Parent or v.Humanoid.Health <= 0 or __WS.Enemies:FindFirstChild("Tyrant of the Skies")
                                 bringmob = false
                             end
                         end
                     else Tween(_tyrantSpawn) end
                 else
-                    for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                    for _, v in pairs(__WS.Enemies:GetChildren()) do
                         if v.Name=="Tyrant of the Skies" and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
                             repeat
                                 task.wait(); AutoHaki(); EquipTool(SelectWeapon)
@@ -12586,7 +11624,7 @@ Tabs.Main:AddDropdown("DropFishingBait", {
     ["Default"] = "Basic Bait"
 }):OnChanged(function(v)
     _G.SelectedBait = v
-    pcall(function() game.ReplicatedStorage:WaitForChild("FishReplicated"):WaitForChild("FishingRequest"):InvokeServer("SelectBait",v) end)
+    pcall(function() __RS:WaitForChild("FishReplicated"):WaitForChild("FishingRequest"):InvokeServer("SelectBait",v) end)
 end)
 Tabs.Main:AddDropdown("DropFishingRod", {
     ["Title"] = "Chọn Cần Câu",
@@ -12594,9 +11632,9 @@ Tabs.Main:AddDropdown("DropFishingRod", {
     ["Default"] = "Fishing Rod"
 }):OnChanged(function(v) _G.SelectedRod = v end)
 task.spawn(function()
-    local fishRep = pcall(function() return game.ReplicatedStorage:WaitForChild("FishReplicated",10) end)
+    local fishRep = pcall(function() return __RS:WaitForChild("FishReplicated",10) end)
     if not fishRep then return end
-    local ok, rep = pcall(function() return game.ReplicatedStorage:WaitForChild("FishReplicated",10) end)
+    local ok, rep = pcall(function() return __RS:WaitForChild("FishReplicated",10) end)
     if not ok then return end
     local fishReq = rep:WaitForChild("FishingRequest")
     while task.wait() do
@@ -12632,7 +11670,7 @@ if Sea3 then
     spawn(function()
         while wait() do
             if _G.Hallow then pcall(function()
-                if not game.Workspace.Enemies:FindFirstChild("Soul Reaper") then
+                if not __WS.Enemies:FindFirstChild("Soul Reaper") then
                     if __LP.Backpack:FindFirstChild("Hallow Essence") or __LP.Character:FindFirstChild("Hallow Essence") then
                         repeat TweenBlock(CFrame.new(-8932.32,146.83,6062.55)); wait()
                         until (CFrame.new(-8932.32,146.83,6062.55).Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 8
@@ -12641,7 +11679,7 @@ if Sea3 then
                         Tween(__RS:FindFirstChild("Soul Reaper").HumanoidRootPart.CFrame * CFrame.new(2,20,2))
                     end
                 else
-                    for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                    for _, v in pairs(__WS.Enemies:GetChildren()) do
                         if string.find(v.Name,"Soul Reaper") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
                             repeat
                                 task.wait(); EquipTool(SelectWeapon); AutoHaki()
