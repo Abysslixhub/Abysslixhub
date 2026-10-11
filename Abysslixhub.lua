@@ -4814,10 +4814,11 @@ end
 
 Tabs = {
     ["Info"]     = createTab("Thông Tin", "info"),
+    ["Discord"]  = createTab("Discord", nil),
     ["Shop"]     = createTab("Shop", "shopping-cart"),
     ["Main"]     = createTab("Cày Cấp", "swords"),
     ["Sea"]      = createTab("Sea Event", "waves"),
-    ["Status"]   = createTab("Webhook", "radio"),
+    ["Status"]   = createTab("Server", "radio"),
     ["Stats"]    = createTab("Chỉ Số", "bar-chart-2"),
     ["Player"]   = createTab("PVP", "user"),
     ["Teleport"] = createTab("Dịch Chuyển", "map-pin"),
@@ -4827,7 +4828,6 @@ Tabs = {
     ["Race"]     = createTab("Nâng Cấp Chủng Tộc", "zap"),
     ["Misc"]     = createTab("Khác", "folder"),
     ["Setting"]  = createTab("Cài Đặt", "settings"),
-    ["Discord"]  = createTab("Discord", nil),
 }
 
 -- [GỘP TAB] Item -> Shop, Raid -> Fruit
@@ -7757,7 +7757,6 @@ end)
 -- ==========================================
 -- ĐỘ CAO KHI FARM (đầu tab Main): kéo thanh hoặc nhập số, min 10 - max 100
 -- ==========================================
-Tabs.Main:AddSection("Select tool")
 local v253 = Tabs.Main:AddDropdown("DropdownSelectWeapon", {
     ["Title"] = "Choose Weapon (Chọn Vũ Khí Farm)",
     ["Values"] = {
@@ -7774,7 +7773,6 @@ ChooseWeapon = "Melee" -- khởi tạo ngay, không chờ callback
 v253:OnChanged(function(p254)
     ChooseWeapon = p254
 end)
-Tabs.Main:AddSection("Độ Cao Farm")
 local _FARM_H_MIN, _FARM_H_MAX = 0, 100
 local _farmH = 30
 local _farmD = 10   -- khoảng cách đứng ngang với quái (studs)
@@ -13584,7 +13582,7 @@ Tabs.Setting:AddToggle("ToggleF", {
     SkillF = p867
 end)
 -- [SetValue skipped - Library không cần]
-Tabs.Status:AddSection("Webhook")
+Tabs.Status:AddSection("Server")
 Tabs.Status:AddParagraph({
     ["Title"] = "Thông Tin",
     ["Description"] = "\239\191\189\239\191\189\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\n" .. "Tên : " .. __LP.DisplayName .. " (@" .. __LP.Name .. ")\n" .. "Cấp : " .. __LP.Data.Level.Value .. "\n" .. "Tiền : " .. __LP.Data.Beli.Value .. "\n" .. "\239\191\189iểm F : " .. __LP.Data.Fragments.Value .. "\n" .. "Tiền Truy Nã : " .. __LP.leaderstats["Bounty/Honor"].Value .. "\n" .. "Máu: " .. __LP.Character.Humanoid.Health .. "/" .. __LP.Character.Humanoid.MaxHealth .. "\n" .. "Năng Lưỡng : " .. __LP.Character.Energy.Value .. "/" .. __LP.Character.Energy.MaxValue .. "\n" .. "Tộc : " .. __LP.Data.Race.Value .. "\n" .. "Trái : " .. __LP.Data.DevilFruit.Value .. "\n\239\191\189\239\191\189\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129\226\148\129"
@@ -13677,6 +13675,79 @@ spawn(function()
         end
     end
 end)
+do
+Tabs.Status:AddSection("Thông Tin Server")
+local srvInfo = Tabs.Status:AddParagraph({["Title"] = "Server", ["Description"] = "Đang tải..."})
+local srvStart = tick()
+spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            local t = math.floor(tick() - srvStart)
+            local ping = 0
+            pcall(function() ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()) end)
+            local fps = math.floor(1 / math.max(RunService.RenderStepped:Wait(), 0.001))
+            srvInfo:SetDesc(string.format("Người chơi: %d/%d\nPlaceId: %s\nJob ID: %s\nPing: %dms | FPS: %d\nĐã ở server: %02d:%02d:%02d",
+                #__PL:GetPlayers(), __PL.MaxPlayers, tostring(game.PlaceId), tostring(game.JobId), ping, fps,
+                math.floor(t / 3600), math.floor(t / 60) % 60, t % 60))
+        end)
+    end
+end)
+
+Tabs.Status:AddSection("Chuyển Server")
+local function srvHop(preferLow)
+    local ok = pcall(function()
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=" .. (preferLow and "Asc" or "Desc") .. "&limit=100"
+        local data = HttpService:JSONDecode(game:HttpGet(url))
+        for _, v in ipairs(data.data or {}) do
+            if v.id ~= game.JobId and v.playing < v.maxPlayers then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id, __LP)
+                return
+            end
+        end
+        error("none")
+    end)
+    if not ok then pcall(function() Hop() end) end
+end
+Tabs.Status:AddButton({["Title"] = "Đổi Server", ["Description"] = "Nhảy sang server khác", ["Callback"] = function() srvHop(false) end})
+Tabs.Status:AddButton({["Title"] = "Server Ít Người", ["Description"] = "Nhảy sang server ít người nhất", ["Callback"] = function() srvHop(true) end})
+Tabs.Status:AddButton({["Title"] = "Vào Lại Server (Rejoin)", ["Description"] = "Vào lại đúng server hiện tại", ["Callback"] = function()
+    pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, __LP) end)
+end})
+Tabs.Status:AddButton({["Title"] = "Copy Script Join Server", ["Description"] = "Copy đoạn lệnh để vào đúng server này", ["Callback"] = function()
+    pcall(function()
+        setclipboard('game:GetService("TeleportService"):TeleportToPlaceInstance(' .. game.PlaceId .. ', "' .. game.JobId .. '", game.Players.LocalPlayer)')
+        Library:Notify({["Title"] = "Server", ["Content"] = "Đã copy script join"})
+    end)
+end})
+Tabs.Status:AddButton({["Title"] = "Copy Place ID", ["Description"] = "Copy Place ID hiện tại", ["Callback"] = function()
+    pcall(function() setclipboard(tostring(game.PlaceId)) end)
+end})
+
+Tabs.Status:AddSection("Tự Động")
+_G.AutoRejoin = false
+Tabs.Status:AddToggle("AutoRejoinToggle", {["Title"] = "Tự Động Vào Lại Khi Mất Kết Nối", ["Description"] = "Tự rejoin khi bị kick/disconnect", ["Default"] = false, ["Callback"] = function() end}):OnChanged(function(v) _G.AutoRejoin = v end)
+pcall(function()
+    game:GetService("CoreGui").RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(c)
+        if _G.AutoRejoin and c.Name == "ErrorPrompt" then
+            task.wait(2)
+            pcall(function() TeleportService:Teleport(game.PlaceId, __LP) end)
+        end
+    end)
+end)
+_G.HopMinutes = 30
+Tabs.Status:AddInput("HopTimerMin", {["Title"] = "Số Phút Tự Đổi Server", ["Default"] = "30", ["Placeholder"] = "30", ["Callback"] = function(v) _G.HopMinutes = tonumber(v) or 30 end})
+_G.AutoHopTimer = false
+Tabs.Status:AddToggle("AutoHopTimerToggle", {["Title"] = "Tự Đổi Server Theo Thời Gian", ["Description"] = "Đổi server sau số phút đã nhập", ["Default"] = false, ["Callback"] = function() end}):OnChanged(function(v) _G.AutoHopTimer = v end)
+spawn(function()
+    local last = tick()
+    while task.wait(1) do
+        if _G.AutoHopTimer then
+            if tick() - last >= math.max(_G.HopMinutes, 1) * 60 then last = tick(); srvHop(false) end
+        else last = tick() end
+    end
+end)
+
+end
 Tabs.Stats:AddSection("Chỉ Số")
 Tabs.Stats:AddToggle("ToggleMelee", {
     ["Title"] = "Nâng Đấm",
