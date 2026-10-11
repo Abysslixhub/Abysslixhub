@@ -824,11 +824,17 @@ local BF = {
     AutoJoinTeam = true,
     JoinTeamTo = "Marines",
     AutoFarm = false,
+    AutoFarmSea = false,
+    AutoPVP = false,
+    AutoAim = false,
     AutoQuest = false,
     AutoSea = false,
     QuestName = nil,
     SelectMap = "Spawn",
     AutoFarmRange = 220,
+    PVPRange = 180,
+    PlayerList = {},
+    SelectedTarget = nil,
 }
 
 local function getCharacter()
@@ -997,6 +1003,92 @@ local function AutoFarmLoop()
     end
 end
 
+local function RefreshPlayerList()
+    local list = {}
+    for _, targetPlayer in ipairs(Players:GetPlayers()) do
+        if targetPlayer ~= Player and targetPlayer.Character then
+            local targetRoot = getRoot(targetPlayer.Character)
+            local targetHum = getHumanoid(targetPlayer.Character)
+            if targetRoot and targetHum and targetHum.Health > 0 then
+                if not (Player.Team and targetPlayer.Team and Player.Team == targetPlayer.Team) then
+                    table.insert(list, targetPlayer.Name)
+                end
+            end
+        end
+    end
+
+    table.sort(list)
+    BF.PlayerList = list
+    if BF.SelectedTarget and not table.find(BF.PlayerList, BF.SelectedTarget) then
+        BF.SelectedTarget = BF.PlayerList[1]
+    end
+    if not BF.SelectedTarget and #BF.PlayerList > 0 then
+        BF.SelectedTarget = BF.PlayerList[1]
+    end
+    return BF.PlayerList
+end
+
+local function GetTargetCharacterByName(name)
+    if not name then return nil end
+    for _, targetPlayer in ipairs(Players:GetPlayers()) do
+        if targetPlayer.Name == name and targetPlayer.Character then
+            local targetRoot = getRoot(targetPlayer.Character)
+            local targetHum = getHumanoid(targetPlayer.Character)
+            if targetRoot and targetHum and targetHum.Health > 0 then
+                return targetPlayer.Character
+            end
+        end
+    end
+    return nil
+end
+
+local function GetNearestPlayer(maxDistance)
+    maxDistance = maxDistance or BF.PVPRange or 180
+    local char = getCharacter()
+    local root = getRoot(char)
+    if not root then return nil end
+
+    local nearest = nil
+    local nearestDist = math.huge
+
+    for _, targetPlayer in ipairs(Players:GetPlayers()) do
+        if targetPlayer ~= Player and targetPlayer.Character then
+            local targetRoot = getRoot(targetPlayer.Character)
+            local targetHum = getHumanoid(targetPlayer.Character)
+            if targetRoot and targetHum and targetHum.Health > 0 then
+                if Player.Team and targetPlayer.Team and Player.Team == targetPlayer.Team then
+                    continue
+                end
+
+                local dist = (targetRoot.Position - root.Position).Magnitude
+                if dist < maxDistance and dist < nearestDist then
+                    nearest = targetPlayer.Character
+                    nearestDist = dist
+                end
+            end
+        end
+    end
+
+    return nearest
+end
+
+local function AutoPVPLoop()
+    if not BF.AutoPVP then return end
+
+    if BF.AutoAim and BF.SelectedTarget then
+        local target = GetTargetCharacterByName(BF.SelectedTarget)
+        if target then
+            AttackTarget(target)
+            return
+        end
+    end
+
+    local target = GetNearestPlayer(BF.PVPRange)
+    if target then
+        AttackTarget(target)
+    end
+end
+
 local function getSeaMapByLevel(level)
     if level < 700 then return "Spawn" end
     if level < 1500 then return "Desert" end
@@ -1012,6 +1104,21 @@ local function AutoSeaLoop()
         BF.SelectMap = targetMap
     end
     TeleportToMap(targetMap)
+end
+
+local function AutoFarmSeaLoop()
+    if not BF.AutoFarmSea then return end
+    local level = getLevel()
+    local targetMap = getSeaMapByLevel(level)
+    if BF.SelectMap ~= targetMap then
+        BF.SelectMap = targetMap
+    end
+    TeleportToMap(targetMap)
+
+    local target = GetNearestEnemy(BF.AutoFarmRange)
+    if target then
+        AttackTarget(target)
+    end
 end
 
 local MapPositions = {
@@ -1051,6 +1158,26 @@ local function SetupBFUI()
             end
         })
 
+        mainSec:AddSlider("Farm Range", {
+            Title = "Farm Range",
+            Description = "Khoảng cách tấn công quái",
+            Min = 50,
+            Max = 500,
+            Default = 220,
+            Callback = function(value)
+                BF.AutoFarmRange = value
+            end
+        })
+
+        mainSec:AddToggle("Auto PVP", {
+            Title = "Auto PVP",
+            Description = "Tự động tấn công người chơi gần nhất",
+            Default = false,
+            Callback = function(state)
+                BF.AutoPVP = state
+            end
+        })
+
         mainSec:AddToggle("Auto Quest", {
             Title = "Auto Quest",
             Description = "Tự động nhận quest phù hợp level",
@@ -1066,6 +1193,61 @@ local function SetupBFUI()
             Default = false,
             Callback = function(state)
                 BF.AutoSea = state
+            end
+        })
+    end
+
+    if Tabs and Tabs.PVP then
+        local pvpSec = Tabs.PVP:AddSection("Combat")
+        RefreshPlayerList()
+
+        local pvpTargetDropdown = pvpSec:AddDropdown("Target Player", {
+            Title = "Target Player",
+            Description = "Chọn người chơi để Auto Aim",
+            Values = BF.PlayerList,
+            Default = BF.SelectedTarget or (BF.PlayerList[1] or ""),
+            Callback = function(value)
+                BF.SelectedTarget = value
+            end
+        })
+
+        pvpSec:AddButton("Refresh Player List", {
+            Title = "Refresh Player List",
+            Description = "Làm mới danh sách người chơi",
+            Callback = function()
+                local list = RefreshPlayerList()
+                if pvpTargetDropdown and pvpTargetDropdown.SetValue then
+                    pvpTargetDropdown:SetValue(BF.SelectedTarget or (list[1] or ""))
+                end
+            end
+        })
+
+        pvpSec:AddToggle("Auto PvP", {
+            Title = "Auto PvP",
+            Description = "Tự động tấn công người chơi gần nhất",
+            Default = false,
+            Callback = function(state)
+                BF.AutoPVP = state
+            end
+        })
+
+        pvpSec:AddToggle("Auto Aim", {
+            Title = "Auto Aim",
+            Description = "Tự động nhắm mục tiêu đã chọn",
+            Default = false,
+            Callback = function(state)
+                BF.AutoAim = state
+            end
+        })
+
+        pvpSec:AddSlider("PvP Range", {
+            Title = "PvP Range",
+            Description = "Khoảng cách tấn công người chơi",
+            Min = 50,
+            Max = 300,
+            Default = 180,
+            Callback = function(value)
+                BF.PVPRange = value
             end
         })
     end
@@ -1122,6 +1304,8 @@ task.spawn(function()
         JoinTeam()
         StartQuest()
         AutoFarmLoop()
+        AutoFarmSeaLoop()
+        AutoPVPLoop()
         AutoSeaLoop()
     end
 end)
