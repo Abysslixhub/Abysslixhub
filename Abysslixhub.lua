@@ -773,48 +773,29 @@ local function wrapTab(rawTab, defaultTitle)
 end
 
 -- ==========================================
--- TẠO CÁC TABS (BANANA HUB STYLE VỚI ICON RBXASSETID CHUẨN)
+-- TẠO CÁC TABS (KHÔNG CÓ ICON)
 -- ==========================================
-local LucideToAsset = {
-    ["info"]          = "rbxassetid://10723346959",
-    ["swords"]        = "rbxassetid://10734954701",
-    ["waves"]         = "rbxassetid://10709819149",
-    ["package"]       = "rbxassetid://10709782497",
-    ["settings"]      = "rbxassetid://10734950309",
-    ["radio"]         = "rbxassetid://10709789310",
-    ["bar-chart-2"]   = "rbxassetid://10709752317",
-    ["user"]          = "rbxassetid://10747373176",
-    ["map-pin"]       = "rbxassetid://10734914109",
-    ["eye"]           = "rbxassetid://10723346959",
-    ["cherry"]        = "rbxassetid://10709775086",
-    ["flame"]         = "rbxassetid://10709768000",
-    ["zap"]           = "rbxassetid://10734975486",
-    ["shopping-cart"] = "rbxassetid://10747372992",
-    ["folder"]        = "rbxassetid://10723387563",
-}
-
-local function createTab(tabTitle, lucideIcon)
-    local iconId = LucideToAsset[lucideIcon] or (string.find(tostring(lucideIcon or ""), "rbxassetid://") and lucideIcon) or HUB_ICON
-    local raw = Window:AddTab(tabTitle, iconId)
+local function createTab(tabTitle)
+    local raw = Window:AddTab(tabTitle)
     return wrapTab(raw, tabTitle)
 end
 
 Tabs = {
-    ["Info"]     = createTab("Thông Tin", "info"),
-    ["Shop"]     = createTab("Cửa Hàng", "shopping-cart"),
-    ["Main"]     = createTab("Cày Cấp", "swords"),
-    ["Sea"]      = createTab("Sự Kiện", "waves"),
-    ["Item"]     = createTab("Lấy & Nâng Cấp Vật Phẩm", "package"),
-    ["Status"]   = createTab("Webhook", "radio"),
-    ["Stats"]    = createTab("Chỉ Số", "bar-chart-2"),
-    ["Player"]   = createTab("Người Chơi", "user"),
-    ["Teleport"] = createTab("Dịch Chuyển", "map-pin"),
-    ["PVP"]      = createTab("Giả Mạo", "eye"),
-    ["Fruit"]    = createTab("Trái Ác Quỷ", "cherry"),
-    ["Raid"]     = createTab("Đột Kích", "flame"),
-    ["Race"]     = createTab("Nâng Cấp Chủng Tộc", "zap"),
-    ["Misc"]     = createTab("Khác", "folder"),
-    ["Setting"]  = createTab("Cài Đặt", "settings"),
+    ["Info"]     = createTab("Thông Tin"),
+    ["Shop"]     = createTab("Cửa Hàng"),
+    ["Main"]     = createTab("Cày Cấp"),
+    ["Sea"]      = createTab("Sự Kiện"),
+    ["Item"]     = createTab("Lấy & Nâng Cấp Vật Phẩm"),
+    ["Status"]   = createTab("Webhook"),
+    ["Stats"]    = createTab("Chỉ Số"),
+    ["Player"]   = createTab("Người Chơi"),
+    ["Teleport"] = createTab("Dịch Chuyển"),
+    ["PVP"]      = createTab("Giả Mạo"),
+    ["Fruit"]    = createTab("Trái Ác Quỷ"),
+    ["Raid"]     = createTab("Đột Kích"),
+    ["Race"]     = createTab("Nâng Cấp Chủng Tộc"),
+    ["Misc"]     = createTab("Khác"),
+    ["Setting"]  = createTab("Cài Đặt"),
 }
 
 -- ==========================================
@@ -1186,13 +1167,25 @@ local function SetupBFUI()
                 BF.AutoQuest = state
             end
         })
+    end
 
-        mainSec:AddToggle("Auto Sea", {
+    if Tabs and Tabs.Sea then
+        local seaSec = Tabs.Sea:AddSection("Sea Auto")
+        seaSec:AddToggle("Auto Sea", {
             Title = "Auto Sea",
-            Description = "Tự động di chuyển tới island phù hợp",
+            Description = "Tự động di chuyển tới island phù hợp theo level",
             Default = false,
             Callback = function(state)
                 BF.AutoSea = state
+            end
+        })
+
+        seaSec:AddToggle("Auto Farm Sea", {
+            Title = "Auto Farm Sea",
+            Description = "Tự động farm theo biển và di chuyển đến map phù hợp",
+            Default = false,
+            Callback = function(state)
+                BF.AutoFarmSea = state
             end
         })
     end
