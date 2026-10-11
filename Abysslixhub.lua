@@ -4938,7 +4938,7 @@ Tabs = {
     ["Teleport"] = createTab("Dịch Chuyển", "map-pin"),
     ["ESP"]      = createTab("ESP", "eye"),
     ["Fruit"]    = createTab("Fruit", "cherry", "Kiểm Tra Stock Trái"),
-    ["Race"]     = createTab("Nâng Cấp Chủng Tộc", "zap"),
+    ["Race"]     = createTab("Race", "zap"),
     ["Misc"]     = createTab("Khác", "folder"),
     ["Setting"]  = createTab("Cài Đặt", "settings"),
 }
@@ -13727,6 +13727,213 @@ Tabs.Setting:AddToggle("ToggleF", {
     SkillF = p867
 end)
 -- [SetValue skipped - Library không cần]
+-- ==========================================
+-- [MỞ RỘNG TAB SEA EVENT] Trạng thái sự kiện, thông báo, bay tới đảo/sự kiện, tăng tốc thuyền, đổi server tìm đảo
+-- ==========================================
+if Sea3 then
+do
+    local ISLANDS = {
+        { "MysticIsland",      "Mirage Island (Đảo Bí Ẩn)",       { "MysticIsland", "Mirage Island" } },
+        { "KitsuneIsland",     "Kitsune Island (Đảo Cáo)",        { "KitsuneIsland", "Kitsune Island" } },
+        { "PrehistoricIsland", "Prehistoric Island (Đảo Dung Nham)", { "PrehistoricIsland" } },
+        { "FrozenDimension",   "Frozen Dimension (Leviathan)",    { "FrozenDimension" } },
+    }
+    local ISLAND_NAMES, selectedIsland = {}, ISLANDS[1]
+    for _, it in ipairs(ISLANDS) do table.insert(ISLAND_NAMES, it[2]) end
+
+    -- tìm 1 đảo: trong Map hoặc _WorldOrigin.Locations
+    local function findIsland(it)
+        for _, nm in ipairs(it[3]) do
+            local o = __WS:FindFirstChild("Map") and __WS.Map:FindFirstChild(nm)
+            if o then return o end
+            local loc = __WS:FindFirstChild("_WorldOrigin") and __WS._WorldOrigin:FindFirstChild("Locations")
+            o = loc and loc:FindFirstChild(nm)
+            if o then return o end
+        end
+    end
+    local function posOf(o)
+        if not o then return nil end
+        if o:IsA("BasePart") then return o.Position end
+        if o:IsA("Model") then return o:GetPivot().Position end
+        local bp = o:FindFirstChildWhichIsA("BasePart", true)
+        return bp and bp.Position
+    end
+    local function notify(msg)
+        pcall(function() Library:Notify({["Title"] = "Sea Event", ["Content"] = msg}) end)
+    end
+
+    -- đếm sự kiện đang có trên biển
+    local function scanEvents()
+        local c = { beast = 0, shark = 0, tshark = 0, piranha = 0, crew = 0, ship = 0, levi = 0 }
+        pcall(function()
+            local sb = __WS:FindFirstChild("SeaBeasts")
+            if sb then
+                for _, v in ipairs(sb:GetChildren()) do
+                    if v:FindFirstChild("HumanoidRootPart") then c.beast = c.beast + 1 end
+                end
+            end
+            local en = __WS:FindFirstChild("Enemies")
+            if en then
+                for _, v in ipairs(en:GetChildren()) do
+                    local n = v.Name
+                    if v:FindFirstChild("HumanoidRootPart") then
+                        if n == "Terrorshark" then c.tshark = c.tshark + 1
+                        elseif n == "Shark" then c.shark = c.shark + 1
+                        elseif n == "Piranha" then c.piranha = c.piranha + 1
+                        elseif n == "Fish Crew Member" or n == "FishBoat" then c.crew = c.crew + 1
+                        elseif string.find(n, "Brigade") then c.ship = c.ship + 1
+                        elseif string.find(string.lower(n), "leviathan") then c.levi = c.levi + 1 end
+                    end
+                end
+            end
+        end)
+        return c
+    end
+
+    Tabs.Sea:AddSection("Trạng Thái Sự Kiện Biển")
+    local statusP = Tabs.Sea:AddParagraph({["Title"] = "Đang Có Trên Biển", ["Description"] = "Đang quét..."})
+    _G.SeaNotify = false
+    local lastSeen = {}
+    spawn(function()
+        while task.wait(2) do
+            pcall(function()
+                local c = scanEvents()
+                local lines = {}
+                for _, it in ipairs(ISLANDS) do
+                    table.insert(lines, (findIsland(it) and "✅ " or "❌ ") .. it[2])
+                end
+                table.insert(lines, string.format("Vua Biển: %d | Terrorshark: %d | Piranha: %d", c.beast, c.tshark, c.piranha))
+                table.insert(lines, string.format("Cá Mập: %d | Tàu Cá: %d | Tàu Hải Tặc: %d | Leviathan: %d", c.shark, c.crew, c.ship, c.levi))
+                statusP:SetDesc(table.concat(lines, "\n"))
+
+                -- thông báo khi sự kiện / đảo VỪA xuất hiện
+                local now = {}
+                for _, it in ipairs(ISLANDS) do now[it[2]] = findIsland(it) ~= nil end
+                now["Vua Biển"] = c.beast > 0
+                now["Terrorshark"] = c.tshark > 0
+                now["Tàu Hải Tặc"] = c.ship > 0
+                now["Tàu Cá"] = c.crew > 0
+                now["Leviathan"] = c.levi > 0
+                if _G.SeaNotify then
+                    for name, on in pairs(now) do
+                        if on and lastSeen[name] == false then notify("Vừa xuất hiện: " .. name) end
+                    end
+                end
+                for name, on in pairs(now) do lastSeen[name] = on end
+            end)
+        end
+    end)
+    Tabs.Sea:AddToggle("SeaNotifyToggle", {
+        ["Title"] = "Thông Báo Khi Có Sự Kiện / Đảo Mới",
+        ["Description"] = "Hiện thông báo khi đảo hoặc sự kiện biển vừa xuất hiện",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.SeaNotify = v end)
+
+    Tabs.Sea:AddSection("Bay Đến Sự Kiện / Đảo")
+    Tabs.Sea:AddDropdown("SeaIslandSelect", {
+        ["Title"] = "Chọn Đảo",
+        ["Values"] = ISLAND_NAMES,
+        ["Multi"] = false,
+        ["Default"] = 1
+    }):OnChanged(function(v)
+        for _, it in ipairs(ISLANDS) do
+            if it[2] == v then selectedIsland = it end
+        end
+    end)
+    Tabs.Sea:AddButton({["Title"] = "Bay Đến Đảo Đã Chọn", ["Description"] = "Chỉ bay được khi đảo đang xuất hiện", ["Callback"] = function()
+        local pos = posOf(findIsland(selectedIsland))
+        if pos then Tween2(CFrame.new(pos + Vector3.new(0, 150, 0))) else notify("Đảo này hiện chưa xuất hiện") end
+    end})
+    Tabs.Sea:AddButton({["Title"] = "Bay Đến Sự Kiện Gần Nhất", ["Description"] = "Vua biển, Terrorshark, Piranha, tàu cá, tàu hải tặc, Leviathan", ["Callback"] = function()
+        local root = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+        local best, bestD
+        local function consider(v)
+            local hrp = v:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local d = (hrp.Position - root.Position).Magnitude
+                if not bestD or d < bestD then best, bestD = hrp, d end
+            end
+        end
+        pcall(function()
+            local sb = __WS:FindFirstChild("SeaBeasts")
+            if sb then for _, v in ipairs(sb:GetChildren()) do consider(v) end end
+            local en = __WS:FindFirstChild("Enemies")
+            if en then
+                for _, v in ipairs(en:GetChildren()) do
+                    local n = v.Name
+                    if n == "Terrorshark" or n == "Piranha" or n == "Fish Crew Member" or n == "FishBoat"
+                        or string.find(n, "Brigade") or string.find(string.lower(n), "leviathan") then
+                        consider(v)
+                    end
+                end
+            end
+        end)
+        if best then Tween2(best.CFrame * CFrame.new(0, 60, 0)) else notify("Chưa có sự kiện nào trên biển") end
+    end})
+
+    Tabs.Sea:AddSection("Thuyền")
+    _G.BoatSpeedOn, _G.BoatSpeed = false, 150
+    Tabs.Sea:AddToggle("BoatSpeedToggle", {
+        ["Title"] = "Tăng Tốc Thuyền",
+        ["Description"] = "Áp dụng cho thuyền bạn đang ngồi",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.BoatSpeedOn = v end)
+    Tabs.Sea:AddSlider("BoatSpeedSlider", {
+        ["Title"] = "Tốc Độ Thuyền",
+        ["Default"] = 150,
+        ["Min"] = 50,
+        ["Max"] = 300,
+        ["Rounding"] = 0,
+        ["Callback"] = function(v) _G.BoatSpeed = tonumber(v) or 150 end
+    })
+    spawn(function()
+        while task.wait(0.5) do
+            if _G.BoatSpeedOn then
+                pcall(function()
+                    local hum = __LP.Character and __LP.Character:FindFirstChildOfClass("Humanoid")
+                    local seat = hum and hum.SeatPart
+                    if seat and seat:IsA("VehicleSeat") and seat.MaxSpeed ~= _G.BoatSpeed then
+                        seat.MaxSpeed = _G.BoatSpeed
+                    end
+                end)
+            end
+        end
+    end)
+
+    Tabs.Sea:AddSection("Đổi Server Tìm Đảo")
+    _G.SeaHopFind = false
+    Tabs.Sea:AddToggle("SeaHopFindToggle", {
+        ["Title"] = "Tự Đổi Server Đến Khi Có Đảo Đã Chọn",
+        ["Description"] = "Dùng đảo đang chọn ở trên. Gặp đảo thì dừng đổi server. Cần để script trong autoexec để tự chạy lại sau mỗi lần đổi server.",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.SeaHopFind = v end)
+    spawn(function()
+        local startAt, lastHop = tick(), 0
+        while task.wait(3) do
+            if _G.SeaHopFind and _G.AbyLoaded and tick() - startAt > 20 then
+                pcall(function()
+                    if findIsland(selectedIsland) then
+                        if tick() - lastHop > 30 then lastHop = tick(); notify("Đã thấy " .. selectedIsland[2] .. " - dừng đổi server") end
+                        return
+                    end
+                    if tick() - lastHop < 25 then return end
+                    lastHop = tick()
+                    local data = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"))
+                    local list = {}
+                    for _, v in ipairs(data.data or {}) do
+                        if v.id ~= game.JobId and v.playing < v.maxPlayers then table.insert(list, v) end
+                    end
+                    if #list > 0 then
+                        TeleportService:TeleportToPlaceInstance(game.PlaceId, list[math.random(1, #list)].id, __LP)
+                    end
+                end)
+            end
+        end
+    end)
+end
+end
+
 Tabs.Setting:AddSection("Haki Tự Động")
 _G.AutoBuso, _G.AutoKen = true, true
 Tabs.Setting:AddToggle("AutoBusoToggle", {
@@ -15542,7 +15749,7 @@ spawn(function()
         end
     end)
 end)
-Tabs.Race:AddSection("Nâng Cấp Chủng Tộc")
+Tabs.Race:AddSection("Race")
 Tabs.Race:AddButton({
     ["Title"] = "Đền Thời Gian",
     ["Callback"] = function()
@@ -15822,6 +16029,114 @@ Tabs.Race:AddToggle("ToggleUpgrade", {
     end
 end)
 -- [SetValue skipped - Library không cần]
+
+-- ==========================================
+-- [MỞ RỘNG TAB RACE] Bảng thông tin tộc, tự dùng kỹ năng tộc, tự đổi tộc đến khi ra tộc mong muốn
+-- ==========================================
+do
+    Tabs.Race:AddSection("Thông Tin Tộc")
+    local raceInfo = Tabs.Race:AddParagraph({["Title"] = "Tộc Của Bạn", ["Description"] = "Đang tải..."})
+    local verText = "?"
+    spawn(function()   -- phiên bản tộc (V1-V4) hỏi server nên chỉ cập nhật mỗi 6 giây
+        while task.wait(6) do
+            pcall(function() if CheckRace then verText = CheckRace() end end)
+        end
+    end)
+    spawn(function()
+        while task.wait(1) do
+            pcall(function()
+                local race = tostring(__LP.Data.Race.Value)
+                local ch = __LP.Character
+                local energy = ch and ch:FindFirstChild("RaceEnergy")
+                local transformed = ch and ch:FindFirstChild("RaceTransformed")
+                local pct = energy and math.floor(math.clamp(energy.Value, 0, 1) * 100) or 0
+                raceInfo:SetDesc(string.format("Tộc: %s\nPhiên bản: %s\nNăng lượng tộc: %d%%\nAwakening (V4): %s\nFragments: %s",
+                    race, verText, pct,
+                    (transformed and transformed.Value) and "Đang bật" or "Đang tắt",
+                    tostring(__LP.Data.Fragments.Value)))
+            end)
+        end
+    end)
+    Tabs.Race:AddButton({["Title"] = "Kiểm Tra Tộc Ngay", ["Description"] = "Hỏi server và hiện thông báo tộc + phiên bản hiện tại", ["Callback"] = function()
+        task.spawn(function()
+            pcall(function()
+                if CheckRace then verText = CheckRace() end
+                Library:Notify({["Title"] = "Race", ["Content"] = tostring(verText)})
+            end)
+        end)
+    end})
+
+    Tabs.Race:AddSection("Kỹ Năng Tộc")
+    _G.AutoRaceSkill = false
+    Tabs.Race:AddToggle("AutoRaceSkillToggle", {
+        ["Title"] = "Tự Dùng Kỹ Năng Tộc (phím T)",
+        ["Description"] = "Cứ vài giây tự bấm T để dùng kỹ năng tộc (V3/V4)",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.AutoRaceSkill = v end)
+    spawn(function()
+        while task.wait(3) do
+            if _G.AutoRaceSkill then
+                pcall(function()
+                    local hum = __LP.Character and __LP.Character:FindFirstChildOfClass("Humanoid")
+                    if not hum or hum.Health <= 0 then return end
+                    __VIM:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+                    task.wait(0.1)
+                    __VIM:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+                end)
+            end
+        end
+    end)
+
+    Tabs.Race:AddSection("Đổi Tộc Tự Động")
+    local RACES = { "Human", "Skypiea", "Fishman", "Cyborg", "Ghoul", "Mink" }
+    _G.RaceTarget, _G.RaceRerollMax, _G.RaceAutoReroll = "Human", 5, false
+    local rerollCount = 0
+    Tabs.Race:AddDropdown("RaceTargetDropdown", {
+        ["Title"] = "Tộc Muốn Có",
+        ["Values"] = RACES,
+        ["Multi"] = false,
+        ["Default"] = 1
+    }):OnChanged(function(v) _G.RaceTarget = v end)
+    Tabs.Race:AddSlider("RaceRerollMaxSlider", {
+        ["Title"] = "Số Lần Đổi Tối Đa",
+        ["Description"] = "Dừng khi đổi đủ số lần này mà chưa ra tộc mong muốn",
+        ["Default"] = 5,
+        ["Min"] = 1,
+        ["Max"] = 20,
+        ["Rounding"] = 0,
+        ["Callback"] = function(v) _G.RaceRerollMax = tonumber(v) or 5 end
+    })
+    local rerollToggle = Tabs.Race:AddToggle("RaceAutoRerollToggle", {
+        ["Title"] = "Tự Đổi Tộc Đến Khi Ra Tộc Đã Chọn",
+        ["Description"] = "CẢNH BÁO: mỗi lần đổi tốn tiền và MẤT tiến trình V2/V3/V4 của tộc cũ. Tự dừng khi ra đúng tộc hoặc hết số lần.",
+        ["Default"] = false
+    })
+    rerollToggle:OnChanged(function(v)
+        _G.RaceAutoReroll = v
+        rerollCount = 0
+    end)
+    spawn(function()
+        while task.wait(1) do
+            if _G.RaceAutoReroll then
+                pcall(function()
+                    local cur = tostring(__LP.Data.Race.Value)
+                    if cur == _G.RaceTarget then
+                        Library:Notify({["Title"] = "Race", ["Content"] = "Đã ra tộc " .. cur .. " - dừng đổi tộc"})
+                        rerollToggle:SetValue(false)
+                    elseif rerollCount >= (_G.RaceRerollMax or 5) then
+                        Library:Notify({["Title"] = "Race", ["Content"] = "Đã đổi " .. rerollCount .. " lần, chưa ra " .. tostring(_G.RaceTarget) .. " - dừng"})
+                        rerollToggle:SetValue(false)
+                    else
+                        rerollCount = rerollCount + 1
+                        __RS.Remotes.CommF_:InvokeServer("BlackbeardReward", "Reroll", "1")
+                        __RS.Remotes.CommF_:InvokeServer("BlackbeardReward", "Reroll", "2")
+                        task.wait(4)   -- chờ server cập nhật tộc mới
+                    end
+                end)
+            end
+        end
+    end)
+end
 
 function RedeemAllCodes()
     local codes = {"NOMOREHACK","BANEXPLOIT","WildDares","BossBuild","GetPranked","EARN_FRUITS","FIGHT4FRUIT","NOEXPLOITER","NOOB2ADMIN","CODESLIDE","ADMINHACKED","ADMINDARES","fruitconcepts","krazydares","TRIPLEABUSE","SEATROLLING","24NOADMIN","REWARDFUN","Chandler","NEWTROLL","KITT_RESET","Sub2CaptainMaui","kittgaming","Sub2Fer999","Enyu_is_Pro","Magicbus","JCWK","Starcodeheo","Bluxxy","fudd10_v2","SUB2GAMERROBOT_EXP1","Sub2NoobMaster123","Sub2UncleKizaru","Sub2Daigrock","Axiore","TantaiGaming","StrawHatMaine","Sub2OfficialNoobie","Fudd10","Bignews","TheGreatAce","SECRET_ADMIN","SUB2GAMERROBOT_RESET1","SUB2OFFICIALNOOBIE","AXIORE","BIGNEWS","BLUXXY","CHANDLER","ENYU_IS_PRO","FUDD10","FUDD10_V2","KITTGAMING","MAGICBUS","STARCODEHEO","STRAWHATMAINE","SUB2CAPTAINMAUI","SUB2DAIGROCK","SUB2FER999","SUB2NOOBMASTER123","SUB2UNCLEKIZARU","TANTAIGAMING","THEGREATACE"}
