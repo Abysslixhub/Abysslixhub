@@ -702,7 +702,7 @@ task.wait(0.5)
 
 Library:Notify({
     Title = "ABYSSLIX HUB",
-    Content = "Khởi chạy thành công Banana Hub! Cảm ơn bạn đã sử dụng script."
+    Content = "Đã load xong AbysslixHub! Cảm ơn bạn đã sử dụng script."
 })
 
 -- Anti AFK
