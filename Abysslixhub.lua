@@ -225,6 +225,209 @@ task.spawn(function()
     end
 end)
 
+-- ==========================================
+-- SỬA THANH TÌM KIẾM CÓ SẴN CỦA UI: xóa chữ tìm kiếm thì mọi chức năng
+-- trở lại đúng vị trí / trạng thái ban đầu
+-- (Bật log để kiểm tra: gõ _G.SearchDebug = true trong executor)
+-- ==========================================
+task.spawn(function()
+    local ok, err = pcall(function()
+        local CoreGui = game:GetService("CoreGui")
+        local gethuiF = gethui or function() return CoreGui end
+
+        local function findHub()
+            local roots = { gethuiF(), CoreGui, __LP:FindFirstChild("PlayerGui") }
+            for _, r in ipairs(roots) do
+                if r then
+                    local g = r:FindFirstChild("Ziner hub GUI")
+                    if g and g:FindFirstChild("Main") then return g end
+                end
+            end
+        end
+
+        local hub
+        for _ = 1, 100 do
+            hub = findHub()
+            if hub then break end
+            task.wait(0.2)
+        end
+        if not hub then return end
+        local main = hub.Main
+
+        local function dbg(...)
+            if _G.SearchDebug then print("[Search]", ...) end
+        end
+
+        -- ===== chụp trạng thái gốc của toàn bộ giao diện =====
+        local snapshot = {}
+        local function takeSnapshot()
+            snapshot = {}
+            for _, d in ipairs(main:GetDescendants()) do
+                if d:IsA("GuiObject") then
+                    local rec = {
+                        Visible = d.Visible,
+                        Parent = d.Parent,
+                        LayoutOrder = d.LayoutOrder,
+                    }
+                    -- chỉ nhớ Size cho các hàng nằm trong danh sách xếp tự động
+                    if d.Parent and d.Parent:FindFirstChildOfClass("UIListLayout") then
+                        rec.Size = d.Size
+                    end
+                    snapshot[d] = rec
+                end
+            end
+            dbg("đã chụp trạng thái gốc:", #main:GetDescendants(), "đối tượng")
+        end
+
+        local function restoreSnapshot()
+            local n = 0
+            for d, rec in pairs(snapshot) do
+                if d and d.Parent ~= nil or (d and rec.Parent) then
+                    pcall(function()
+                        if rec.Parent and d.Parent ~= rec.Parent and rec.Parent.Parent then
+                            d.Parent = rec.Parent
+                        end
+                        if d.Visible ~= rec.Visible then
+                            d.Visible = rec.Visible
+                            n += 1
+                        end
+                        if d.LayoutOrder ~= rec.LayoutOrder then d.LayoutOrder = rec.LayoutOrder end
+                        if rec.Size and d.Size ~= rec.Size then d.Size = rec.Size end
+                    end)
+                end
+            end
+            dbg("đã khôi phục, số mục được hiện lại:", n)
+        end
+
+        -- ===== nhận diện ô tìm kiếm của UI =====
+        local hooked = {}
+        local function looksLikeSearch(tb)
+            local s = (tb.Name .. " " .. tb.PlaceholderText .. " " .. (tb.Parent and tb.Parent.Name or "")):lower()
+            return s:find("search", 1, true) or s:find("tìm", 1, true) or s:find("tim kiem", 1, true)
+                or s:find("tìm kiếm", 1, true)
+        end
+        local function insideScroll(tb)
+            local p = tb.Parent
+            while p and p ~= main do
+                if p:IsA("ScrollingFrame") then return true end
+                p = p.Parent
+            end
+            return false
+        end
+
+        local function hook(tb)
+            if hooked[tb] then return end
+            hooked[tb] = true
+            dbg("đã nối vào ô tìm kiếm:", tb:GetFullName())
+
+            -- chụp lại ngay trước khi người dùng bắt đầu gõ
+            tb.Focused:Connect(function()
+                if tb.Text == "" then takeSnapshot() end
+            end)
+
+            local token = 0
+            tb:GetPropertyChangedSignal("Text"):Connect(function()
+                token += 1
+                local my = token
+                if tb.Text == "" then
+                    -- đợi UI tự xử lý xong rồi ghi đè lại trạng thái gốc
+                    task.delay(0.12, function()
+                        if my == token and tb.Text == "" then
+                            restoreSnapshot()
+                        end
+                    end)
+                elseif next(snapshot) == nil then
+                    takeSnapshot()
+                end
+            end)
+
+            tb.FocusLost:Connect(function()
+                if tb.Text == "" then
+                    task.delay(0.12, function()
+                        if tb.Text == "" then restoreSnapshot() end
+                    end)
+                end
+            end)
+        end
+
+        local function scan(root)
+            for _, d in ipairs(root:GetDescendants()) do
+                if d:IsA("TextBox") and looksLikeSearch(d) and not insideScroll(d) then
+                    hook(d)
+                end
+            end
+        end
+
+        -- ===== ẨN ICON CẠNH TÊN CÁC TAB (không đụng tới icon khác) =====
+        local function removeTabIcons()
+            local titles = {}
+            for _, t in ipairs(_G.AbysslixTabTitles or {}) do titles[t] = true end
+            for _, d in ipairs(main:GetDescendants()) do
+                if (d:IsA("TextLabel") or d:IsA("TextButton")) and titles[d.Text] and not d:GetAttribute("AbyNoIcon") then
+                    local found
+                    local holders = { d.Parent, d.Parent and d.Parent.Parent }
+                    for _, h in ipairs(holders) do
+                        if h and not found then
+                            for _, k in ipairs(h:GetChildren()) do
+                                if (k:IsA("ImageLabel") or k:IsA("ImageButton")) and k ~= d then
+                                    local w, hh = k.AbsoluteSize.X, k.AbsoluteSize.Y
+                                    local midY = d.AbsolutePosition.Y + d.AbsoluteSize.Y / 2
+                                    if w >= 8 and w <= 40 and math.abs(w - hh) <= 6
+                                        and midY >= k.AbsolutePosition.Y and midY <= k.AbsolutePosition.Y + hh then
+                                        found = k
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    if found then
+                        d:SetAttribute("AbyNoIcon", true)
+                        local delta = d.AbsolutePosition.X - found.AbsolutePosition.X
+                        found.Visible = false
+                        -- nếu chữ được đặt tay (không phải xếp tự động) thì dời chữ sang chỗ icon cũ
+                        if delta > 0 and d.Parent and not d.Parent:FindFirstChildOfClass("UIListLayout")
+                            and d.TextXAlignment ~= Enum.TextXAlignment.Center then
+                            local p, sz = d.Position, d.Size
+                            d.Position = UDim2.new(p.X.Scale, p.X.Offset - delta, p.Y.Scale, p.Y.Offset)
+                            d.Size = UDim2.new(sz.X.Scale, sz.X.Offset + delta, sz.Y.Scale, sz.Y.Offset)
+                        end
+                        dbg("đã ẩn icon tab:", d.Text)
+                    end
+                end
+            end
+        end
+
+        local waited = 0
+        while not getgenv().ReadyForGuiLoaded and waited < 30 do
+            task.wait(0.5)
+            waited += 0.5
+        end
+        for _ = 1, 4 do
+            pcall(removeTabIcons)
+            task.wait(1.5)
+        end
+
+        -- chụp trạng thái gốc khi UI đã dựng xong (trước mọi lần tìm kiếm)
+        takeSnapshot()
+        scan(hub)
+
+        -- ô tìm kiếm có thể được tạo muộn (khi bấm biểu tượng kính lúp)
+        hub.DescendantAdded:Connect(function(d)
+            if d:IsA("TextBox") then
+                task.defer(function()
+                    if looksLikeSearch(d) and not insideScroll(d) then hook(d) end
+                end)
+            end
+        end)
+
+        if next(hooked) == nil then
+            dbg("chưa tìm thấy ô tìm kiếm của UI, sẽ nối ngay khi nó xuất hiện")
+        end
+    end)
+    if not ok then warn("[Search] " .. tostring(err)) end
+end)
+
 -- Tự động mở menu khi load script
 task.spawn(function()
     repeat task.wait() until getgenv().ReadyForGuiLoaded
@@ -720,9 +923,14 @@ local LucideToAsset = {
     ["folder"]        = "rbxassetid://10723387563",
 }
 
+_G.AbysslixTabTitles = _G.AbysslixTabTitles or {}
 local function createTab(tabTitle, lucideIcon)
-    local iconId = LucideToAsset[lucideIcon] or (string.find(tostring(lucideIcon or ""), "rbxassetid://") and lucideIcon) or HUB_ICON
-    local raw = Window:AddTab(tabTitle, iconId)
+    -- Bỏ icon cạnh tên tab: truyền icon rỗng, nếu UI không chịu thì dùng lại icon mặc định (và sẽ bị ẩn ở bước dọn UI)
+    table.insert(_G.AbysslixTabTitles, tabTitle)
+    local okTab, raw = pcall(function() return Window:AddTab(tabTitle, "") end)
+    if not okTab or not raw then
+        raw = Window:AddTab(tabTitle, HUB_ICON)
+    end
     return wrapTab(raw, tabTitle)
 end
 
@@ -2797,115 +3005,88 @@ function GetWeaponInventory(p193)
     return false
 end
 local vu198 = __LP
+
+local function _alive(m)
+    local h = m and m:FindFirstChildOfClass("Humanoid")
+    return h and h.Health > 0
+end
+
+-- Bật log để biết đòn đánh có chạy không: gõ _G.AttackDebug = true trong executor
+_G.AttackDebug = _G.AttackDebug or false
+local _lastClick, _lastLog = 0, 0
+
 function AttackNoCoolDown()
-    local vu199 = vu198.Character
-    if not vu199 then
-        return
-    end
-    local v200, v201, v202 = ipairs(vu199:GetChildren())
-    local v203 = nil
-    while true do
-        local vu204
-        v202, vu204 = v200(v201, v202)
-        if v202 == nil then
-            vu204 = v203
-            break
+    local ok, err = pcall(function()
+        local char = vu198.Character
+        local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if not myRoot or not hum or hum.Health <= 0 then return end
+        local myPos = myRoot.Position
+
+        -- tool đang cầm
+        local tool
+        for _, c in ipairs(char:GetChildren()) do
+            if c:IsA("Tool") then tool = c break end
         end
-        if vu204:IsA("Tool") then
-            break
-        end
-    end
-    if vu204 then
-        local function vu207(p205)
-            local v206 = p205 and p205:FindFirstChild("Humanoid")
-            if v206 then
-                v206 = p205.Humanoid.Health > 0
-            end
-            return v206
-        end
-        local function v217(p208)
-            local v209 = __WS.Enemies:GetChildren()
-            local v210 = vu199:GetPivot().Position
-            local v211, v212, v213 = ipairs(v209)
-            local v214 = {}
-            while true do
-                local v215
-                v213, v215 = v211(v212, v213)
-                if v213 == nil then
-                    break
-                end
-                local v216 = v215:FindFirstChild("HumanoidRootPart")
-                if v216 and (vu207(v215) and (v216.Position - v210).Magnitude <= p208) then
-                    table.insert(v214, v215)
-                end
-            end
-            return v214
-        end
-        if vu204:FindFirstChild("LeftClickRemote") then
-            local v218 = v217(60)
-            local v219, v220, v221 = ipairs(v218)
-            local vu222 = 1
-            while true do
-                local v223
-                v221, v223 = v219(v220, v221)
-                if v221 == nil then
-                    break
-                end
-                local vu224 = (v223.HumanoidRootPart.Position - vu199:GetPivot().Position).Unit
-                pcall(function()
-                    vu204.LeftClickRemote:FireServer(vu224, vu222)
-                end)
-                local v225 = vu222 + 1
-                vu222 = v225 > 1000000000 and 1 or v225
-            end
-        else
-            local v226 = __WS.Enemies:GetChildren()
-            local v227 = vu199:GetPivot().Position
-            local v228, v229, v230 = ipairs(v226)
-            local v231 = vu207
-            local vu232 = {}
-            local vu233 = nil
-            while true do
-                local v234, v235 = v228(v229, v230)
-                if v234 == nil then
-                    break
-                end
-                v230 = v234
-                if not v235:GetAttribute("IsBoat") and v231(v235) then
-                    local v236 = v235:FindFirstChild("Head")
-                    if v236 and (v227 - v236.Position).Magnitude <= 60 then
-                        table.insert(vu232, {
-                            v235,
-                            v236
-                        })
-                        vu233 = v236
+        if not tool then return end
+
+        local enemiesFolder = __WS:FindFirstChild("Enemies")
+        if not enemiesFolder then return end
+
+        -- gom quái trong tầm 60 studs
+        local hits, firstPart, dirs = {}, nil, {}
+        for _, mob in ipairs(enemiesFolder:GetChildren()) do
+            if not mob:GetAttribute("IsBoat") and _alive(mob) then
+                local mhrp = mob:FindFirstChild("HumanoidRootPart")
+                local part = mob:FindFirstChild("Head") or mhrp
+                if mhrp and part then
+                    local diff = mhrp.Position - myPos
+                    if diff.Magnitude <= 60 then
+                        table.insert(hits, { mob, part })
+                        table.insert(dirs, diff.Magnitude > 0 and diff.Unit or Vector3.new(0, 0, 1))
+                        firstPart = firstPart or part
                     end
                 end
             end
-            if not vu233 then
-                return
-            end
-            pcall(function()
-                local v237 = __RS
-                local mods = v237:FindFirstChild("Modules")
-                local net = mods and mods:FindFirstChild("Net")
-                local v238 = net and net:FindFirstChild("RE/RegisterAttack")
-                local v239 = net and net:FindFirstChild("RE/RegisterHit")
-                if v238 and v239 then
-                    if # vu232 <= 0 then
-                        task.wait(1e-9)
-                    else
-                        v238:FireServer(1e-9)
-                        v239:FireServer(vu233, vu232)
-                    end
-                else
-                    pcall(function()
-                        if vu204 then vu204:Activate() end
-                    end)
-                end
-            end)
         end
-    end
+        if not firstPart then return end
+
+        local fired = {}
+
+        -- Cách 1: LeftClickRemote (vũ khí/chiêu kiểu cũ)
+        local lc = tool:FindFirstChild("LeftClickRemote")
+        if lc then
+            for i, dir in ipairs(dirs) do
+                pcall(function() lc:FireServer(dir, i) end)
+            end
+            fired[#fired + 1] = "LeftClickRemote"
+        end
+
+        -- Cách 2: RegisterAttack + RegisterHit (kiểu mới)
+        local mods = __RS:FindFirstChild("Modules")
+        local net  = mods and mods:FindFirstChild("Net")
+        local reAtk = net and net:FindFirstChild("RE/RegisterAttack")
+        local reHit = net and net:FindFirstChild("RE/RegisterHit")
+        if reAtk and reHit then
+            pcall(function() reAtk:FireServer(0) end)
+            pcall(function() reHit:FireServer(firstPart, hits) end)
+            fired[#fired + 1] = "RegisterHit"
+        end
+
+        -- Cách 3 (luôn có): click thật, đảm bảo vẫn gây sát thương dù remote bị game đổi
+        if os.clock() - _lastClick >= 0.1 then
+            _lastClick = os.clock()
+            pcall(function() tool:Activate() end)
+            pcall(function() VirtualUser:ClickButton1(Vector2.new(900, 500)) end)
+            fired[#fired + 1] = "Click"
+        end
+
+        if _G.AttackDebug and os.clock() - _lastLog > 1 then
+            _lastLog = os.clock()
+            print(("[Attack] tool=%s | quái=%d | dùng: %s"):format(tool.Name, #hits, table.concat(fired, ", ")))
+        end
+    end)
+    if not ok then warn("[AttackNoCoolDown] " .. tostring(err)) end
 end
 -- [OPT] Type/Pos là hằng số: gán 1 lần thay vì 2 vòng lặp wait() chạy mãi
 Type = 1
@@ -3014,6 +3195,43 @@ spawn(function()
         end
     end
 end)
+-- ==========================================
+-- ĐỘ CAO KHI FARM (đầu tab Main): kéo thanh hoặc nhập số, min 10 - max 100
+-- ==========================================
+Tabs.Main:AddSection("Độ Cao Khi Farm")
+local _FARM_H_MIN, _FARM_H_MAX = 10, 100
+local _farmH = 30
+local _farmHSync = false
+local vFarmHeightSlider, vFarmHeightInput
+
+local function _setFarmHeight(raw, src)
+    local n = tonumber(raw)
+    if not n then return end
+    n = math.clamp(math.floor(n + 0.5), _FARM_H_MIN, _FARM_H_MAX)
+    _farmH = n
+    Pos = CFrame.new(0, n, 0)
+    if _farmHSync then return end
+    _farmHSync = true
+    if src ~= "slider" and vFarmHeightSlider then pcall(function() vFarmHeightSlider:SetValue(n) end) end
+    if src ~= "input" and vFarmHeightInput then pcall(function() vFarmHeightInput:SetValue(tostring(n)) end) end
+    _farmHSync = false
+end
+
+vFarmHeightSlider = Tabs.Main:AddSlider("SliderFarmHeight", {
+    ["Title"] = "Độ Cao Khi Farm",
+    ["Default"] = 30,
+    ["Min"] = _FARM_H_MIN,
+    ["Max"] = _FARM_H_MAX,
+    ["Rounding"] = 0,
+    ["Callback"] = function(v) _setFarmHeight(v, "slider") end
+})
+vFarmHeightInput = Tabs.Main:AddInput("InputFarmHeight", {
+    ["Title"] = "Nhập Độ Cao (10 - 100)",
+    ["Default"] = "30",
+    ["Placeholder"] = "10 - 100",
+    ["Callback"] = function(v) _setFarmHeight(v, "input") end
+})
+Pos = CFrame.new(0, _farmH, 0)
 Tabs.Main:AddSection("Tốc Độ Đánh & Vũ Khí")
 local vFastMode = Tabs.Main:AddDropdown("DropdownFastAttackMode", {
     ["Title"] = "Tốc Độ Đánh Nhanh",
@@ -8783,12 +9001,9 @@ v899:OnChanged(function(p900)
     _G.SelectPly = p900
 end)
 Tabs.Player:AddButton({
-    ["Title"] = "Tải Lại Người Chơi",
+    ["Title"] = "Làm Mới Danh Sách Người Chơi",
     ["Callback"] = function()
-        table.clear(vu897)
-        for v903, v904 in pairs(__PL:GetChildren()) do
-            table.insert(vu897, v904.Name)
-        end
+        if _G.__RefreshPlyList then pcall(_G.__RefreshPlyList) end
     end
 })
 Tabs.Player:AddToggle("ToggleTeleport", {
@@ -8839,7 +9054,10 @@ Tabs.Player:AddToggle("ToggleSpeedRun", {
 }):OnChanged(function(p907)
     InfAbility = p907
     if p907 == false then
-        __LP.Character.HumanoidRootPart:FindFirstChild("Agility"):Destroy()
+        pcall(function()
+            local ag = __LP.Character.HumanoidRootPart:FindFirstChild("Agility")
+            if ag then ag:Destroy() end
+        end)
     end
 end)
 -- [SetValue skipped - Library không cần]
@@ -8920,6 +9138,186 @@ spawn(function()
         end
     end)
 end)
+-- ============================================================
+-- [NEW] PVP: Danh sách người chơi / Auto Aim / Chạy nhanh / Nhảy cao
+-- (bọc trong do...end để không tốn thêm biến local của file chính)
+-- ============================================================
+do
+    -- ---------- DANH SÁCH NGƯỜI CHƠI ----------
+    local function BuildPlayerList()
+        local list = {}
+        for _, pl in ipairs(__PL:GetPlayers()) do
+            if pl ~= __LP then table.insert(list, pl.Name) end
+        end
+        table.sort(list)
+        return list
+    end
+
+    _G.__RefreshPlyList = function()
+        local list = BuildPlayerList()
+        pcall(function() v899:Refresh(list) end)
+        if _G.SelectPly and not __PL:FindFirstChild(_G.SelectPly) then
+            _G.SelectPly = nil
+        end
+        if not _G.SelectPly and list[1] then
+            _G.SelectPly = list[1]
+            pcall(function() v899:SetValue(list[1]) end)
+        end
+        return list
+    end
+
+    -- tự cập nhật khi có người vào / ra server
+    local _refreshPending = false
+    local function QueueRefresh()
+        if _refreshPending then return end
+        _refreshPending = true
+        task.delay(0.5, function()
+            _refreshPending = false
+            pcall(_G.__RefreshPlyList)
+        end)
+    end
+    __PL.PlayerAdded:Connect(QueueRefresh)
+    __PL.PlayerRemoving:Connect(QueueRefresh)
+    task.defer(function() pcall(_G.__RefreshPlyList) end)
+
+    -- ---------- AUTO AIM ----------
+    Tabs.Player:AddSection("Tự Động Ngắm (Auto Aim)")
+    _G.AimMode = "Người Đã Chọn"
+    _G.AimRange = 1000
+    _G.AimPredict = 0.08
+
+    local vAimMode = Tabs.Player:AddDropdown("DropdownAimMode", {
+        ["Title"] = "Chế Độ Ngắm",
+        ["Values"] = { "Người Đã Chọn", "Gần Nhất" },
+        ["Multi"] = false,
+        ["Default"] = 1
+    })
+    vAimMode:OnChanged(function(m) _G.AimMode = tostring(m) end)
+
+    Tabs.Player:AddToggle("ToggleAutoAim", {
+        ["Title"] = "Tự Động Ngắm",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.AutoAim = v end)
+
+    local function GetAimTarget()
+        local myChar = __LP.Character
+        local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        if not myHRP then return nil end
+        if string.find(_G.AimMode or "", "Gần", 1, true) then
+            local best, bestDist = nil, math.huge
+            for _, pl in ipairs(__PL:GetPlayers()) do
+                if pl ~= __LP and pl.Character then
+                    local hrp = pl.Character:FindFirstChild("HumanoidRootPart")
+                    local hum = pl.Character:FindFirstChild("Humanoid")
+                    if hrp and hum and hum.Health > 0 then
+                        local d = (hrp.Position - myHRP.Position).Magnitude
+                        if d < bestDist and d <= _G.AimRange then
+                            best, bestDist = hrp, d
+                        end
+                    end
+                end
+            end
+            return best
+        else
+            local pl = _G.SelectPly and __PL:FindFirstChild(_G.SelectPly)
+            local ch = pl and pl.Character
+            local hrp = ch and ch:FindFirstChild("HumanoidRootPart")
+            local hum = ch and ch:FindFirstChild("Humanoid")
+            if hrp and hum and hum.Health > 0 then return hrp end
+        end
+        return nil
+    end
+
+    RunService.RenderStepped:Connect(function()
+        if not _G.AutoAim then return end
+        local cam = __WS.CurrentCamera
+        if not cam then return end
+        local t = GetAimTarget()
+        if t then
+            local aimPos = t.Position + t.AssemblyLinearVelocity * _G.AimPredict
+            cam.CFrame = CFrame.new(cam.CFrame.Position, aimPos)
+        end
+    end)
+
+    -- ---------- CHẠY NHANH / NHẢY CAO (10 - 500) ----------
+    Tabs.Player:AddSection("Tốc Độ & Nhảy")
+    _G.SpeedValue = 50
+    _G.JumpValue = 50
+    local origWalk, origJump
+
+    Tabs.Player:AddToggle("ToggleCustomSpeed", {
+        ["Title"] = "Bật Chạy Nhanh Tùy Chỉnh",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.CustomSpeed = v
+        local hum = __LP.Character and __LP.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            if v then
+                origWalk = origWalk or hum.WalkSpeed
+            elseif origWalk then
+                hum.WalkSpeed = origWalk
+                origWalk = nil
+            end
+        end
+    end)
+    Tabs.Player:AddSlider("SliderCustomSpeed", {
+        ["Title"] = "Tốc Độ Chạy",
+        ["Description"] = "10 - 500",
+        ["Default"] = 50,
+        ["Min"] = 10,
+        ["Max"] = 500,
+        ["Callback"] = function(v)
+            _G.SpeedValue = math.clamp(math.floor((tonumber(v) or 50) + 0.5), 10, 500)
+        end
+    })
+
+    Tabs.Player:AddToggle("ToggleCustomJump", {
+        ["Title"] = "Bật Nhảy Cao Tùy Chỉnh",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.CustomJump = v
+        local hum = __LP.Character and __LP.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            if v then
+                origJump = origJump or { hum.UseJumpPower, hum.JumpPower, hum.JumpHeight }
+            elseif origJump then
+                hum.UseJumpPower = origJump[1]
+                hum.JumpPower = origJump[2]
+                hum.JumpHeight = origJump[3]
+                origJump = nil
+            end
+        end
+    end)
+    Tabs.Player:AddSlider("SliderCustomJump", {
+        ["Title"] = "Độ Cao Nhảy",
+        ["Description"] = "10 - 500",
+        ["Default"] = 50,
+        ["Min"] = 10,
+        ["Max"] = 500,
+        ["Callback"] = function(v)
+            _G.JumpValue = math.clamp(math.floor((tonumber(v) or 50) + 0.5), 10, 500)
+        end
+    })
+
+    -- Game hay ghi đè WalkSpeed/JumpPower nên ép lại mỗi frame (chỉ ghi khi giá trị khác)
+    RunService.Heartbeat:Connect(function()
+        if not (_G.CustomSpeed or _G.CustomJump) then return end
+        local ch = __LP.Character
+        local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+        if not hum then return end
+        if _G.CustomSpeed and hum.WalkSpeed ~= _G.SpeedValue then
+            hum.WalkSpeed = _G.SpeedValue
+        end
+        if _G.CustomJump then
+            if hum.UseJumpPower then
+                if hum.JumpPower ~= _G.JumpValue then hum.JumpPower = _G.JumpValue end
+            else
+                local h = (_G.JumpValue ^ 2) / (2 * __WS.Gravity) -- cùng độ cao với JumpPower tương ứng
+                if math.abs(hum.JumpHeight - h) > 0.01 then hum.JumpHeight = h end
+            end
+        end
+    end)
+end
 local vu916 = Tabs.Teleport:AddSection("Thế Giới")
 Tabs.Teleport:AddToggle("ToggleAutoSea2", {
     ["Title"] = "Nhiệm V\225\187\165 Qua Biển 2",
