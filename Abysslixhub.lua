@@ -5097,6 +5097,88 @@ local function TakeQuest(qCF, qName, qLv, flagFn)
     end
 end
 
+-- =====================================================================
+-- [FIX] Nhận nhiệm vụ cho Cày Xương / Cày Tư Lệnh Bánh (có nhiệm vụ)
+-- Dùng cùng cơ chế đã vá sẵn ở Auto Level. Lỗi cũ:
+--  1) So tên quái bằng string.find nguyên tên: quest "Posessed Mummy" hiện là "Defeat ... Posessed Mummies"
+--     => không khớp => script tưởng sai quest, AbandonQuest rồi nhận lại liên tục (kẹt ở NPC).
+--  2) Không có cooldown cho AbandonQuest (spam remote), không chịu được lúc title chưa đọc được.
+--  3) UI quest không báo Visible dù đã nhận => đứng lại NPC gọi StartQuest mãi.
+-- Cách sửa: khớp theo thân từ (cắt 2 ký tự cuối), title rỗng coi là đúng, abandon có cooldown 3s,
+-- đã StartQuest >= 2 lần mà UI chưa báo thì coi như đang chạy (tối đa 90s), bay tới NPC tối đa 10s.
+-- Dùng bảng global AbyQuest (không thêm biến local vào scope chính).
+-- =====================================================================
+AbyQuest = { state = {} }
+
+function AbyQuest.Get(id)
+    local st = AbyQuest.state[id]
+    if not st then
+        st = { key = "", tries = 0, start = 0, lastAbandon = 0 }
+        AbyQuest.state[id] = st
+    end
+    return st
+end
+
+function AbyQuest.TitleOK(title, mob)
+    if not title or title == "" then return true end
+    return string.find(string.lower(title), string.sub(string.lower(mob), 1, -3), 1, true) ~= nil
+end
+
+-- true nếu quest đang chạy (UI báo Visible, hoặc vừa nhận >= 2 lần trong 90s mà UI chưa cập nhật)
+function AbyQuest.Active(id)
+    local vis = GetQuestGui()
+    if vis then return true end
+    local st = AbyQuest.Get(id)
+    return st.tries >= 2 and os.clock() - st.start < 90
+end
+
+-- true = đã có đúng quest, đi farm được; false = vừa xử lý quest (nhận/bỏ), caller nên return
+function AbyQuest.Ensure(id, qName, qLv, qMob, qCF, flagFn)
+    local st = AbyQuest.Get(id)
+    local key = qName .. "|" .. tostring(qLv)
+    if st.key ~= key then st.key = key; st.tries = 0; st.start = 0 end
+
+    local vis, title = GetQuestGui()
+    if vis then
+        if AbyQuest.TitleOK(title, qMob) then
+            st.tries = 0
+            return true
+        end
+        -- đang giữ quest KHÁC (hoặc title chưa kịp đổi sau khi vừa nhận): chờ 4s đầu rồi mới bỏ
+        bringmob = false
+        if os.clock() - st.start < 4 then task.wait(0.3); return false end
+        if os.clock() - st.lastAbandon > 3 then
+            st.lastAbandon = os.clock()
+            __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
+            st.tries = 0
+            task.wait(0.5)
+        end
+        return false
+    end
+
+    -- UI không báo Visible nhưng đã StartQuest >= 2 lần => coi như đang chạy
+    if st.tries >= 2 then
+        if os.clock() - st.start < 90 then return true end
+        st.tries = 0 -- quá 90s: thử nhận lại
+    end
+
+    bringmob = false
+    Tween2(qCF)
+    local t0 = os.clock()
+    repeat
+        task.wait(0.1)
+    until (qCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20
+        or not flagFn() or not MoverBusy() or os.clock() - t0 > 10
+    task.wait(0.2)
+    if flagFn() and (qCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 then
+        __RS.Remotes.CommF_:InvokeServer("StartQuest", qName, qLv)
+        st.tries = st.tries + 1
+        st.start = os.clock()
+        task.wait(0.3)
+    end
+    return false
+end
+
 local QUEST_HAUNTED1 = CFrame.new(-9480.80762, 142.130661, 5566.37305)
 local QUEST_HAUNTED2 = CFrame.new(-9516.9931640625, 178.00651550293, 6078.4653320313)
 -- dữ liệu quest xương theo cấp (khớp bảng CheckLevel). Dưới cấp 1975 → nil (farm không quest)
@@ -5188,18 +5270,8 @@ if Sea3 then
                 pcall(function()
                     -- [NEW] Chế độ CÓ nhiệm vụ: nhận quest theo cấp, chỉ đánh đúng quái của quest
                     local qName, qLv, qMob, qCF = GetBoneQuest()
-                    if qName then
-                        local vis, title = GetQuestGui()
-                        if vis and not string.find(title, qMob, 1, true) then
-                            bringmob = false
-                            __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
-                            return
-                        end
-                        if not vis then
-                            bringmob = false
-                            TakeQuest(qCF, qName, qLv, function() return _G.AutoBone end)
-                            return
-                        end
+                    if qName and not AbyQuest.Ensure("bone", qName, qLv, qMob, qCF, function() return _G.AutoBone end) then
+                        return
                     end
                     -- Tìm quái xương và đánh
                     local found = false
@@ -5233,7 +5305,7 @@ if Sea3 then
                                 PrepBoneMob(v434)
                                 FarmPos = v434.HumanoidRootPart.CFrame
                                 MonFarm = v434.Name
-                            until not _G.AutoBone or not v434.Parent or v434.Humanoid.Health <= 0 or (qMob and not GetQuestGui())
+                            until not _G.AutoBone or not v434.Parent or v434.Humanoid.Health <= 0 or (qMob and not AbyQuest.Active("bone"))
                             bringmob = false
                             break
                         end
@@ -5442,18 +5514,8 @@ if Sea3 then
                         -- [NEW] Chế độ CÓ nhiệm vụ: nhận quest theo cấp, chỉ đánh đúng quái của quest
                         local qName, qLv, qMob, qCF
                         if _G.Cake then qName, qLv, qMob, qCF = GetCakeQuest() end
-                        if qName then
-                            local vis, title = GetQuestGui()
-                            if vis and not string.find(title, qMob, 1, true) then
-                                bringmob = false
-                                __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
-                                return
-                            end
-                            if not vis then
-                                bringmob = false
-                                TakeQuest(qCF, qName, qLv, function() return _G.Cake end)
-                                return
-                            end
+                        if qName and not AbyQuest.Ensure("cake", qName, qLv, qMob, qCF, function() return _G.Cake end) then
+                            return
                         end
                         local function isTarget(m)
                             if qMob then return m.Name == qMob end
@@ -5477,7 +5539,7 @@ if Sea3 then
                                         local _mc41 = v450.HumanoidRootPart.CFrame * Pos
                                         if (v450.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc41) end
                                         AttackNoCoolDown()
-                                    until not CakeOn() or (__RS:FindFirstChild("Cake Prince") or (__RS:FindFirstChild("Dough King") or (not v450.Parent or hum450.Health <= 0 or (qMob and not GetQuestGui()))))
+                                    until not CakeOn() or (__RS:FindFirstChild("Cake Prince") or (__RS:FindFirstChild("Dough King") or (not v450.Parent or hum450.Health <= 0 or (qMob and not AbyQuest.Active("cake")))))
                                 end
                             end
                         else
