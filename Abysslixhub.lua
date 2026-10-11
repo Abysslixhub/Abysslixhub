@@ -2592,7 +2592,7 @@ function StopMovement()
     end
 end
 
-function IsFlying()
+function MoverBusy()
     return _moveTarget ~= nil
 end
 
@@ -3134,7 +3134,7 @@ spawn(function()
                 if not questVisible then
                     bringmob = false
                     Tween2(CFrameQ)
-                    repeat task.wait(0.1) until (CFrameQ.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 or not _G.AutoLevel or not IsFlying()
+                    repeat task.wait(0.1) until (CFrameQ.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 or not _G.AutoLevel or not MoverBusy()
                     wait(0.2)
                     if (CFrameQ.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 then
                         __RS.Remotes.CommF_:InvokeServer("StartQuest", NameQuest, QuestLv)
@@ -4497,7 +4497,7 @@ end
 -- bay tới NPC rồi nhận quest. flagFn(): còn bật chức năng không
 local function TakeQuest(qCF, qName, qLv, flagFn)
     Tween2(qCF)
-    repeat task.wait(0.1) until (qCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 or not flagFn() or not IsFlying()
+    repeat task.wait(0.1) until (qCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 or not flagFn() or not MoverBusy()
     wait(0.2)
     if (qCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 then
         __RS.Remotes.CommF_:InvokeServer("StartQuest", qName, qLv)
@@ -4622,7 +4622,7 @@ if Sea3 then
                             if _dist0 > 30 then
                                 Tween2(_bCF0)
                                 repeat task.wait(0.05) until
-                                    not IsFlying() or ((v434.HumanoidRootPart.CFrame * Pos).Position - __LP.Character.HumanoidRootPart.Position).Magnitude < 30
+                                    not MoverBusy() or ((v434.HumanoidRootPart.CFrame * Pos).Position - __LP.Character.HumanoidRootPart.Position).Magnitude < 30
                                     or not _G.AutoBone or not v434.Parent or v434.Humanoid.Health <= 0
                             end
                             -- Bật hiệu ứng tia lửa + tiếng spam liên tục
@@ -4693,7 +4693,7 @@ if Sea3 then
                         if _bnDist0.Magnitude > 30 then
                             Tween2(v439.HumanoidRootPart.CFrame * Pos)
                             repeat task.wait(0.05) until
-                                not IsFlying() or not v439 or not v439.Parent
+                                not MoverBusy() or not v439 or not v439.Parent
                                 or ((v439.HumanoidRootPart.CFrame * Pos).Position - __LP.Character.HumanoidRootPart.Position).Magnitude < 30
                                 or not BoneNoQuestOn()
                         end
@@ -5577,6 +5577,49 @@ if Sea3 then
     -- HỆ THỐNG SEA EVENT CAO CẤP (BANANA HUB STYLE)
     -- ============================================================
     Tabs.Sea:AddSection("Săn Vua Biển & Sự Kiện Biển")
+    Tabs.Sea:AddToggle("ToggleSeaEventFarm", {
+        ["Title"] = "Farm Sự Kiện Biển Tự Động (Sea 3)",
+        ["Description"] = "Tự lái thuyền, nhặt rương và đánh từng sự kiện theo thứ tự ưu tiên. Khi bật, các nút lẻ bên dưới do script tự điều khiển.",
+        ["Default"] = false
+    }):OnChanged(function(val)
+        _G.SeaEventFarm = val
+    end)
+    _G.SeaAttackMode = "default"
+    Tabs.Sea:AddDropdown("DropdownSeaAttackMode", {
+        ["Title"] = "Kiểu Đánh Sự Kiện Biển",
+        ["Values"] = {
+            "Mặc Định (Vũ Khí Đã Chọn)",
+            "M1 Trái Ác Quỷ",
+            "Dragon Storm"
+        },
+        ["Multi"] = false,
+        ["Default"] = 1
+    }):OnChanged(function(val)
+        if string.find(val, "Dragon", 1, true) then _G.SeaAttackMode = "dragon"
+        elseif string.find(val, "M1", 1, true) then _G.SeaAttackMode = "fruit"
+        else _G.SeaAttackMode = "default" end
+    end)
+    -- [NEW] Danh sách sự kiện biển muốn farm (chỉ áp dụng cho nút farm tự động ở trên)
+    _G.SeaPick = { beast = true, shark = true, pirate = true, ghost = true, crew = true, piranha = true, fish = true }
+    do
+    local SEA_LIST = {
+        { "beast",   "Sự Kiện: Vua Biển (Sea Beast)" },
+        { "shark",   "Sự Kiện: Cá Mập (Terrorshark)" },
+        { "pirate",  "Sự Kiện: Tàu Hải Tặc" },
+        { "ghost",   "Sự Kiện: Tàu Ma" },
+        { "crew",    "Sự Kiện: Tàu Cá (Fish Crew)" },
+        { "piranha", "Sự Kiện: Piranha" },
+        { "fish",    "Sự Kiện: Cá Con (Shark)" },
+    }
+    for _, ev in ipairs(SEA_LIST) do
+        Tabs.Sea:AddToggle("ToggleSeaPick_" .. ev[1], {
+            ["Title"] = ev[2],
+            ["Default"] = true
+        }):OnChanged(function(val)
+            _G.SeaPick[ev[1]] = val
+        end)
+    end
+    end
 
     -- 1. TỰ ĐÁNH VUA BIỂN (SEA BEAST)
     Tabs.Sea:AddToggle("ToggleAutoSeaBeast", {
@@ -5671,6 +5714,7 @@ if Sea3 then
         if workspace.Enemies:FindFirstChild("Shark") then return true end
         if workspace.Enemies:FindFirstChild("Fish Crew Member") then return true end
         if CheckPirateBoat and CheckPirateBoat() then return true end
+        if CheckFishBoat and CheckFishBoat() then return true end
         return false
     end
 
@@ -6129,7 +6173,7 @@ if Sea3 then
         _G.bjirFishBoat = p629
     end)
     -- [SetValue skipped - Library không cần]
-    function CheckPirateBoat()
+    function CheckFishBoat()
         local v630 = next
         local v631, v632 = __WS.Enemies:GetChildren()
         local v633 = {
@@ -6149,18 +6193,18 @@ if Sea3 then
     spawn(function()
         while wait() do
             pcall(function()
-                if _G.bjirFishBoat and CheckPirateBoat() then
+                if _G.bjirFishBoat and CheckFishBoat() then
                     __VIM:SendKeyEvent(true, 32, false, game)
                     wait()
                     __VIM:SendKeyEvent(false, 32, false, game)
-                    local v635 = CheckPirateBoat()
+                    local v635 = CheckFishBoat()
                     repeat
                         wait()
                         Tween2(v635.Engine.CFrame * CFrame.new(0, -20, 0))
                         AutoSkill = true
                         Skillaimbot = true
                         AimBotSkillPosition = __LP.Character.HumanoidRootPart.CFrame * CFrame.new(0, - 5, 0)
-                    until not v635.Parent or (v635.Health.Value <= 0 or not CheckPirateBoat())
+                    until not v635.Parent or (v635.Health.Value <= 0 or not CheckFishBoat())
                     AutoSkill = false
                     Skillaimbot = false
                 end
@@ -6171,7 +6215,7 @@ if Sea3 then
         while wait() do
             if _G.bjirFishBoat then
                 pcall(function()
-                    if CheckPirateBoat() then
+                    if CheckFishBoat() then
                         AutoHaki()
                         game:GetService("VirtualUser"):CaptureController()
                         game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
@@ -6386,6 +6430,169 @@ if Sea3 then
                         until not _G.AttackRipIndra or not indra.Parent or indra.Humanoid.Health <= 0
                     end
                 end)
+            end
+        end
+    end)
+
+    -- ============================================================
+    -- [NEW] FARM SỰ KIỆN BIỂN TỰ ĐỘNG: mỗi lúc CHỈ bật 1 chức năng để không tranh nhau di chuyển
+    -- Ưu tiên: Vua Biển > Cá Mập > Tàu Hải Tặc > Tàu Ma > Tàu Cá > Piranha > Cá Con > (không có) lái thuyền + nhặt rương
+    -- ============================================================
+    task.spawn(function()
+        local FLAGS = {"AutoSeaBeast","AutoTerrorshark","Ship","bjirFishBoat","GhostShip",
+                       "AutoFishCrew","farmpiranya","AutoShark","AutoSailZone","CollectSeaChests"}
+        local MODES = {
+            beast   = {"AutoSeaBeast"},
+            shark   = {"AutoTerrorshark"},
+            pirate  = {"Ship"},
+            ghost   = {"bjirFishBoat","GhostShip"},
+            crew    = {"AutoFishCrew"},
+            piranha = {"farmpiranya"},
+            fish    = {"AutoShark"},
+            sail    = {"AutoSailZone","CollectSeaChests"},
+        }
+        local current = nil
+        local function apply(mode)
+            for _, f in ipairs(FLAGS) do _G[f] = false end
+            if mode then
+                for _, f in ipairs(MODES[mode]) do _G[f] = true end
+            end
+            pcall(function() if StopMovement then StopMovement() end end)
+        end
+        local function detect()
+            local en = __WS:FindFirstChild("Enemies")
+            if not en then return "sail" end
+            local P = _G.SeaPick
+            if P.beast and FindSeaBeast() then return "beast" end
+            if P.shark and en:FindFirstChild("Terrorshark") then return "shark" end
+            if P.pirate and CheckPirateBoat and CheckPirateBoat() then return "pirate" end
+            if P.ghost and CheckFishBoat and CheckFishBoat() then return "ghost" end
+            if P.crew and en:FindFirstChild("Fish Crew Member") then return "crew" end
+            if P.piranha and en:FindFirstChild("Piranha") then return "piranha" end
+            if P.fish and en:FindFirstChild("Shark") then return "fish" end
+            return "sail"
+        end
+        while true do
+            task.wait(0.5)
+            if _G.SeaEventFarm then
+                local ok, mode = pcall(detect)
+                if ok and mode ~= current then
+                    current = mode
+                    apply(mode)
+                end
+            elseif current ~= nil then
+                current = nil
+                apply(nil)
+            end
+        end
+    end)
+
+    -- ============================================================
+    -- [NEW] ĐÁNH SỰ KIỆN BIỂN BẰNG M1 TRÁI ÁC QUỶ / DRAGON STORM
+    -- AttackNoCoolDown chỉ quét thư mục Enemies trong 60 studs nên không đánh được Vua Biển (SeaBeasts) và tàu từ xa.
+    -- Vòng này tự chọn mục tiêu gần nhất (Vua Biển, cá, tàu) rồi bắn thẳng vào nó.
+    -- ============================================================
+    task.spawn(function()
+        local NAMES = { ["Terrorshark"] = "shark", ["Piranha"] = "piranha", ["Shark"] = "fish", ["Fish Crew Member"] = "crew" }
+        local savedChoose, counter, lastWarn = nil, 0, 0
+
+        local function scan(container, mode)
+            if not container then return nil end
+            for _, t in ipairs(container:GetChildren()) do
+                if t:IsA("Tool") then
+                    if mode == "dragon" then
+                        local n = string.lower(t.Name):gsub("%s", "")
+                        if string.find(n, "dragonstorm", 1, true) then return t end
+                    elseif mode == "fruit" and t.ToolTip == "Blox Fruit" then
+                        return t
+                    end
+                end
+            end
+        end
+        local function findTool(mode)
+            return scan(__LP.Character, mode) or scan(__LP.Backpack, mode)
+        end
+
+        local function getTarget(root)
+            local best, bestD = nil, math.huge
+            local function consider(part)
+                if part and part:IsA("BasePart") then
+                    local d = (part.Position - root.Position).Magnitude
+                    if d < bestD then best, bestD = part, d end
+                end
+            end
+            local P = _G.SeaPick
+            if P.beast then
+                local _, sbHrp = FindSeaBeast()
+                consider(sbHrp)
+            end
+            local en = __WS:FindFirstChild("Enemies")
+            if en then
+                for _, m in ipairs(en:GetChildren()) do
+                    local key = NAMES[m.Name]
+                    if key and P[key] then
+                        local h = m:FindFirstChild("Humanoid")
+                        if h and h.Health > 0 then consider(m:FindFirstChild("HumanoidRootPart")) end
+                    end
+                end
+            end
+            for _, b in ipairs({ { "pirate", CheckPirateBoat }, { "ghost", CheckFishBoat } }) do
+                if P[b[1]] and b[2] then
+                    local ok, boat = pcall(b[2])
+                    if ok and boat then consider(boat:FindFirstChild("Engine") or boat.PrimaryPart) end
+                end
+            end
+            return best
+        end
+
+        local function fire(tool, targetPart, root)
+            local dir = (targetPart.Position - root.Position).Unit
+            counter = counter % 1000000000 + 1
+            local lc = tool:FindFirstChild("LeftClickRemote")
+            if lc then pcall(function() lc:FireServer(dir, counter) end) end
+            if tool.ToolTip == "Gun" then
+                pcall(function()
+                    local mods = __RS:FindFirstChild("Modules")
+                    local net = mods and mods:FindFirstChild("Net")
+                    local ev = net and net:FindFirstChild("RE/ShootGunEvent")
+                    if ev then ev:FireServer(targetPart.Position, { targetPart }) end
+                end)
+            end
+            pcall(function() tool:Activate() end)
+        end
+
+        while true do
+            task.wait(0.1)
+            local mode = _G.SeaAttackMode
+            if _G.SeaEventFarm and mode and mode ~= "default" then
+                pcall(function()
+                    local char = __LP.Character
+                    local hum = char and char:FindFirstChild("Humanoid")
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    if not (hum and root) then return end
+                    local tool = findTool(mode)
+                    if not tool then
+                        if os.clock() - lastWarn > 15 then
+                            lastWarn = os.clock()
+                            Library:Notify({
+                                Title = "Sự Kiện Biển",
+                                Content = (mode == "dragon") and "Không tìm thấy Dragon Storm trong túi đồ!" or "Không tìm thấy trái ác quỷ trong túi đồ!"
+                            })
+                        end
+                        return
+                    end
+                    -- khóa vũ khí để vòng chọn vũ khí chung không đổi lại
+                    if savedChoose == nil then savedChoose = ChooseWeapon end
+                    ChooseWeapon = "SeaMode"
+                    SelectWeapon = tool.Name
+                    if tool.Parent ~= char then hum:EquipTool(tool) end
+                    AutoHaki()
+                    local tgt = getTarget(root)
+                    if tgt then fire(tool, tgt, root) end
+                end)
+            elseif savedChoose ~= nil then
+                ChooseWeapon = savedChoose
+                savedChoose = nil
             end
         end
     end)
@@ -8085,6 +8292,16 @@ if Sea2 then
     end)
 end
 Tabs.Setting:AddSection("Cài Đặt")
+Tabs.Setting:AddSlider("SliderTweenSpeed", {
+    ["Title"] = "Tốc Độ Bay",
+    ["Description"] = "10 - 500 (studs/giây). Bị server kéo lại thì giảm xuống.",
+    ["Default"] = math.clamp(tonumber(_G.TweenSpeed) or 300, 10, 500),
+    ["Min"] = 10,
+    ["Max"] = 500,
+    ["Callback"] = function(v)
+        _G.TweenSpeed = math.clamp(math.floor((tonumber(v) or 300) + 0.5), 10, 500)
+    end
+})
 Tabs.Setting:AddToggle("ToggleAutoT", {
     ["Title"] = "Bật Tộc V3",
     ["Default"] = false
@@ -8218,46 +8435,76 @@ Tabs.Setting:AddToggle("ToggleBringMob", {
     _G.BringMob = p856
 end)
 _G.BringMob = true
--- [SetValue skipped - Library không cần]
--- [OPT] Gom quái: trước đó mỗi frame đều GetChildren() cả thư mục Enemies dù không farm,
--- gọi sethiddenproperty cho từng quái, và 1 quái thiếu Head làm hỏng cả vòng lặp (lỗi bị pcall nuốt).
--- Nay: thoát sớm khi không cần, chỉ lọc đúng loại quái, sethiddenproperty 1 lần/frame, guard Head/Animator.
+_G.BringSpeed = 500   -- studs/giây, kéo quái về chỗ đánh (50 - 500)
+_G.BringCount = 10    -- số quái gom mỗi lần (1 - 10)
+Tabs.Setting:AddSlider("SliderBringSpeed", {
+    ["Title"] = "Tốc Độ Gom Quái",
+    ["Description"] = "50 - 500 (studs/giây)",
+    ["Default"] = 500,
+    ["Min"] = 50,
+    ["Max"] = 500,
+    ["Callback"] = function(v)
+        _G.BringSpeed = math.clamp(math.floor((tonumber(v) or 500) + 0.5), 50, 500)
+    end
+})
+Tabs.Setting:AddSlider("SliderBringCount", {
+    ["Title"] = "Số Lượng Quái Mỗi Lần Gom",
+    ["Description"] = "1 - 10 con",
+    ["Default"] = 10,
+    ["Min"] = 1,
+    ["Max"] = 10,
+    ["Callback"] = function(v)
+        _G.BringCount = math.clamp(math.floor((tonumber(v) or 10) + 0.5), 1, 10)
+    end
+})
+-- [OPT] Gom quái: thoát sớm khi không cần, chỉ lọc đúng loại quái, guard Head/Animator.
+-- [NEW] Chỉ gom N con gần điểm đánh nhất (_G.BringCount) và kéo về với tốc độ _G.BringSpeed (theo dt, mượt).
 spawn(function()
-    while wait() do
+    local big = Vector3.new(60, 60, 60)
+    while true do
+        local dt = task.wait()
         if _G.BringMob and bringmob and MonFarm and FarmPos then
             pcall(function()
-                local big = Vector3.new(60, 60, 60)
-                local moved = false
+                local list = {}
+                local fpos = FarmPos.Position
                 for _, mob in ipairs(__WS.Enemies:GetChildren()) do
                     if mob.Name == MonFarm then
                         local hum = mob:FindFirstChild("Humanoid")
                         local mhrp = mob:FindFirstChild("HumanoidRootPart")
                         if hum and mhrp and hum.Health > 0 then
-                            local head = mob:FindFirstChild("Head")
-                            local animator = hum:FindFirstChild("Animator")
-                            if mob.Name ~= "Factory Staff" then
-                                mhrp.CFrame = FarmPos
-                                mhrp.Size = big
-                                mhrp.Transparency = 1
-                                hum.JumpPower = 0
-                                hum.WalkSpeed = 0
-                                if animator then animator:Destroy() end
-                                mhrp.CanCollide = false
-                                if head then head.CanCollide = false end
-                                hum:ChangeState(11)
-                                hum:ChangeState(14)
-                            else
-                                if head then head.CanCollide = false end
-                                mhrp.CanCollide = false
-                                mhrp.Size = big
-                                mhrp.CFrame = FarmPos
-                                if animator then animator:Destroy() end
-                            end
-                            moved = true
+                            list[#list + 1] = { mob = mob, hum = hum, hrp = mhrp, d = (mhrp.Position - fpos).Magnitude }
                         end
                     end
                 end
-                if moved then sethiddenproperty(__LP, "SimulationRadius", math.huge) end
+                if #list == 0 then return end
+                table.sort(list, function(x, y) return x.d < y.d end)
+                local limit = math.min(#list, math.clamp(_G.BringCount or 10, 1, 10))
+                local stepLen = math.clamp(_G.BringSpeed or 500, 50, 500) * math.min(dt, 0.1)
+                for i = 1, limit do
+                    local e = list[i]
+                    local mob, hum, mhrp = e.mob, e.hum, e.hrp
+                    local head = mob:FindFirstChild("Head")
+                    local animator = hum:FindFirstChild("Animator")
+                    -- kéo dần về FarmPos theo tốc độ cài đặt
+                    if e.d <= stepLen then
+                        mhrp.CFrame = FarmPos
+                    else
+                        local cur = mhrp.Position
+                        mhrp.CFrame = CFrame.new(cur + (fpos - cur).Unit * stepLen) * FarmPos.Rotation
+                    end
+                    mhrp.Size = big
+                    if mhrp.CanCollide then mhrp.CanCollide = false end
+                    if head and head.CanCollide then head.CanCollide = false end
+                    if animator then animator:Destroy() end
+                    if mob.Name ~= "Factory Staff" then
+                        mhrp.Transparency = 1
+                        hum.JumpPower = 0
+                        hum.WalkSpeed = 0
+                        hum:ChangeState(11)
+                        hum:ChangeState(14)
+                    end
+                end
+                sethiddenproperty(__LP, "SimulationRadius", math.huge)
             end)
         end
     end
