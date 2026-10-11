@@ -3322,6 +3322,8 @@ Tabs.Main:AddToggle("ToggleLevel", {
     end
 end)
 -- [SetValue skipped - Library không cần]
+-- [FIX ĐỨNG IM SAU KHI NHẬN QUEST] theo dõi số lần đã nhận quest, phòng khi UI Quest không báo Visible
+local _qKey, _qTries, _qStart = nil, 0, 0
 spawn(function()
     while task.wait() do
         if _G.AutoLevel then
@@ -3343,6 +3345,24 @@ spawn(function()
                 -- [FIX] đọc title lỗi => coi như đúng quest; cắt 2 ký tự cuối để khớp số nhiều (Snowman/Snowmen)
                 local titleOK = QuestTitle == "" or string.find(QuestTitle:lower(), NameMon:lower():sub(1, -3), 1, true) ~= nil
 
+                -- [FIX] Quest đã nhận (StartQuest chạy >= 2 lần) mà UI vẫn không báo Visible
+                -- => coi như quest đang chạy và đi farm, không đứng lại NPC gọi StartQuest mãi
+                local _key = tostring(NameQuest) .. "|" .. tostring(QuestLv)
+                if _qKey ~= _key then _qKey = _key; _qTries = 0 end
+                if questVisible then _qTries = 0 end
+                if not questVisible and _qTries >= 2 then
+                    if os.clock() - _qStart < 90 then
+                        questVisible = true
+                        titleOK = true
+                    else
+                        _qTries = 0   -- quá 90s thì thử nhận lại quest mới
+                    end
+                end
+                if _G.FarmDebug then
+                    print(("[Farm] quest=%s lv=%s visible=%s titleOK=%s tries=%d mob=%s"):format(
+                        tostring(NameQuest), tostring(QuestLv), tostring(questVisible), tostring(titleOK), _qTries, tostring(Ms)))
+                end
+
                 -- Nếu đang có quest KHÁC thì bỏ quest
                 if questVisible and not titleOK then
                     bringmob = false
@@ -3358,6 +3378,8 @@ spawn(function()
                     wait(0.2)
                     if (CFrameQ.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 20 then
                         __RS.Remotes.CommF_:InvokeServer("StartQuest", NameQuest, QuestLv)
+                        _qTries = _qTries + 1
+                        _qStart = os.clock()
                         wait(0.3)
                     end
                     return
@@ -3365,9 +3387,11 @@ spawn(function()
 
                 -- Đã có quest đúng → farm (dùng BKP để đứng cạnh quái, giống island travel)
                 if questVisible and titleOK then
+                    local _foundAlive = false
                     if __WS.Enemies:FindFirstChild(Ms) then
                         for _, v in pairs(__WS.Enemies:GetChildren()) do
                             if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 and v.Name == Ms then
+                                _foundAlive = true
                                 -- Bật hiệu ứng tia lửa + tiếng spam liên tục
                                 if not _fxEnabled then _fxEnabled = true; StartFXLoop() end
                                 repeat
@@ -3393,16 +3417,17 @@ spawn(function()
                                     FarmPos = v.HumanoidRootPart.CFrame
                                     MonFarm = v.Name
                                     -- [OPT] không tạo closure + pcall mỗi frame
-                                    local qv = false
+                                    local qv = (_qTries >= 2)
                                     local _mg = __LP.PlayerGui:FindFirstChild("Main")
                                     local _qg = _mg and _mg:FindFirstChild("Quest")
-                                    if _qg then qv = _qg.Visible end
+                                    if _qg and _qg.Visible then qv = true end
                                 until not _G.AutoLevel or not v.Parent or v.Humanoid.Health <= 0 or not qv
                                 bringmob = false
                                 if not _G.OneHitKill and not _G.AutoBone and not BoneNoQuestOn() and not _G.AutoNear then StopFXLoop() end
                             end
                         end
-                    else
+                    end
+                    if not _foundAlive then
                         bringmob = false
                         -- Bay đến vị trí quái spawn bằng Tween2 (giống di chuyển đảo)
                         Tween2(CFrameMon)
