@@ -433,7 +433,8 @@ task.spawn(function()
     repeat task.wait() until getgenv().ReadyForGuiLoaded
     task.wait(0.1)
     if not getgenv().UIToggled and Library and Library.ToggleUI then
-        Library.ToggleUI()
+        local okT, errT = pcall(Library.ToggleUI)
+        if not okT then warn("[UI] ToggleUI lỗi: " .. tostring(errT)) end
     end
 end)
 
@@ -12979,6 +12980,31 @@ do
 [=====[
 Settings = Settings or {}
 
+-- Aimbot chỉ được tải khi bạn thật sự bật một tuỳ chọn Aimbot (tránh chạy vòng lặp ngầm + lỗi lúc khởi động)
+function __LazyAimbot()
+    local lib, tried = nil, false
+    local function get()
+        if not tried then
+            tried = true
+            local ok, r = pcall(function()
+                return loadstring(game:HttpGet("https://raw.githubusercontent.com/PlockScripts/Aimbot-skill-config/refs/heads/main/Aimbot.lua"))()
+            end)
+            if ok and type(r) == "table" then lib = r else warn("[Aimbot] không tải được: " .. tostring(r)) end
+        end
+        return lib
+    end
+    return setmetatable({}, { __index = function(_, k)
+        return function(_, ...)
+            local a = get()
+            if a and a[k] then
+                local ok, r = pcall(a[k], a, ...)
+                if ok then return r end
+                warn("[Aimbot] " .. tostring(k) .. " lỗi: " .. tostring(r))
+            end
+        end
+    end })
+end
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
@@ -13004,11 +13030,15 @@ end
 
 JoinTeam()
 
-hookfunction(require(game:GetService("ReplicatedStorage").Effect.Container.Death), function()
-    -- empty block
+pcall(function()
+    hookfunction(require(game:GetService("ReplicatedStorage").Effect.Container.Death), function()
+        -- empty block
+    end)
 end)
-hookfunction(require(game:GetService("ReplicatedStorage").Effect.Container.Respawn), function()
-    -- empty block
+pcall(function()
+    hookfunction(require(game:GetService("ReplicatedStorage").Effect.Container.Respawn), function()
+        -- empty block
+    end)
 end)
 if game.PlaceId == 2753915549 or game.PlaceId == 85211729168715 then
     World1 = true
@@ -22005,7 +22035,7 @@ v497:AddToggle({
 
 local _ = v494:AddSection({"Aimbot Nearest"})
 
-local v1 = loadstring(game:HttpGet("https://raw.githubusercontent.com/PlockScripts/Aimbot-skill-config/refs/heads/main/Aimbot.lua"))()
+local v1 = __LazyAimbot()
 
 local AimbotEnabled = false
 local AimPlayers = false
@@ -22111,7 +22141,7 @@ v494:AddToggle({
 })
 
 local _ = v494:AddSection({"Aimbot skill V2"})
-local v1 = loadstring(game:HttpGet("https://raw.githubusercontent.com/PlockScripts/Aimbot-skill-config/refs/heads/main/Aimbot.lua"))()
+local v1 = __LazyAimbot()
 
 local AimbotEnabled = false
 local AimPlayers = false
