@@ -675,27 +675,48 @@ local function wrapTab(rawTab, defaultTitle)
     return wrapped
 end
 
-local function createTab(tabTitle)
-    local raw = Window:AddTab(tabTitle)
-    return wrapTab(raw, tabTitle)
-end
+-- ==========================================
+-- TẠO CÁC TABS (BANANA HUB STYLE VỚI ICON RBXASSETID CHUẨN)
+-- ==========================================
+local LucideToAsset = {
+    ["info"]          = "rbxassetid://10723346959",
+    ["swords"]        = "rbxassetid://10734954701",
+    ["waves"]         = "rbxassetid://10709819149",
+    ["package"]       = "rbxassetid://10709782497",
+    ["settings"]      = "rbxassetid://10734950309",
+    ["radio"]         = "rbxassetid://10709789310",
+    ["bar-chart-2"]   = "rbxassetid://10709752317",
+    ["bar-chart-2"]   = "rbxassetid://10709752317",
+    ["user"]          = "rbxassetid://10747373176",
+    ["map-pin"]       = "rbxassetid://10734914109",
+    ["eye"]           = "rbxassetid://10723346959",
+    ["cherry"]        = "rbxassetid://10709775086",
+    ["flame"]         = "rbxassetid://10709768000",
+    ["zap"]           = "rbxassetid://10734975486",
+    ["shopping-cart"] = "rbxassetid://10747372992",
+    ["folder"]        = "rbxassetid://10723387563",
+}
+
+local function createTab(tabTitle, lucideIcon)
+    local iconId = LucideToAsset[lucideIcon] or (string.find(tostring(lucideIcon or ""), "rbxassetid://") and lucideIcon) or HUB_ICON
+    local raw = Window:AddTab(tabTitle, iconId)
 
 Tabs = {
-    ["Info"]     = createTab("Thông Tin"),
-    ["Shop"]     = createTab("Cửa Hàng"),
-    ["Main"]     = createTab("Cày Cấp",),
+    ["Info"]     = createTab("Thông Tin", "info"),
+    ["Shop"]     = createTab("Cửa Hàng", "shopping-cart"),
+    ["Main"]     = createTab("Cày Cấp", "swords"),
     ["Sea"]      = createTab("Sự Kiện", "waves"),
-    ["Item"]     = createTab("Lấy & Nâng Cấp Vật Phẩm"),
-    ["Status"]   = createTab("Webhook"),
-    ["Stats"]    = createTab("Chỉ Số"),
-    ["Player"]   = createTab("Người Chơi"),
-    ["Teleport"] = createTab("Dịch Chuyển"),
-    ["Visual"]   = createTab("Giả Mạo"),
-    ["Fruit"]    = createTab("Trái Ác Quỷ"),
-    ["Raid"]     = createTab("Đột Kích"),
-    ["Race"]     = createTab("Nâng Cấp Chủng Tộc"),
-    ["Misc"]     = createTab("Khác"),
-    ["Setting"]  = createTab("Cài Đặt"),
+    ["Item"]     = createTab("Lấy & Nâng Cấp Vật Phẩm", "package"),
+    ["Status"]   = createTab("Webhook", "radio"),
+    ["Stats"]    = createTab("Chỉ Số", "bar-chart-2"),
+    ["Player"]   = createTab("Người Chơi", "user"),
+    ["Teleport"] = createTab("Dịch Chuyển", "map-pin"),
+    ["Visual"]   = createTab("Giả Mạo", "eye"),
+    ["Fruit"]    = createTab("Trái Ác Quỷ", "cherry"),
+    ["Raid"]     = createTab("Đột Kích", "flame"),
+    ["Race"]     = createTab("Nâng Cấp Chủng Tộc", "zap"),
+    ["Misc"]     = createTab("Khác", "folder"),
+    ["Setting"]  = createTab("Cài Đặt", "settings"),
 }
 
 task.wait(0.5)
