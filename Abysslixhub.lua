@@ -681,21 +681,21 @@ local function createTab(tabTitle)
 end
 
 Tabs = {
-    ["Info"]     = createTab("Thông Tin", "info"),
-    ["Shop"]     = createTab("Cửa Hàng", "shopping-cart"),
-    ["Main"]     = createTab("Cày Cấp", "swords"),
+    ["Info"]     = createTab("Thông Tin"),
+    ["Shop"]     = createTab("Cửa Hàng"),
+    ["Main"]     = createTab("Cày Cấp",),
     ["Sea"]      = createTab("Sự Kiện", "waves"),
-    ["Item"]     = createTab("Lấy & Nâng Cấp Vật Phẩm", "package"),
-    ["Status"]   = createTab("Webhook", "radio"),
-    ["Stats"]    = createTab("Chỉ Số", "bar-chart-2"),
-    ["Player"]   = createTab("Người Chơi", "user"),
-    ["Teleport"] = createTab("Dịch Chuyển", "map-pin"),
-    ["Visual"]   = createTab("Giả Mạo", "eye"),
-    ["Fruit"]    = createTab("Trái Ác Quỷ", "cherry"),
-    ["Raid"]     = createTab("Đột Kích", "flame"),
-    ["Race"]     = createTab("Nâng Cấp Chủng Tộc", "zap"),
-    ["Misc"]     = createTab("Khác", "folder"),
-    ["Setting"]  = createTab("Cài Đặt", "settings"),
+    ["Item"]     = createTab("Lấy & Nâng Cấp Vật Phẩm"),
+    ["Status"]   = createTab("Webhook"),
+    ["Stats"]    = createTab("Chỉ Số"),
+    ["Player"]   = createTab("Người Chơi"),
+    ["Teleport"] = createTab("Dịch Chuyển"),
+    ["Visual"]   = createTab("Giả Mạo"),
+    ["Fruit"]    = createTab("Trái Ác Quỷ"),
+    ["Raid"]     = createTab("Đột Kích"),
+    ["Race"]     = createTab("Nâng Cấp Chủng Tộc"),
+    ["Misc"]     = createTab("Khác"),
+    ["Setting"]  = createTab("Cài Đặt"),
 }
 
 task.wait(0.5)
