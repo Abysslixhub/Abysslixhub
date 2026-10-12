@@ -113,7 +113,7 @@ local Root = HumanoidRootPart
 -- Giữ nguyên 100% Logo Abysslix & Màu Xanh Đen (Abyss Black & Neon Cyan Glow)
 -- Phím tắt Ctrl (LeftControl / RightControl) & Nút nổi kéo thả
 -- ==========================================
-local HUB_ICON = "rbxassetid://118975851631674"
+local HUB_ICON = "rbxassetid://132431272043343"
 local UserInputService = game:GetService("UserInputService")
 local TweenService = TweenService
 
@@ -139,7 +139,7 @@ local T1UIColor = {
     ["Border Color"] = Color3.fromRGB(0, 180, 255),
     ["Click Effect Color"] = Color3.fromRGB(0, 240, 255),
     ["Setting Icon Color"] = Color3.fromRGB(0, 240, 255),
-    ["Logo Image"] = "rbxassetid://118975851631674",
+    ["Logo Image"] = "rbxassetid://132431272043343",
     ["Search Icon Color"] = Color3.fromRGB(0, 240, 255),
     ["Search Icon Highlight Color"] = Color3.fromRGB(0, 255, 255),
     ["GUI Text Color"] = Color3.fromRGB(0, 240, 255),
@@ -296,7 +296,7 @@ icon.AnchorPoint = Vector2.new(0.5, 0.5)
 icon.Position = UDim2.new(0.5, 0, 0.5, 0)
 icon.Size = UDim2.new(0, 36, 0, 36)
 icon.BackgroundTransparency = 1
-icon.Image = "rbxassetid://118975851631674" -- ID ẢNH
+icon.Image = "rbxassetid://132431272043343" -- ID ẢNH
 icon.ScaleType = Enum.ScaleType.Fit
 icon.ZIndex = 11
 
