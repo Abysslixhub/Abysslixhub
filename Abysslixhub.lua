@@ -117,12 +117,13 @@ local Root = HumanoidRootPart
 -- Giữ nguyên 100% Logo Abysslix & Màu Xanh Đen (Abyss Black & Neon Cyan Glow)
 -- Phím tắt Ctrl (LeftControl / RightControl) & Nút nổi kéo thả
 -- ==========================================
-local HUB_ICON = "rbxassetid://132431272043343"
+local HUB_ICON = "rbxassetid://121641096627801"
 -- Tự chọn ID logo nào tải được (ID Image mới -> ID Decal mới -> logo cũ)
 do
     pcall(function()
         local CP = game:GetService("ContentProvider")
         for _, id in ipairs({
+            "rbxassetid://121641096627801",
             "rbxassetid://132431272043343",
             "rbxassetid://118975851631674",
             "rbxassetid://107755537229053",
