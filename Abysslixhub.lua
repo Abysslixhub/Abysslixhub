@@ -26,7 +26,7 @@ local CollectionService = game:GetService("CollectionService")
 -- Mặc định chọn Hải Quân; đổi trong tab Cài Đặt (mục "Chọn Phe").
 -- ==========================================
 _G.AutoTeam = true
-_G.TeamChoice = "Marines"
+_G.TeamChoice = "Pirates"
 pcall(function()   -- đọc phe đã lưu từ lần trước (nút "Choose Team" trong tab Cài Đặt)
     local HS = game:GetService("HttpService")
     local d = nil
@@ -5015,14 +5015,14 @@ Tabs = {
     ["Skill"]    = createTab("Skill", "zap", "Dùng Skill"),
     ["Sea"]      = createTab("Sea Event", "waves"),
     ["Status"]   = createTab("Server", "radio"),
-    ["Stats"]    = createTab("Chỉ Số", "bar-chart-2"),
+    ["Stats"]    = createTab("Stats", "bar-chart-2"),
     ["Player"]   = createTab("PVP", "user"),
-    ["Teleport"] = createTab("Dịch Chuyển", "map-pin"),
-    ["ESP"]      = createTab("ESP", "eye"),
-    ["Fruit"]    = createTab("Fruit", "cherry", "Kiểm Tra Stock Trái"),
+    ["Teleport"] = createTab("Teleport Island", "map-pin"),
+    ["ESP"]      = createTab("Esp", "eye"),
+    ["Fruit"]    = createTab("Fruits / Raid", "cherry", "Kiểm Tra Stock Trái"),
     ["Raid"]     = createTab("Raid", "zap", "Đột Kích"),
-    ["Race"]     = createTab("Race", "zap"),
-    ["Draco"]    = createTab("Draco", "flame"),
+    ["Race"]     = createTab("Upgrade Race", "zap"),
+    ["Draco"]    = createTab("Draco/Prehistoric", "flame"),
     ["Boss"]     = createTab("Raid Boss", "swords"),
     ["Setting"]  = createTab("Settings", "settings", "Config"),
 }
@@ -14814,19 +14814,13 @@ do
     })
 
     -- Choose Team / Join Selected Team
-    _G.TeamChoice = (_G.TeamChoice == "Pirates") and "Pirates" or "Marines"
+    _G.TeamChoice = (_G.TeamChoice == "Marines") and "Marines" or "Pirates"
     Real:AddDropdown("ChooseTeamDropdown", {
         Title = "Choose Team", Values = { "Marines", "Pirates" }, Default = _G.TeamChoice, Multi = false,
         Callback = function(v) _G.TeamChoice = (v == "Pirates") and "Pirates" or "Marines" end,
     })
     B("Join Selected Team", "Đổi sang team đang chọn", function()
         __RS.Remotes.CommF_:InvokeServer("SetTeam", _G.TeamChoice)
-    end)
-    B("Join Pirates Team", "Vào phe Hải Tặc ngay", function()
-        __RS.Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
-    end)
-    B("Join Marines Team", "Vào phe Hải Quân ngay", function()
-        __RS.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
     end)
 
     -- Low CPU
@@ -14936,7 +14930,7 @@ do
     T("ToggleBringMobs", "Bring Mobs", "Gom quái", true, function(on) drive("ToggleBringMob", on) end)
     T("ToggleFastAttackNew", "Fast Attack", "Đánh Nhanh", true, function(on) drive("ToggleFastAttack", on) end)
     T("ToggleMagicFastFruit", "Magic Fast Fruit", "Đánh trái ác quỷ không cần cầm", false, function(on) _G.UseFruitM1 = on end)
-    T("ToggleAutoShootGun", "Auto Shoot Gun (Risk)", "Tự Động Bắn Súng", false, function(on) _G.UseGun = on end)
+    T("ToggleAutoShootGun", "Auto Shoot Gun (Risk)", "Tự Động Bắn Súng", true, function(on) _G.UseGun = on end)
 
     -- Haki / Tộc
     T("ToggleAutoBuso", "Auto Turn on Buso", "Bật Haki Tay", true, function(on) drive("AutoBusoToggle", on) end)
