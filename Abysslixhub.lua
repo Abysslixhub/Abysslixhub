@@ -123,9 +123,9 @@ local TweenService = TweenService
 -- ==========================================
 local Library = (function()
 if getgenv().Nousigi then 
-	if game.CoreGui:FindFirstChild("Ziner hub GUI") then
+	if game.CoreGui:FindFirstChild("Abysslixhub GUI") then
 		for i, v in ipairs(game.CoreGui:GetChildren()) do
-			if string.find(v.Name,  "Ziner hub") then
+			if string.find(v.Name,  "Abysslixhub") then
 				v:Destroy()
 			end
 		end
@@ -230,7 +230,7 @@ end
 
 Library_Function.Gui = Instance.new('ScreenGui')
 Library_Function.Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-Library_Function.Gui.Name = 'Ziner hub GUI'
+Library_Function.Gui.Name = 'Abysslixhub GUI'
 Library_Function.Gui.Enabled = false
 
 getgenv().ReadyForGuiLoaded = false
@@ -246,11 +246,11 @@ end)
 
 Library_Function.NotiGui = Instance.new('ScreenGui')
 Library_Function.NotiGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-Library_Function.NotiGui.Name = 'Ziner hub Notification'
+Library_Function.NotiGui.Name = 'Abysslixhub Notification'
 
 Library_Function.HideGui = Instance.new('ScreenGui')
 Library_Function.HideGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-Library_Function.HideGui.Name = 'Ziner hub'
+Library_Function.HideGui.Name = 'Abysslixhub'
 
 
 local Players = game:GetService("Players")
@@ -478,9 +478,9 @@ end)
 Library.ToggleUI = function()
     getgenv().UIToggled = not getgenv().UIToggled
     
-    if game.CoreGui:FindFirstChild("Ziner hub GUI") then
+    if game.CoreGui:FindFirstChild("Abysslixhub GUI") then
         for a, b in ipairs(game.CoreGui:GetChildren()) do
-            if b.Name == "Ziner hub GUI" then
+            if b.Name == "Abysslixhub GUI" then
                 b.Enabled = getgenv().UIToggled
             end
         end
@@ -502,9 +502,9 @@ Library.ToggleUI = function()
 end
 
 Library.DestroyUI = function()
-    if game.CoreGui:FindFirstChild("Ziner hub GUI") then
+    if game.CoreGui:FindFirstChild("Abysslixhub GUI") then
         for i, v in ipairs(game.CoreGui:GetChildren()) do
-            if string.find(v.Name, "Ziner hub") then
+            if string.find(v.Name, "Abysslixhub") then
                 v:Destroy()
             end
         end
@@ -609,7 +609,7 @@ local libCreateNoti = function(Setting)
 	local colorG = tostring(Library_Function.Getcolor(getgenv().UIColor['Title Text Color'])[2])
 	local colorB = tostring(Library_Function.Getcolor(getgenv().UIColor['Title Text Color'])[3])
 	local color = colorR .. ',' .. colorG .. ',' .. colorB
-    TextLabelNoti.Text = "<font color=\"rgb(" .. tostring(color or "255,80,80") .. ")\">" .. tostring(TitleNameMain or "Ziner hub") .. "</font> " .. tostring(getgenv().TitleNameNoti or "")
+    TextLabelNoti.Text = "<font color=\"rgb(" .. tostring(color or "255,80,80") .. ")\">" .. tostring(TitleNameMain or "Abysslixhub") .. "</font> " .. tostring(getgenv().TitleNameNoti or "")
     
 	TextLabelNoti.Name = "TextLabelNoti"
 	TextLabelNoti.Parent = Topnoti
@@ -716,7 +716,7 @@ function Library:Notify(Setting, bypass)
 end
 
 function Library:CreateWindow(Setting)
-    local TitleNameMain = Setting.Title or "Ziner hub"
+    local TitleNameMain = Setting.Title or "Abysslixhub"
     getgenv().MainDesc = Setting.Desc or Setting.Subtitle or ""
     
     if Setting.Image then
@@ -846,7 +846,7 @@ function Library:CreateWindow(Setting)
 	TextLabelMain.TextWrapped = true
 	TextLabelMain.TextXAlignment = Enum.TextXAlignment.Left
 	TextLabelMain.TextColor3 = getgenv().UIColor["GUI Text Color"]
-   TextLabelMain.Text = "<font color=\"rgb(0,0,0)\">" .. tostring(TitleNameMain or "Ziner hub") .. "</font> <font color=\"rgb(255,255,255)\">" .. tostring(getgenv().MainDesc or "") .. "</font>"
+   TextLabelMain.Text = "<font color=\"rgb(0,0,0)\">" .. tostring(TitleNameMain or "Abysslixhub") .. "</font> <font color=\"rgb(255,255,255)\">" .. tostring(getgenv().MainDesc or "") .. "</font>"
 	PageControl.Name = "Background1"
 	PageControl.Parent = Concacmain
 	PageControl.Position = UDim2.new(0, 5, 0, 0)
@@ -4137,9 +4137,9 @@ task.spawn(function()
     end
 
     for _ = 1, 40 do
-        local zinerGui = (pGui and pGui:FindFirstChild("Ziner hub GUI")) or (__LP:FindFirstChild("PlayerGui") and __LP.PlayerGui:FindFirstChild("Ziner hub GUI"))
-        if zinerGui then
-            setupGlow(zinerGui)
+        local abyssGui = (pGui and pGui:FindFirstChild("Abysslixhub GUI")) or (__LP:FindFirstChild("PlayerGui") and __LP.PlayerGui:FindFirstChild("Abysslixhub GUI"))
+        if abyssGui then
+            setupGlow(abyssGui)
             break
         end
         task.wait(0.1)
@@ -4160,7 +4160,7 @@ task.spawn(function()
             local roots = { gethuiF(), CoreGui, __LP:FindFirstChild("PlayerGui") }
             for _, r in ipairs(roots) do
                 if r then
-                    local g = r:FindFirstChild("Ziner hub GUI")
+                    local g = r:FindFirstChild("Abysslixhub GUI")
                     if g and g:FindFirstChild("Main") then return g end
                 end
             end
@@ -8067,21 +8067,11 @@ Tabs.Main:AddToggle("ToggleLevel", {
     ["Default"] = false
 }):OnChanged(function(p267)
     _G.AutoLevel = p267
-    if p267 == true then
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "✅ Auto Farm Level";
-            Text = "Đã bật! Bot sẽ tự động farm level";
-            Duration = 3;
-        })
-    else
+    if p267 ~= true then
+        -- giữ lại: dừng tween/di chuyển khi tắt Auto Level
         wait()
         Tween(__LP.Character.HumanoidRootPart.CFrame)
         wait()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "❌ Auto Farm Level";
-            Text = "Đã tắt!";
-            Duration = 2;
-        })
     end
 end)
 -- [SetValue skipped - Library không cần]
@@ -10007,7 +9997,7 @@ if Sea3 then
             if CakeOn() then
                 pcall(function()
                     local enemies = __WS.Enemies
-                    if __RS:FindFirstChild("Cake Prince") or (enemies:FindFirstChild("Cake Prince") or (__RS:FindFirstChild("Dough King") or enemies:FindFirstChild("Dough King"))) then
+                    if not _G.IgnoreCakePrince and (__RS:FindFirstChild("Cake Prince") or (enemies:FindFirstChild("Cake Prince") or (__RS:FindFirstChild("Dough King") or enemies:FindFirstChild("Dough King")))) then
                         -- ===== Giai đoạn Boss (giữ nguyên) =====
                         if enemies:FindFirstChild("Cake Prince") or enemies:FindFirstChild("Dough King") then
                             for _, v446 in pairs(enemies:GetChildren()) do
@@ -10080,7 +10070,7 @@ if Sea3 then
                             local _hrp = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
                             if _hrp and (_cf.Position - _hrp.Position).Magnitude > 5 then BKP(_cf) end
                         until not CakeOn()
-                            or __RS:FindFirstChild("Cake Prince") or __RS:FindFirstChild("Dough King")
+                            or (not _G.IgnoreCakePrince and (__RS:FindFirstChild("Cake Prince") or __RS:FindFirstChild("Dough King")))
                             or not target.Parent or hum.Health <= 0
                             or (qMob and not AbyQuest.Active("cake"))
                         bringmob = false
@@ -10118,7 +10108,7 @@ if Sea3 then
 end
 spawn(function()
     while wait(0.25) do -- [OPT] trước: 2 InvokeServer mỗi frame, kể cả khi không ở Sea 3
-        if _G.SpawnCakePrince then
+        if _G.SpawnCakePrince and not _G.IgnoreCakePrince then
             __RS.Remotes.CommF_:InvokeServer(unpack({
                 "CakePrinceSpawner",
                 true
@@ -10129,6 +10119,60 @@ spawn(function()
         end
     end
 end)
+if Sea3 then
+    -- [NEW] Farm theo mục tiêu đã chọn (giống RealKid Hub): điều khiển lại các cờ của 4 chế độ Xương/Cake có sẵn,
+    -- không viết lại logic farm nên các nút cũ ở trên vẫn dùng bình thường.
+    Tabs.Main:AddSection("Farm Mục Tiêu (Xương / Tư Lệnh Bánh)")
+    _G.AbyFarmTarget = "Xương"
+    _G.AbyAcceptQuest = true
+    _G.AbyFarmOn = false
+    _G.IgnoreCakePrince = false
+    local function AbyApplyFarmTarget()
+        local on, quest, tg = _G.AbyFarmOn, _G.AbyAcceptQuest, _G.AbyFarmTarget
+        _G.AutoBone = on and tg == "Xương" and quest or false
+        _G.AutoBoneNoQuest = on and tg == "Xương" and not quest or false
+        _G.Cake = on and tg == "Tư Lệnh Bánh" and quest or false
+        _G.CakeNoQuest = on and tg == "Tư Lệnh Bánh" and not quest or false
+    end
+    local abyTargetDD = Tabs.Main:AddDropdown("DropdownFarmTarget", {
+        ["Title"] = "Chọn Mục Tiêu Farm",
+        ["Values"] = { "Xương", "Tư Lệnh Bánh" },
+        ["Multi"] = false,
+        ["Default"] = 1
+    })
+    abyTargetDD:OnChanged(function(v)
+        _G.AbyFarmTarget = tostring(v)
+        if _G.AbyFarmOn then AbyApplyFarmTarget() end
+    end)
+    Tabs.Main:AddToggle("ToggleAbyFarmTarget", {
+        ["Title"] = "Auto Farm Mục Tiêu Đã Chọn",
+        ["Description"] = "Tự động farm mục tiêu ở trên",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.AbyFarmOn = v == true
+        AbyApplyFarmTarget()
+        if not v then
+            wait()
+            pcall(function() Tween(__LP.Character.HumanoidRootPart.CFrame) end)
+            wait()
+        end
+    end)
+    Tabs.Main:AddToggle("ToggleAbyAcceptQuest", {
+        ["Title"] = "Nhận Nhiệm Vụ",
+        ["Description"] = "Bật: farm có nhiệm vụ. Tắt: farm không nhiệm vụ",
+        ["Default"] = true
+    }):OnChanged(function(v)
+        _G.AbyAcceptQuest = v == true
+        if _G.AbyFarmOn then AbyApplyFarmTarget() end
+    end)
+    Tabs.Main:AddToggle("ToggleIgnoreCakePrince", {
+        ["Title"] = "Bỏ Qua Tư Lệnh Bánh",
+        ["Description"] = "Khi farm Cake: không triệu hồi/đánh boss, chỉ cày quái phụ",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.IgnoreCakePrince = v == true
+    end)
+end
 if Sea2 then
     Tabs.Main:AddSection("Ectoplasm Farm")
     Tabs.Main:AddToggle("ToggleVatChatKiDi", {
@@ -14936,6 +14980,32 @@ spawn(function()
         end
     end
 end)
+-- [NEW] Rình tầm (Spectate) người chơi đã chọn
+Tabs.Player:AddToggle("ToggleSpectatePly", {
+    ["Title"] = "Rình Tầm Người Chơi Đã Chọn",
+    ["Description"] = "Xem camera của người chơi đã chọn, tắt để quay về nhân vật mình",
+    ["Default"] = false
+}):OnChanged(function(v)
+    _G.SpectatePly = v == true
+    if not v then
+        pcall(function()
+            __WS.CurrentCamera.CameraSubject = __LP.Character:FindFirstChildOfClass("Humanoid")
+        end)
+    end
+end)
+spawn(function()
+    while task.wait(0.2) do
+        if _G.SpectatePly then
+            pcall(function()
+                local pl = _G.SelectPly and __PL:FindFirstChild(_G.SelectPly)
+                local hum = pl and pl.Character and pl.Character:FindFirstChildOfClass("Humanoid")
+                if hum and __WS.CurrentCamera.CameraSubject ~= hum then
+                    __WS.CurrentCamera.CameraSubject = hum
+                end
+            end)
+        end
+    end
+end)
 -- [FIX ĐI TRÊN NƯỚC] nút bật sẵn (Default=true) nhưng cờ chưa từng được gán => luôn nil => vòng lặp ép mặt nước về 80.
 -- Gán sẵn cờ + 1 hàm dùng chung để nút "Walk on Water" ở phần mở rộng cũng điều khiển đúng cờ này.
 _G.WalkonWater = true
@@ -15940,6 +16010,55 @@ do
         end
     end)
 
+    -- ---------- [NEW] CỬA HÀNG / TỰ BAY TỚI TRÁI ----------
+    Tab:AddSection("Cửa Hàng & Nhặt Trái")
+    Tab:AddButton({
+        ["Title"] = "Mở Cửa Hàng Trái Ác Quỷ",
+        ["Description"] = "Mở bảng mua trái ác quỷ ngay trên màn hình",
+        ["Callback"] = function()
+            task.spawn(function()
+                pcall(function() invoke("GetFruits") end)
+                local ok = pcall(function()
+                    __LP.PlayerGui.Main.FruitShop.Visible = true
+                end)
+                if not ok then notify("Không mở được cửa hàng trái (UI có thể đã đổi tên).") end
+            end)
+        end
+    })
+    Tab:AddToggle("ToggleTweenFruit", {
+        ["Title"] = "Tự Bay Đến Trái Ác Quỷ",
+        ["Description"] = "Tự di chuyển đến trái đang rơi trên bản đồ (kết hợp Tự Lưu Trái để cất)",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.AutoTweenFruit = v == true
+        if not v then
+            wait()
+            pcall(function() Tween2(__LP.Character.HumanoidRootPart.CFrame) end)
+            wait()
+        end
+    end)
+    task.spawn(function()
+        while task.wait(0.5) do
+            if _G.AutoTweenFruit then
+                pcall(function()
+                    local hrp = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
+                    if not hrp then return end
+                    local best, bestD = nil, math.huge
+                    for _, f in ipairs(__WS:GetChildren()) do
+                        if f:IsA("Tool") and string.find(f.Name, "Fruit") then
+                            local h = f:FindFirstChild("Handle")
+                            if h then
+                                local d = (h.Position - hrp.Position).Magnitude
+                                if d < bestD then best, bestD = h, d end
+                            end
+                        end
+                    end
+                    if best then Tween2(best.CFrame) end
+                end)
+            end
+        end
+    end)
+
     -- ---------- QUAY TRÁI ----------
     Tab:AddSection("Quay Trái")
     Tab:AddToggle("ToggleRandomFruit", {
@@ -16531,6 +16650,51 @@ task.spawn(function()
         end
     end
 end)
+Tabs.Raid:AddSection("Dungeon (Thu Thập Thông Tin)")
+Tabs.Raid:AddButton({
+    ["Title"] = "Lưu Thông Tin Dungeon Ra File",
+    ["Description"] = "Đứng ở sảnh Dungeon rồi bấm: lưu tên pad/remote vào Abysslixhub_dungeon.txt để làm tính năng Dungeon",
+    ["Callback"] = function()
+        task.spawn(function()
+            local out = {}
+            local function add(t) if #out < 600 then out[#out + 1] = t end end
+            pcall(function()
+                for _, d in ipairs(__WS:GetDescendants()) do
+                    local n = string.lower(d.Name)
+                    if string.find(n, "dungeon", 1, true) or string.find(n, "simulation", 1, true) or string.find(n, "pad", 1, true) or string.find(n, "lucian", 1, true) then
+                        add("WS: " .. d:GetFullName() .. " [" .. d.ClassName .. "]")
+                    end
+                end
+            end)
+            pcall(function()
+                for _, d in ipairs(__RS:GetDescendants()) do
+                    if d:IsA("RemoteEvent") or d:IsA("RemoteFunction") then
+                        local n = string.lower(d.Name)
+                        if string.find(n, "dungeon", 1, true) or string.find(n, "party", 1, true) or string.find(n, "lobby", 1, true) or string.find(n, "card", 1, true) then
+                            add("REMOTE: " .. d:GetFullName() .. " [" .. d.ClassName .. "]")
+                        end
+                    end
+                end
+            end)
+            pcall(function()
+                for _, d in ipairs(__LP.PlayerGui:GetDescendants()) do
+                    if string.find(string.lower(d.Name), "dungeon", 1, true) then
+                        add("GUI: " .. d:GetFullName() .. " [" .. d.ClassName .. "]")
+                    end
+                end
+            end)
+            local text = table.concat(out, "\n")
+            local ok = pcall(function() writefile("Abysslixhub_dungeon.txt", text) end)
+            pcall(function()
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Dungeon",
+                    Text = ok and ("Đã lưu " .. #out .. " dòng vào Abysslixhub_dungeon.txt") or "Executor không hỗ trợ writefile",
+                    Duration = 4
+                })
+            end)
+        end)
+    end
+})
 Tabs.Raid:AddSection("Tắp Kích Law")
 Tabs.Raid:AddToggle("ToggleLaw", {
     ["Title"] = "Mua Chip Và Đánh Law",
