@@ -113,7 +113,7 @@ local Root = HumanoidRootPart
 -- Giữ nguyên 100% Logo Abysslix & Màu Xanh Đen (Abyss Black & Neon Cyan Glow)
 -- Phím tắt Ctrl (LeftControl / RightControl) & Nút nổi kéo thả
 -- ==========================================
-local HUB_ICON = "rbxassetid://107755537229053"
+local HUB_ICON = "rbxassetid://118975851631674"
 local UserInputService = game:GetService("UserInputService")
 local TweenService = TweenService
 
@@ -139,7 +139,7 @@ local T1UIColor = {
     ["Border Color"] = Color3.fromRGB(0, 180, 255),
     ["Click Effect Color"] = Color3.fromRGB(0, 240, 255),
     ["Setting Icon Color"] = Color3.fromRGB(0, 240, 255),
-    ["Logo Image"] = "rbxassetid://107755537229053",
+    ["Logo Image"] = "rbxassetid://118975851631674",
     ["Search Icon Color"] = Color3.fromRGB(0, 240, 255),
     ["Search Icon Highlight Color"] = Color3.fromRGB(0, 255, 255),
     ["GUI Text Color"] = Color3.fromRGB(0, 240, 255),
@@ -296,7 +296,7 @@ icon.AnchorPoint = Vector2.new(0.5, 0.5)
 icon.Position = UDim2.new(0.5, 0, 0.5, 0)
 icon.Size = UDim2.new(0, 36, 0, 36)
 icon.BackgroundTransparency = 1
-icon.Image = "rbxassetid://107755537229053" -- ID ẢNH
+icon.Image = "rbxassetid://118975851631674" -- ID ẢNH
 icon.ScaleType = Enum.ScaleType.Fit
 icon.ZIndex = 11
 
@@ -4979,6 +4979,7 @@ Tabs = {
     ["Discord"]  = createTab("Discord", nil),
     ["Shop"]     = createTab("Shop", "shopping-cart"),
     ["Main"]     = createTab("Cày Cấp", "swords"),
+    ["Skill"]    = createTab("Skill", "zap", "Dùng Skill"),
     ["Sea"]      = createTab("Sea Event", "waves"),
     ["Status"]   = createTab("Server", "radio"),
     ["Stats"]    = createTab("Chỉ Số", "bar-chart-2"),
@@ -4986,6 +4987,7 @@ Tabs = {
     ["Teleport"] = createTab("Dịch Chuyển", "map-pin"),
     ["ESP"]      = createTab("ESP", "eye"),
     ["Fruit"]    = createTab("Fruit", "cherry", "Kiểm Tra Stock Trái"),
+    ["Raid"]     = createTab("Raid", "zap", "Đột Kích"),
     ["Race"]     = createTab("Race", "zap"),
     ["Draco"]    = createTab("Draco", "flame"),
     ["Boss"]     = createTab("Raid Boss", "swords"),
@@ -4993,10 +4995,10 @@ Tabs = {
     ["Setting"]  = createTab("Cài Đặt", "settings"),
 }
 
--- [GỘP TAB] Item -> Shop, Raid -> Fruit
+-- [GỘP TAB] Item -> Shop (Raid đã tách thành tab riêng)
 -- Code cũ vẫn gọi Tabs.Item / Tabs.Raid nên cho chúng trỏ về cùng 1 tab (không phải sửa 30+ chỗ)
 Tabs.Item = Tabs.Shop
-Tabs.Raid = Tabs.Fruit
+-- Raid giờ là tab riêng (Tabs.Raid), không còn gộp vào Fruit
 
 -- [TAB DISCORD]
 Tabs.Discord:AddSection("Cộng Đồng Discord")
@@ -8217,24 +8219,40 @@ do
     _G.SkillDelay = 0.3          -- giây nghỉ giữa các lượt dùng chiêu
     _G.SkillRange = 60           -- chỉ dùng chiêu khi có quái trong tầm này (studs)
 
-    Tabs.Main:AddSection("Farm Bằng Skill")
-    Tabs.Main:AddToggle("ToggleFarmSkill", {
+    Tabs.Skill:AddToggle("ToggleFarmSkill", {
         ["Title"] = "Farm Bằng Skill (Z X C V)",
+        ["Description"] = "Tự dùng chiêu khi đang farm (Cày Cấp / Xương / Đánh Quái Gần) và có quái trong tầm",
         ["Default"] = false
     }):OnChanged(function(v) _G.FarmSkill = v end)
     for _, k in ipairs({ "Z", "X", "C", "V", "F" }) do
-        Tabs.Main:AddToggle("ToggleSkillKey" .. k, {
+        Tabs.Skill:AddToggle("ToggleSkillKey" .. k, {
             ["Title"] = "Dùng chiêu " .. k,
             ["Default"] = _G.SkillKeys[k]
         }):OnChanged(function(v) _G.SkillKeys[k] = v end)
     end
-    Tabs.Main:AddSlider("SliderSkillDelay", {
+    Tabs.Skill:AddSlider("SliderSkillDelay", {
         ["Title"] = "Nghỉ Giữa Các Lượt Chiêu (x0.1 giây)",
         ["Default"] = 3,
         ["Min"] = 1,
         ["Max"] = 20,
         ["Rounding"] = 0,
         ["Callback"] = function(v) _G.SkillDelay = (tonumber(v) or 3) / 10 end
+    })
+    -- [NEW] dùng skill cả khi không farm + chỉnh tầm phát hiện quái
+    _G.SkillAlways = false
+    Tabs.Skill:AddToggle("ToggleSkillAlways", {
+        ["Title"] = "Dùng Skill Cả Khi Không Farm",
+        ["Description"] = "Có quái trong tầm là tự dùng chiêu (cần bật Farm Bằng Skill ở trên)",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.SkillAlways = (v == true) end)
+    Tabs.Skill:AddSlider("SliderSkillRange", {
+        ["Title"] = "Tầm Phát Hiện Quái",
+        ["Description"] = "20 - 300 studs: chỉ dùng chiêu khi có quái trong tầm này",
+        ["Default"] = 60,
+        ["Min"] = 20,
+        ["Max"] = 300,
+        ["Rounding"] = 0,
+        ["Callback"] = function(v) _G.SkillRange = math.clamp(math.floor((tonumber(v) or 60) + 0.5), 20, 300) end
     })
 
     local function _mobNear()
@@ -8257,7 +8275,7 @@ do
             pcall(function()
                 farming = _G.AutoLevel or _G.AutoBone or _G.AutoNear or BoneNoQuestOn()
             end)
-            if _G.FarmSkill and farming and _mobNear() then
+            if _G.FarmSkill and (farming or _G.SkillAlways) and _mobNear() then
                 for _, k in ipairs({ "Z", "X", "C", "V", "F" }) do
                     if not (_G.FarmSkill and _G.SkillKeys[k]) then continue end
                     pcall(function()
@@ -13711,6 +13729,28 @@ if Sea2 then
         end)
     end)
 end
+Tabs.Setting:AddSection("Bắn M1 Trái / Súng")
+_G.UseFruitM1 = false
+_G.UseGun = false
+do
+    local gunT, fruitT
+    fruitT = Tabs.Setting:AddToggle("ToggleUseFruitM1", {
+        ["Title"] = "Dùng M1 Trái Ác Quỷ",
+        ["Description"] = "Cầm trái và bắn M1 vào quái gần nhất",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.UseFruitM1 = (v == true)
+        if v and gunT then gunT:SetValue(false) end
+    end)
+    gunT = Tabs.Setting:AddToggle("ToggleUseGun", {
+        ["Title"] = "Dùng Súng",
+        ["Description"] = "Cầm súng và bắn vào quái gần nhất",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.UseGun = (v == true)
+        if v and fruitT then fruitT:SetValue(false) end
+    end)
+end
 Tabs.Setting:AddSection("Cài Đặt")
 Tabs.Setting:AddToggle("ToggleFastAttack", {
     ["Title"] = "Đánh Nhanh (Bật/Tắt)",
@@ -13890,27 +13930,6 @@ Tabs.Setting:AddSlider("SliderBringCount", {
 -- Tắt nút: trả lại vũ khí đã chọn ở "Choose Weapon". Khi đang bật Farm Sự Kiện Biển với kiểu đánh
 -- M1 Trái / Dragon Storm thì vòng bắn riêng của sự kiện biển lo, nút này tạm nhường.
 -- ============================================================
-_G.UseFruitM1 = false
-_G.UseGun = false
-do
-    local gunT, fruitT
-    fruitT = Tabs.Setting:AddToggle("ToggleUseFruitM1", {
-        ["Title"] = "Dùng M1 Trái Ác Quỷ",
-        ["Description"] = "Cầm trái và bắn M1 vào quái gần nhất",
-        ["Default"] = false
-    }):OnChanged(function(v)
-        _G.UseFruitM1 = (v == true)
-        if v and gunT then gunT:SetValue(false) end
-    end)
-    gunT = Tabs.Setting:AddToggle("ToggleUseGun", {
-        ["Title"] = "Dùng Súng",
-        ["Description"] = "Cầm súng và bắn vào quái gần nhất",
-        ["Default"] = false
-    }):OnChanged(function(v)
-        _G.UseGun = (v == true)
-        if v and fruitT then fruitT:SetValue(false) end
-    end)
-end
 task.spawn(function()
     local savedChoose, counter, lastWarn = nil, 0, 0
     local function scan(container, tip)
@@ -16260,7 +16279,7 @@ if not _fok then
     pcall(function() Library:Notify({ Title = "Lỗi tab Fruit", Content = tostring(_ferr), Duration = 15 }) end)
 end
 end
-Tabs.Raid:AddSection("Đột Kích")
+-- (section đầu tiên của tab Raid đã tên "Đột Kích" nên không cần AddSection ở đây)
 local v999 = Tabs.Raid:AddDropdown("DropdownRaid", {
     ["Title"] = "Chọn Chip",
     ["Values"] = {
