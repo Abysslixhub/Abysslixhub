@@ -14822,6 +14822,12 @@ do
     B("Join Selected Team", "Đổi sang team đang chọn", function()
         __RS.Remotes.CommF_:InvokeServer("SetTeam", _G.TeamChoice)
     end)
+    B("Join Pirates Team", "Vào phe Hải Tặc ngay", function()
+        __RS.Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
+    end)
+    B("Join Marines Team", "Vào phe Hải Quân ngay", function()
+        __RS.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+    end)
 
     -- Low CPU
     local function lowCPU()
@@ -18053,19 +18059,6 @@ function Hop()
     end
     vu916()
 end
-Tabs.Misc:AddSection("Đội")
-Tabs.Misc:AddButton({
-    ["Title"] = "Hải Tặc",
-    ["Callback"] = function()
-        __RS.Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
-    end
-})
-Tabs.Misc:AddButton({
-    ["Title"] = "Hải Quân",
-    ["Callback"] = function()
-        __RS.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-    end
-})
 Tabs.Misc:AddSection("Kinh Nghiậm")
 local vu1083 = {
     "KITT_RESET",
@@ -29792,18 +29785,6 @@ v496:AddButton({
     if Lighting:FindFirstChild("SeaTerrorCC") then Lighting.SeaTerrorCC:Destroy() end
     if Lighting:FindFirstChild("FantasySky") then Lighting.FantasySky:Destroy() end
 end
-})
-v496:AddButton({
-    Title = "Join Pirates Team",
-    Callback = function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
-    end
-})
-v496:AddButton({
-    Title = "Join Marines Team",
-    Callback = function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-    end
 })
 v496:AddButton({
     Title = "Open Title Name",
