@@ -5025,7 +5025,7 @@ Tabs = {
     ["Race"]     = createTab("Upgrade Race", "zap"),
     ["Draco"]    = createTab("Draco/Prehistoric", "flame"),
     ["Boss"]     = createTab("Raid Boss", "swords"),
-    ["Setting"]  = createTab("Settings", "settings", "Cài Đặt"),
+    ["Setting"]  = createTab("Settings", "settings", "Config"),
 }
 Tabs.Misc = Tabs.Status   -- Tabs.Misc CHỈ còn dùng cho mục liên quan server (vào lại/đổi server)
 Tabs.SettingTab = Tabs.Setting   -- tab Settings thật (mọi mục không liên quan Server đưa về đây)
@@ -13771,7 +13771,9 @@ end
 -- ============================================================
 do
     local Real = Tabs.Setting
-    local Misc = Real   -- [Fix] mục cũ của Settings đổ về tab Settings (không còn nằm ở tab Server)
+    local Misc = Tabs.Status   -- mục cũ (không có trong ảnh) chuyển sang tab Server
+    _G.AbyFirstSecUsed = true
+    Tabs.SettingTab = Tabs.Status
     _G.AbyRealSetting = Real
     local H = {}
     _G.AbyHidden = H
@@ -14713,7 +14715,6 @@ do
     end
 
     -- ===================== Config =====================
-    Real:AddSection("Config")
     B("Copy Config", "Copy config. Dán vào executor trước khi chạy Abysslix.", function()
         local C = _G.AbyCfg
         local json = game:GetService("HttpService"):JSONEncode(C and C.data or {})
