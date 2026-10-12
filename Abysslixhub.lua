@@ -1888,10 +1888,9 @@ end)
 				
 				UIGradient_1.Parent = ClickArea_1
 				UIGradient_1.Color = ColorSequence.new{
-					ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-					ColorSequenceKeypoint.new(0.4, Color3.fromRGB(240, 240, 240)),
-					ColorSequenceKeypoint.new(0.6, Color3.fromRGB(230, 230, 230)),
-					ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 220, 220))
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 140, 255)),
+					ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 100, 235)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 70, 200))
 				}
 				UIGradient_1.Rotation = 90
 				
@@ -1929,7 +1928,7 @@ end)
 				Button_1.Size = UDim2.new(1, 0, 1, 0)
 				Button_1.Font = Enum.Font.GothamBold
 				Button_1.Text = "Click"
-				Button_1.TextColor3 = Color3.fromRGB(40, 40, 40)
+				Button_1.TextColor3 = Color3.fromRGB(255, 255, 255)
 				Button_1.TextSize = 13
 				
 				local scaleHover = TweenService:Create(UIScale_1, TweenInfo.new(0.12, Enum.EasingStyle.Sine), { Scale = 1.05 })
@@ -14684,7 +14683,7 @@ Tabs.Setting:AddButton({
 -- ============================================================
 -- [SETTINGS THEO ẢNH 100%] Tab Cài Đặt mới: 2 mục Config + 28 mục "Teleports & Misc" đúng thứ tự trong ảnh
 -- ============================================================
-do
+_G.__okSet, _G.__errSet = pcall(function()
     local Real = _G.AbyRealSetting
     local H = _G.AbyHidden or {}
     local LightingS = game:GetService("Lighting")
@@ -14699,19 +14698,30 @@ do
     end
     -- toggle: gọi fn(trạng thái ban đầu) 1 lần để cờ _G.* khớp với nút (mặc định hoặc giá trị đã lưu)
     local function T(id, title, desc, def, fn)
-        local t = Real:AddToggle(id, { Title = title, Description = desc, Default = def }):OnChanged(function(v)
-            pcall(fn, v == true)
+        local okT, t = pcall(function()
+            return Real:AddToggle(id, { Title = title, Description = desc, Default = def }):OnChanged(function(v)
+                pcall(fn, v == true)
+            end)
         end)
+        if not okT then warn("[Settings] Toggle lỗi: " .. tostring(title) .. " -> " .. tostring(t)); return nil end
         local ok, cur = pcall(function() return t:GetValue() end)
         if ok and type(cur) == "boolean" then pcall(fn, cur) end
         return t
     end
     local function B(title, desc, fn)
-        Real:AddButton({
-            Title = title,
-            Description = desc,
-            Callback = function() task.spawn(function() pcall(fn) end) end,
-        })
+        local okB, eB = pcall(function()
+            Real:AddButton({
+                Title = title,
+                Description = desc,
+                Callback = function()
+                    task.spawn(function()
+                        local ok, e = pcall(fn)
+                        if not ok then notify(title, "Lỗi: " .. tostring(e)) end
+                    end)
+                end,
+            })
+        end)
+        if not okB then warn("[Settings] Button lỗi: " .. tostring(title) .. " -> " .. tostring(eB)) end
     end
 
     -- ===================== Config =====================
@@ -15022,6 +15032,10 @@ do
 
     -- Disable Notify
     T("ToggleDisableNotify", "Disable Notify", "Tắt thông báo hạ quái", true, function(on) drive("ToggleRemoveNotify", on) end)
+end)
+if not _G.__okSet then
+    warn("[Settings] Lỗi khi dựng tab Settings: " .. tostring(_G.__errSet))
+    pcall(function() Library:Notify({ Title = "Settings lỗi", Content = tostring(_G.__errSet) }) end)
 end
 ;(function() -- (bọc hàm riêng để không vượt giới hạn 200 biến local)
 -- ==========================================
