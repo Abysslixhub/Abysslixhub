@@ -5024,9 +5024,9 @@ Tabs = {
     ["Race"]     = createTab("Race", "zap"),
     ["Draco"]    = createTab("Draco", "flame"),
     ["Boss"]     = createTab("Raid Boss", "swords"),
-    ["Misc"]     = createTab("Khác", "folder"),
     ["Setting"]  = createTab("Settings", "settings", "Config"),
 }
+Tabs.Misc = Tabs.Status   -- [Settings] gộp tab "Khác" vào tab "Server"
 
 -- [GỘP TAB] Item -> Shop (Raid đã tách thành tab riêng)
 -- Code cũ vẫn gọi Tabs.Item / Tabs.Raid nên cho chúng trỏ về cùng 1 tab (không phải sửa 30+ chỗ)
