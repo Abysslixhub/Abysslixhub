@@ -5072,9 +5072,9 @@ end)
 -- SEA FLAGS (Tự động nhận diện Sea 1 / 2 / 3 chính xác 100%)
 -- ==========================================
 local currentPlaceId = game.PlaceId
-Sea1 = (currentPlaceId == 2753915549)
-Sea2 = (currentPlaceId == 4442272183)
-Sea3 = (currentPlaceId == 7449423635)
+Sea1 = (currentPlaceId == 2753915549 or currentPlaceId == 85211729168715)
+Sea2 = (currentPlaceId == 4442272183 or currentPlaceId == 79091703265657)
+Sea3 = (currentPlaceId == 7449423635 or currentPlaceId == 100117331123089)
 if not (Sea1 or Sea2 or Sea3) then
     local pLevel = 1
     pcall(function()
@@ -16890,6 +16890,8 @@ spawn(function()
     while task.wait(0.1) do
         if _G.Auto_Buy_Chips_Dungeon then
             pcall(function()
+                -- [Fix] đã có chip hoặc đang raid thì không gọi mua nữa (trước đây spam server 10 lần/giây)
+                if __LP.Backpack:FindFirstChild("Special Microchip") or (__LP.Character and __LP.Character:FindFirstChild("Special Microchip")) or __LP.PlayerGui.Main.Timer.Visible then return end
                 local v1002 = {
                     "RaidsNpc",
                     "Select",
@@ -16929,6 +16931,19 @@ spawn(function()
         end)
     end
 end)
+-- [Auto Raid] đảo hiện tại = đảo cao nhất đang có trong Locations (đảo mới xuất hiện dần theo từng đợt)
+function _G.AbyRaidStage()
+    local n = 0
+    pcall(function()
+        local loc = __WS._WorldOrigin:FindFirstChild("Locations")
+        if loc then
+            for i = 5, 1, -1 do
+                if loc:FindFirstChild("Island " .. i) then n = i break end
+            end
+        end
+    end)
+    return n
+end
 Tabs.Raid:AddToggle("ToggleNextIsland", {
     ["Title"] = "Đánh Quái Raid+Bay Đến Đảo",
     ["Default"] = false
@@ -16948,11 +16963,16 @@ spawn(function()
                 if v1006 and v1006:FindFirstChild("HumanoidRootPart") then
                     local v1007 = __WS._WorldOrigin.Locations
                     local v1008 = v1006.HumanoidRootPart.Position
+                    -- [Fix] hết raid (không còn Island nào) thì reset, để raid lần sau vẫn bay đủ các đảo
+                    if not (v1007:FindFirstChild("Island 1") or v1007:FindFirstChild("Island 2") or v1007:FindFirstChild("Island 3") or v1007:FindFirstChild("Island 4") or v1007:FindFirstChild("Island 5")) then
+                        vu1005 = {}
+                    end
                     if (v1008 - Vector3.new(- 6438.73535, 250.645355, - 4501.50684)).Magnitude < 1 or (v1008 - Vector3.new(- 5017.40869, 314.844055, - 2823.0127)).Magnitude < 1 then
                         vu1005 = {}
                     end
                     if v1007:FindFirstChild("Island 1") then
-                        _G.AutoNear = true
+                        -- Auto Raid: từ đảo 4-5 tắt đánh quái thường, nhường cho Kill Aura
+                        _G.AutoNear = not (_G.RaidSmart and _G.AbyRaidStage() >= 4)
                     end
                     if v1007:FindFirstChild("Island 2") and not vu1005["Island 2"] then
                         Tween2(v1007:FindFirstChild("Island 2").CFrame)
@@ -17103,73 +17123,33 @@ end
 -- Dùng lại các chức năng raid có sẵn ở trên (Mua Chip / Bắt Đầu Raid / Bay Đảo / Thức Tỉnh), chỉ gom lại thành 1 nút theo kiểu.
 -- Chip lấy theo dropdown "Chọn Chip" phía trên.
 -- ============================================================
-Tabs.Raid:AddSection("Raid Các Kiểu")
+Tabs.Raid:AddSection("Auto Raid")
 _G.RaidKillAura = false
 _G.RaidDieSkip = false
-_G.RaidAuraRange = 500
+_G.RaidAuraRange = 1000   -- tầm cố định tối đa (đã bỏ slider chỉnh tay)
 do
-    -- Kill Aura đã gộp vào tất cả các kiểu raid: gom quái trong tầm về trước mặt và đánh liên tục
-    local MODES = {
-        ["Raid Đầy Đủ + Kill Aura (Mua Chip, Bắt Đầu, Bay Đảo, Thức Tỉnh)"] = { buy = true, start = true, next = true,  awake = true,  aura = true },
-        ["Raid Bay Đảo + Kill Aura (Mua Chip, Bắt Đầu, Bay Đảo)"]            = { buy = true, start = true, next = true,  awake = false, aura = true },
-        ["Raid Chỉ Bắt Đầu + Kill Aura (Mua Chip, Bắt Đầu)"]                 = { buy = true, start = true, next = false, awake = false, aura = true },
-        ["Raid Đảo 4-5 + Kill Aura (Bay Thẳng Tới Đảo Cuối, Quái Tự Chết)"]  = { buy = true, start = true, next = false, awake = false, aura = true, die = true },
-    }
-    local ORDER = {
-        "Raid Đầy Đủ + Kill Aura (Mua Chip, Bắt Đầu, Bay Đảo, Thức Tỉnh)",
-        "Raid Bay Đảo + Kill Aura (Mua Chip, Bắt Đầu, Bay Đảo)",
-        "Raid Chỉ Bắt Đầu + Kill Aura (Mua Chip, Bắt Đầu)",
-        "Raid Đảo 4-5 + Kill Aura (Bay Thẳng Tới Đảo Cuối, Quái Tự Chết)",
-    }
-    local currentMode, modeOn = ORDER[1], false
-
+    -- Auto Raid 1 nút: mua chip -> bắt đầu raid -> thức tỉnh -> bay qua từng đảo
+    --   đảo 1-3: đánh quái thường (Đánh Quái Raid) | đảo 4-5: Kill Aura (gom quái trong tầm và đánh liên tục)
+    local modeOn, lastApplied = false, false
     local function applyMode()
-        local m = modeOn and MODES[currentMode] or nil
-        _G.Auto_Buy_Chips_Dungeon = m and m.buy or false
-        _G.Auto_StartRaid = m and m.start or false
-        AutoNextIsland = m and m.next or false
-        AutoAwakenAbilities = m and m.awake or false
-        _G.RaidKillAura = m and m.aura or false
-        _G.RaidDieSkip = (m and m.die == true) or false
-        if not (m and m.next) then _G.AutoNear = false end
+        _G.Auto_Buy_Chips_Dungeon = modeOn
+        _G.Auto_StartRaid = modeOn
+        AutoNextIsland = modeOn
+        AutoAwakenAbilities = modeOn
+        _G.RaidSmart = modeOn
+        _G.RaidKillAura = false
+        if not modeOn then _G.AutoNear = false end
     end
 
-    Tabs.Raid:AddDropdown("DropdownRaidMode", {
-        ["Title"] = "Kiểu Raid",
-        ["Values"] = ORDER,
-        ["Multi"] = false,
-        ["Default"] = 1
-    }):OnChanged(function(v)
-        if MODES[v] then
-            currentMode = v
-            if modeOn then applyMode() end
-        end
-    end)
     Tabs.Raid:AddToggle("ToggleRaidMode", {
-        ["Title"] = "Bật Kiểu Raid Đã Chọn",
-        ["Description"] = "Tự bật các chức năng raid của kiểu đã chọn, đã gồm Kill Aura. Tắt nút này là tắt hết",
+        ["Title"] = "Auto Raid (Đảo 1-3 Đánh Quái, Đảo 4-5 Kill Aura)",
+        ["Description"] = "1 nút: tự mua chip, bắt đầu raid, thức tỉnh, bay qua từng đảo. Đảo 1-3 đánh quái thường. Từ đảo 4-5: bay thẳng tới đảo cuối, quái trong tầm 1000 tự chết, đồng thời Kill Aura gom quái và đánh để dự phòng. Tắt nút này là tắt hết",
         ["Default"] = false
     }):OnChanged(function(v)
         modeOn = (v == true)
+        if modeOn == lastApplied then return end   -- không đổi trạng thái thì không đụng tới các nút raid lẻ
+        lastApplied = modeOn
         applyMode()
-    end)
-
-    Tabs.Raid:AddSlider("SliderRaidAuraRange", {
-        ["Title"] = "Tầm Kill Aura",
-        ["Description"] = "50 - 1000 studs: quái raid trong tầm này sẽ bị kéo lại và đánh",
-        ["Default"] = 500,
-        ["Min"] = 50,
-        ["Max"] = 1000,
-        ["Callback"] = function(v)
-            _G.RaidAuraRange = math.clamp(math.floor((tonumber(v) or 500) + 0.5), 50, 1000)
-        end
-    })
-    Tabs.Raid:AddToggle("ToggleRaidDieSkip", {
-        ["Title"] = "Raid Đến Đảo 4-5 Quái Tự Chết",
-        ["Description"] = "Đang trong raid: bay thẳng tới đảo cuối (đảo 5, không có thì đảo 4) và cho toàn bộ quái raid trong tầm tự chết",
-        ["Default"] = false
-    }):OnChanged(function(v)
-        _G.RaidDieSkip = (v == true)
     end)
 end
 -- [NEW] Raid đảo 4-5: bay thẳng tới đảo cuối rồi cho quái raid tự chết (Health = 0, dùng SimulationRadius)
@@ -17188,7 +17168,7 @@ task.spawn(function()
     end
     while true do
         task.wait(0.2)
-        if _G.RaidDieSkip then
+        if _G.RaidSmart and _G.AbyRaidStage() >= 4 then   -- Auto Raid ở đảo 4-5: bay tới đảo cuối + cho quái trong tầm tự chết
             pcall(function()
                 local active, island = raidInfo()
                 if not active then return end
@@ -17200,7 +17180,7 @@ task.spawn(function()
                     Tween2(island.CFrame)
                 end
                 -- 2) cho quái raid trong tầm tự chết
-                local range = math.max(_G.RaidAuraRange or 500, 500)
+                local range = _G.RaidAuraRange or 1000
                 pcall(function() sethiddenproperty(__LP, "SimulationRadius", math.huge) end)
                 for _, m in ipairs(__WS.Enemies:GetChildren()) do
                     local h = m:FindFirstChild("Humanoid")
@@ -17223,7 +17203,7 @@ task.spawn(function()
     end
     while true do
         task.wait(0.1)
-        if _G.RaidKillAura and inRaid() then
+        if (_G.RaidKillAura or (_G.RaidSmart and _G.AbyRaidStage() >= 4)) and inRaid() then
             pcall(function()
                 local char = __LP.Character
                 local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -17231,7 +17211,7 @@ task.spawn(function()
                 AutoHaki()
                 EquipTool(SelectWeapon)
                 local front = root.CFrame * CFrame.new(0, 0, -6)
-                local range = _G.RaidAuraRange or 500
+                local range = _G.RaidAuraRange or 1000
                 local pulled = 0
                 for _, m in ipairs(__WS.Enemies:GetChildren()) do
                     local h = m:FindFirstChild("Humanoid")
@@ -17307,7 +17287,7 @@ Tabs.Raid:AddToggle("ToggleLaw", {
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
-    pcall(function()
+    while true do pcall(function() -- [Fix] pcall nằm trong vòng lặp ngoài, lỗi 1 lần không làm chết cả chức năng
         while task.wait(0.1) do
             if Auto_Law and not (__LP.Character:FindFirstChild("Microchip") or (__LP.Backpack:FindFirstChild("Microchip") or (__WS.Enemies:FindFirstChild("Order") or __RS:FindFirstChild("Order")))) then
                 wait()
@@ -17315,10 +17295,10 @@ spawn(function()
                 __RS.Remotes.CommF_:InvokeServer("BlackbeardReward", "Microchip", "2")
             end
         end
-    end)
+    end) task.wait(0.5) end
 end)
 spawn(function()
-    pcall(function()
+    while true do pcall(function() -- [Fix] pcall nằm trong vòng lặp ngoài, lỗi 1 lần không làm chết cả chức năng
         while task.wait() do
             if Auto_Law then
                 if not __WS.Enemies:FindFirstChild("Order") and (not __RS:FindFirstChild("Order") and (__LP.Character:FindFirstChild("Microchip") or __LP.Backpack:FindFirstChild("Microchip"))) then
@@ -17346,7 +17326,7 @@ spawn(function()
                 end
             end
         end
-    end)
+    end) task.wait(0.5) end
 end)
 Tabs.Race:AddSection("Race")
 Tabs.Race:AddButton({
