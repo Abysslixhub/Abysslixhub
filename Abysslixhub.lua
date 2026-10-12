@@ -10391,50 +10391,46 @@ do
         pcall(function() Library:Notify({["Title"] = "Raid Boss", ["Content"] = msg}) end)
     end
 
-    Tabs.Boss:AddSection("Trạng Thái Raid Boss")
-    local statusP = Tabs.Boss:AddParagraph({["Title"] = "Boss Đang Có Trên Server", ["Description"] = "Đang quét..."})
-    _G.BossNotify = false
-    local lastAlive = {}
-    spawn(function()
-        while task.wait(2) do
-            pcall(function()
-                local alive, now = {}, {}
-                for _, b in ipairs(BOSSES) do
-                    local on = findBoss(b[1]) ~= nil
-                    now[b[1]] = on
-                    if on then table.insert(alive, b[2]) end
+    -- Vị trí của boss: nếu đang xuất hiện thì lấy vị trí thật, nếu chưa thì lấy điểm spawn
+    local function bossSpawnCF(name)
+        local alive = findBoss(name)
+        if alive then return alive.HumanoidRootPart.CFrame end
+        local tpl = __RS:FindFirstChild(name)
+        local thrp = tpl and tpl:FindFirstChild("HumanoidRootPart")
+        if thrp then return thrp.CFrame end
+        local wo = __WS:FindFirstChild("_WorldOrigin")
+        local es = wo and wo:FindFirstChild("EnemySpawns")
+        if es then
+            for _, p in ipairs(es:GetChildren()) do
+                if p:IsA("BasePart") and (p.Name == name or string.find(p.Name, name, 1, true)) then
+                    return p.CFrame
                 end
-                statusP:SetDesc(#alive > 0 and ("✅ " .. table.concat(alive, ", ")) or "Hiện không có boss nào")
-                if _G.BossNotify then
-                    for _, b in ipairs(BOSSES) do
-                        if now[b[1]] and lastAlive[b[1]] == false then notify("Boss vừa xuất hiện: " .. b[2]) end
-                    end
-                end
-                for k, v in pairs(now) do lastAlive[k] = v end
-            end)
+            end
         end
-    end)
-    Tabs.Boss:AddToggle("BossNotifyToggle", {
-        ["Title"] = "Thông Báo Khi Có Boss Mới",
-        ["Description"] = "Hiện thông báo khi bất kỳ boss trong danh sách vừa xuất hiện",
-        ["Default"] = false
-    }):OnChanged(function(v) _G.BossNotify = v end)
+        return nil
+    end
 
-    Tabs.Boss:AddSection("Boss Đã Chọn")
+    Tabs.Boss:AddSection("Chọn Boss")
     Tabs.Boss:AddDropdown("BossSelectDropdown", {
         ["Title"] = "Chọn Boss",
         ["Values"] = LABELS,
         ["Multi"] = false,
         ["Default"] = 1
     }):OnChanged(function(v) selected = NAME_OF[v] or selected end)
-    Tabs.Boss:AddButton({["Title"] = "Bay Đến Boss Đã Chọn", ["Description"] = "Chỉ bay được khi boss đang xuất hiện", ["Callback"] = function()
-        local b = findBoss(selected)
-        if b then Tween2(b.HumanoidRootPart.CFrame * CFrame.new(0, 40, 0)) else notify("Boss này hiện chưa xuất hiện") end
+    Tabs.Boss:AddButton({["Title"] = "Bay Đến Boss Đã Chọn", ["Description"] = "Bay tới boss đang xuất hiện, nếu chưa có thì bay tới điểm spawn của boss", ["Callback"] = function()
+        task.spawn(function()
+            local cf = bossSpawnCF(selected)
+            if cf then
+                Tween2(cf * CFrame.new(0, 40, 0))
+            else
+                notify("Không tìm thấy vị trí của boss này")
+            end
+        end)
     end})
     _G.BossKill = false
     Tabs.Boss:AddToggle("BossKillToggle", {
         ["Title"] = "Tự Đánh Boss Đã Chọn",
-        ["Description"] = "Boss xuất hiện thì tự bay tới và đánh đến khi chết",
+        ["Description"] = "Tự bay tới điểm spawn của boss đã chọn, boss xuất hiện thì đánh đến khi chết",
         ["Default"] = false
     }):OnChanged(function(v) _G.BossKill = v end)
     spawn(function()
@@ -10442,7 +10438,14 @@ do
             if _G.BossKill then
                 pcall(function()
                     local boss = findBoss(selected)
-                    if not boss then return end
+                    if not boss then
+                        local cf = bossSpawnCF(selected)
+                        local root = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
+                        if cf and root and (root.Position - cf.Position).Magnitude > 150 then
+                            Tween2(cf * CFrame.new(0, 60, 0))
+                        end
+                        return
+                    end
                     local hrp, hum = boss.HumanoidRootPart, boss.Humanoid
                     repeat
                         task.wait(_G.Fast_Delay or 0.05)
@@ -11975,7 +11978,7 @@ if Sea3 then
                         return
                     end
                     -- khóa vũ khí để vòng chọn vũ khí chung không đổi lại
-                    if savedChoose == nil then savedChoose = ChooseWeapon end
+                    if savedChoose == nil then if ChooseWeapon ~= "SeaMode" then _G.PrevChoose = ChooseWeapon end savedChoose = _G.PrevChoose end
                     ChooseWeapon = "SeaMode"
                     SelectWeapon = tool.Name
                     if tool.Parent ~= char then hum:EquipTool(tool) end
@@ -13835,6 +13838,133 @@ Tabs.Setting:AddSlider("SliderBringCount", {
         _G.BringCount = math.clamp(math.floor((tonumber(v) or 10) + 0.5), 1, 10)
     end
 })
+-- ============================================================
+-- [NEW] NÚT BẬT/TẮT DÙNG M1 TRÁI / DÙNG SÚNG (tab Setting)
+-- Bật 1 trong 2: script tự cầm trái/súng và bắn vào quái (và Vua Biển) ở gần. Hai nút loại trừ nhau.
+-- Tắt nút: trả lại vũ khí đã chọn ở "Choose Weapon". Khi đang bật Farm Sự Kiện Biển với kiểu đánh
+-- M1 Trái / Dragon Storm thì vòng bắn riêng của sự kiện biển lo, nút này tạm nhường.
+-- ============================================================
+_G.UseFruitM1 = false
+_G.UseGun = false
+do
+    local gunT, fruitT
+    fruitT = Tabs.Setting:AddToggle("ToggleUseFruitM1", {
+        ["Title"] = "Dùng M1 Trái Ác Quỷ",
+        ["Description"] = "Cầm trái và bắn M1 vào quái gần nhất",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.UseFruitM1 = (v == true)
+        if v and gunT then gunT:SetValue(false) end
+    end)
+    gunT = Tabs.Setting:AddToggle("ToggleUseGun", {
+        ["Title"] = "Dùng Súng",
+        ["Description"] = "Cầm súng và bắn vào quái gần nhất",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.UseGun = (v == true)
+        if v and fruitT then fruitT:SetValue(false) end
+    end)
+end
+task.spawn(function()
+    local savedChoose, counter, lastWarn = nil, 0, 0
+    local function scan(container, tip)
+        if not container then return nil end
+        local first
+        for _, t in ipairs(container:GetChildren()) do
+            if t:IsA("Tool") and t.ToolTip == tip then
+                -- ưu tiên Dragon Storm nếu có, không có thì lấy khẩu súng đầu tiên
+                if tip == "Gun" then
+                    local n = string.lower(t.Name):gsub("%s", "")
+                    if string.find(n, "dragonstorm", 1, true) then return t end
+                end
+                first = first or t
+            end
+        end
+        return first
+    end
+    local function nearest(root, maxDist)
+        local best, bestD = nil, maxDist
+        local function consider(part)
+            if part and part:IsA("BasePart") then
+                local d = (part.Position - root.Position).Magnitude
+                if d < bestD then best, bestD = part, d end
+            end
+        end
+        local en = __WS:FindFirstChild("Enemies")
+        if en then
+            for _, m in ipairs(en:GetChildren()) do
+                local h = m:FindFirstChild("Humanoid")
+                if h and h.Health > 0 then consider(m:FindFirstChild("HumanoidRootPart")) end
+            end
+        end
+        local sb = __WS:FindFirstChild("SeaBeasts")
+        if sb then
+            for _, m in ipairs(sb:GetChildren()) do
+                local h = m:FindFirstChild("Humanoid")
+                if not h or h.Health > 0 then
+                    consider(m:FindFirstChild("HumanoidRootPart") or m:FindFirstChild("Head") or (m:IsA("Model") and m.PrimaryPart))
+                end
+            end
+        end
+        return best
+    end
+    local function fire(tool, targetPart, root)
+        local dir = (targetPart.Position - root.Position).Unit
+        counter = counter % 1000000000 + 1
+        local lc = tool:FindFirstChild("LeftClickRemote")
+        if lc then pcall(function() lc:FireServer(dir, counter) end) end
+        if tool.ToolTip == "Gun" then
+            pcall(function()
+                local mods = __RS:FindFirstChild("Modules")
+                local net = mods and mods:FindFirstChild("Net")
+                local ev = net and net:FindFirstChild("RE/ShootGunEvent")
+                if ev then ev:FireServer(targetPart.Position, { targetPart }) end
+            end)
+        end
+        pcall(function() tool:Activate() end)
+    end
+    while true do
+        task.wait(0.1)
+        local seaBusy = _G.SeaEventFarm and _G.SeaAttackMode and _G.SeaAttackMode ~= "default"
+        local wantFruit, wantGun = _G.UseFruitM1, _G.UseGun
+        if (wantFruit or wantGun) and not seaBusy then
+            pcall(function()
+                local char = __LP.Character
+                local hum = char and char:FindFirstChild("Humanoid")
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                if not (hum and root) then return end
+                local tip = wantFruit and "Blox Fruit" or "Gun"
+                local tool = scan(char, tip) or scan(__LP.Backpack, tip)
+                if tip == "Gun" then
+                    local function isDS(t) return t and string.find(string.lower(t.Name):gsub("%s", ""), "dragonstorm", 1, true) end
+                    if not isDS(tool) then
+                        local alt = scan(__LP.Backpack, tip)
+                        if isDS(alt) then tool = alt end
+                    end
+                end
+                if not tool then
+                    if os.clock() - lastWarn > 15 then
+                        lastWarn = os.clock()
+                        Library:Notify({
+                            Title = "Vũ Khí",
+                            Content = wantFruit and "Không tìm thấy trái ác quỷ trong túi đồ!" or "Không tìm thấy súng trong túi đồ!"
+                        })
+                    end
+                    return
+                end
+                if savedChoose == nil then if ChooseWeapon ~= "SeaMode" then _G.PrevChoose = ChooseWeapon end savedChoose = _G.PrevChoose end
+                ChooseWeapon = "SeaMode"   -- khóa vòng chọn vũ khí chung, không đổi lại vũ khí khác
+                SelectWeapon = tool.Name
+                if tool.Parent ~= char then hum:EquipTool(tool) end
+                local tgt = nearest(root, wantFruit and 100 or 200)
+                if tgt then fire(tool, tgt, root) end
+            end)
+        elseif savedChoose ~= nil then
+            ChooseWeapon = savedChoose
+            savedChoose = nil
+        end
+    end
+end)
 -- [OPT] Gom quái: thoát sớm khi không cần, chỉ lọc đúng loại quái, guard Head/Animator.
 -- [NEW] Chỉ gom N con gần điểm đánh nhất (_G.BringCount) và kéo về với tốc độ _G.BringSpeed (theo dt, mượt).
 spawn(function()
@@ -15656,6 +15786,9 @@ do
 
     local normalOnSale = {}
     local selectedNormal = nil
+    local mirageOnSale = {}
+    local selectedMirage = nil
+    local mirageDD = nil -- tạo bên dưới nút mua shop thường
     local selectedPerm = nil
     local permDD = nil -- tạo ở mục "Trái Ác Quỷ" bên dưới
     local NONE_TEXT = "(Bấm Làm Mới Stock)"
@@ -15686,6 +15819,16 @@ do
         if normalDD then
             pcall(function() normalDD:Refresh(names) end)
             pcall(function() normalDD:SetValue(names[1]) end)
+        end
+
+        mirageOnSale = mirage or {}
+        local mnames = {}
+        for _, f in ipairs(mirageOnSale) do table.insert(mnames, f.Name) end
+        if #mnames == 0 then mnames = { "(Đảo Bí Ẩn không có trái)" } end
+        selectedMirage = mnames[1]
+        if mirageDD then
+            pcall(function() mirageDD:Refresh(mnames) end)
+            pcall(function() mirageDD:SetValue(mnames[1]) end)
         end
 
         if allNames and #allNames > 0 and permDD then
@@ -15737,6 +15880,59 @@ do
         end
     })
 
+    Tab:AddButton({
+        ["Title"] = "Mua Tất Cả Trái Đang Bán (Shop Thường)",
+        ["Description"] = "Bấm 1 lần: mua lần lượt từ trái rẻ nhất, trái nào không đủ tiền sẽ tự bị bỏ qua",
+        ["Callback"] = function()
+            task.spawn(function()
+                if #normalOnSale == 0 then
+                    notify("Shop thường không có trái. Bấm Làm Mới Stock rồi thử lại.")
+                    return
+                end
+                invoke("GetFruits")
+                local list = {}
+                for _, f in ipairs(normalOnSale) do table.insert(list, f.Name) end
+                for _, name in ipairs(list) do
+                    invoke("PurchaseRawFruit", name, false)
+                    task.wait(0.4)
+                end
+                notify("Đã gửi yêu cầu mua " .. #list .. " trái ở shop thường.")
+                refreshStock(true)
+            end)
+        end
+    })
+
+    -- ---------- MUA TRÁI ĐẢO BÍ ẨN (Advanced Fruit Dealer) ----------
+    mirageDD = Tab:AddDropdown("DropdownFruitShopMirage", {
+        ["Title"] = "Trái Đang Bán (Đảo Bí Ẩn)",
+        ["Values"] = { NONE_TEXT },
+        ["Multi"] = false,
+        ["Default"] = 1
+    })
+    mirageDD:OnChanged(function(v)
+        selectedMirage = v
+    end)
+    Tab:AddButton({
+        ["Title"] = "Mua Trái Đã Chọn (Đảo Bí Ẩn)",
+        ["Description"] = "Chỉ mua được khi Đảo Bí Ẩn đang xuất hiện và trái có trong stock Advanced Fruit Dealer",
+        ["Callback"] = function()
+            task.spawn(function()
+                local name = selectedMirage
+                local valid = false
+                for _, f in ipairs(mirageOnSale) do
+                    if f.Name == name then valid = true break end
+                end
+                if not valid then
+                    notify("Chưa chọn trái hợp lệ. Bấm Làm Mới Stock rồi chọn lại.")
+                    return
+                end
+                invoke("GetFruits", true)
+                invoke("PurchaseRawFruit", name, true)
+                notify("Đã gửi yêu cầu mua (Đảo Bí Ẩn): " .. tostring(name))
+            end)
+        end
+    })
+
     task.spawn(function()
         pcall(function() refreshStock(true) end)
         while task.wait(60) do
@@ -15760,6 +15956,16 @@ do
             end
         end
     end)
+    Tab:AddButton({
+        ["Title"] = "Quay Trái 1 Lần",
+        ["Description"] = "Mua 1 trái ngẫu nhiên từ Cousin",
+        ["Callback"] = function()
+            task.spawn(function()
+                invoke("Cousin", "Buy")
+                notify("Đã quay trái ngẫu nhiên 1 lần.")
+            end)
+        end
+    })
 
     -- ---------- LƯU / NHẶT TRÁI ----------
     Tab:AddSection("Trái Ác Quỷ")
@@ -15812,6 +16018,32 @@ do
             end
         end
     end)
+
+    Tab:AddButton({
+        ["Title"] = "Lưu Hết Trái Vào Kho (1 Lần)",
+        ["Description"] = "Cất toàn bộ trái đang có trong túi đồ vào kho",
+        ["Callback"] = function()
+            task.spawn(function()
+                local map = {}
+                for _, pair in ipairs(StoreList) do map[pair[1]] = pair[2] end
+                local stored = 0
+                local function try(tool)
+                    if tool:IsA("Tool") and (tool.ToolTip == "Blox Fruit" or map[tool.Name]) then
+                        local id = tool:GetAttribute("OriginalName") or map[tool.Name]
+                        if id then
+                            invoke("StoreFruit", id, tool)
+                            stored = stored + 1
+                        end
+                    end
+                end
+                local bag = __LP:FindFirstChild("Backpack")
+                if bag then for _, t in ipairs(bag:GetChildren()) do try(t) end end
+                local char = __LP.Character
+                if char then for _, t in ipairs(char:GetChildren()) do try(t) end end
+                notify(stored > 0 and ("Đã gửi yêu cầu lưu " .. stored .. " trái vào kho.") or "Không có trái nào trong túi đồ.")
+            end)
+        end
+    })
 
     local MODE_TWEEN = "Dịch chuyển (an toàn)"
     local MODE_TP = "Bay tức thời"
@@ -16144,6 +16376,161 @@ elseif Sea3 then
         end
     })
 end
+-- ============================================================
+-- [NEW] RAID CÁC KIỂU + RAID KILL AURA (tab Fruit)
+-- Dùng lại các chức năng raid có sẵn ở trên (Mua Chip / Bắt Đầu Raid / Bay Đảo / Thức Tỉnh), chỉ gom lại thành 1 nút theo kiểu.
+-- Chip lấy theo dropdown "Chọn Chip" phía trên.
+-- ============================================================
+Tabs.Raid:AddSection("Raid Các Kiểu")
+_G.RaidKillAura = false
+_G.RaidDieSkip = false
+_G.RaidAuraRange = 500
+do
+    -- Kill Aura đã gộp vào tất cả các kiểu raid: gom quái trong tầm về trước mặt và đánh liên tục
+    local MODES = {
+        ["Raid Đầy Đủ + Kill Aura (Mua Chip, Bắt Đầu, Bay Đảo, Thức Tỉnh)"] = { buy = true, start = true, next = true,  awake = true,  aura = true },
+        ["Raid Bay Đảo + Kill Aura (Mua Chip, Bắt Đầu, Bay Đảo)"]            = { buy = true, start = true, next = true,  awake = false, aura = true },
+        ["Raid Chỉ Bắt Đầu + Kill Aura (Mua Chip, Bắt Đầu)"]                 = { buy = true, start = true, next = false, awake = false, aura = true },
+        ["Raid Đảo 4-5 + Kill Aura (Bay Thẳng Tới Đảo Cuối, Quái Tự Chết)"]  = { buy = true, start = true, next = false, awake = false, aura = true, die = true },
+    }
+    local ORDER = {
+        "Raid Đầy Đủ + Kill Aura (Mua Chip, Bắt Đầu, Bay Đảo, Thức Tỉnh)",
+        "Raid Bay Đảo + Kill Aura (Mua Chip, Bắt Đầu, Bay Đảo)",
+        "Raid Chỉ Bắt Đầu + Kill Aura (Mua Chip, Bắt Đầu)",
+        "Raid Đảo 4-5 + Kill Aura (Bay Thẳng Tới Đảo Cuối, Quái Tự Chết)",
+    }
+    local currentMode, modeOn = ORDER[1], false
+
+    local function applyMode()
+        local m = modeOn and MODES[currentMode] or nil
+        _G.Auto_Buy_Chips_Dungeon = m and m.buy or false
+        _G.Auto_StartRaid = m and m.start or false
+        AutoNextIsland = m and m.next or false
+        AutoAwakenAbilities = m and m.awake or false
+        _G.RaidKillAura = m and m.aura or false
+        _G.RaidDieSkip = (m and m.die == true) or false
+        if not (m and m.next) then _G.AutoNear = false end
+    end
+
+    Tabs.Raid:AddDropdown("DropdownRaidMode", {
+        ["Title"] = "Kiểu Raid",
+        ["Values"] = ORDER,
+        ["Multi"] = false,
+        ["Default"] = 1
+    }):OnChanged(function(v)
+        if MODES[v] then
+            currentMode = v
+            if modeOn then applyMode() end
+        end
+    end)
+    Tabs.Raid:AddToggle("ToggleRaidMode", {
+        ["Title"] = "Bật Kiểu Raid Đã Chọn",
+        ["Description"] = "Tự bật các chức năng raid của kiểu đã chọn, đã gồm Kill Aura. Tắt nút này là tắt hết",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        modeOn = (v == true)
+        applyMode()
+    end)
+
+    Tabs.Raid:AddSlider("SliderRaidAuraRange", {
+        ["Title"] = "Tầm Kill Aura",
+        ["Description"] = "50 - 1000 studs: quái raid trong tầm này sẽ bị kéo lại và đánh",
+        ["Default"] = 500,
+        ["Min"] = 50,
+        ["Max"] = 1000,
+        ["Callback"] = function(v)
+            _G.RaidAuraRange = math.clamp(math.floor((tonumber(v) or 500) + 0.5), 50, 1000)
+        end
+    })
+    Tabs.Raid:AddToggle("ToggleRaidDieSkip", {
+        ["Title"] = "Raid Đến Đảo 4-5 Quái Tự Chết",
+        ["Description"] = "Đang trong raid: bay thẳng tới đảo cuối (đảo 5, không có thì đảo 4) và cho toàn bộ quái raid trong tầm tự chết",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.RaidDieSkip = (v == true)
+    end)
+end
+-- [NEW] Raid đảo 4-5: bay thẳng tới đảo cuối rồi cho quái raid tự chết (Health = 0, dùng SimulationRadius)
+task.spawn(function()
+    local function raidInfo()
+        local ok, loc = pcall(function() return __WS._WorldOrigin:FindFirstChild("Locations") end)
+        if not ok or not loc then return false, nil end
+        local timerOn = false
+        pcall(function() timerOn = __LP.PlayerGui.Main.Timer.Visible end)
+        local best
+        for i = 5, 1, -1 do
+            local isl = loc:FindFirstChild("Island " .. i)
+            if isl then best = isl break end
+        end
+        return (timerOn or best ~= nil), best
+    end
+    while true do
+        task.wait(0.2)
+        if _G.RaidDieSkip then
+            pcall(function()
+                local active, island = raidInfo()
+                if not active then return end
+                local char = __LP.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                if not root then return end
+                -- 1) bay thẳng tới đảo cuối (ưu tiên đảo 5, rồi 4, ...)
+                if island and (island.Position - root.Position).Magnitude > 150 then
+                    Tween2(island.CFrame)
+                end
+                -- 2) cho quái raid trong tầm tự chết
+                local range = math.max(_G.RaidAuraRange or 500, 500)
+                pcall(function() sethiddenproperty(__LP, "SimulationRadius", math.huge) end)
+                for _, m in ipairs(__WS.Enemies:GetChildren()) do
+                    local h = m:FindFirstChild("Humanoid")
+                    local r = m:FindFirstChild("HumanoidRootPart")
+                    if h and r and h.Health > 0 and (r.Position - root.Position).Magnitude <= range then
+                        h.Health = 0
+                    end
+                end
+            end)
+        end
+    end
+end)
+task.spawn(function()
+    local function inRaid()
+        local ok, r = pcall(function()
+            local loc = __WS._WorldOrigin:FindFirstChild("Locations")
+            return __LP.PlayerGui.Main.Timer.Visible or (loc and loc:FindFirstChild("Island 1") ~= nil)
+        end)
+        return ok and r
+    end
+    while true do
+        task.wait(0.1)
+        if _G.RaidKillAura and inRaid() then
+            pcall(function()
+                local char = __LP.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                if not root then return end
+                AutoHaki()
+                EquipTool(SelectWeapon)
+                local front = root.CFrame * CFrame.new(0, 0, -6)
+                local range = _G.RaidAuraRange or 500
+                local pulled = 0
+                for _, m in ipairs(__WS.Enemies:GetChildren()) do
+                    local h = m:FindFirstChild("Humanoid")
+                    local r = m:FindFirstChild("HumanoidRootPart")
+                    if h and r and h.Health > 0 and (r.Position - root.Position).Magnitude <= range then
+                        r.CFrame = front
+                        r.CanCollide = false
+                        h.WalkSpeed = 0
+                        h.JumpPower = 0
+                        pulled = pulled + 1
+                        if pulled >= 30 then break end
+                    end
+                end
+                if pulled > 0 then
+                    pcall(function() sethiddenproperty(__LP, "SimulationRadius", math.huge) end)
+                    AttackNoCoolDown()
+                end
+            end)
+        end
+    end
+end)
 Tabs.Raid:AddSection("Tắp Kích Law")
 Tabs.Raid:AddToggle("ToggleLaw", {
     ["Title"] = "Mua Chip Và Đánh Law",
