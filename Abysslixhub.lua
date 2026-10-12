@@ -5015,7 +5015,7 @@ Tabs = {
     ["Main"]     = createTab("Cày Cấp", "swords"),
     ["Skill"]    = createTab("Skill", "zap", "Dùng Skill"),
     ["Sea"]      = createTab("Sea Event", "waves"),
-    ["Status"]   = createTab("Server", "radio"),
+    ["Status"]   = createTab("Server", "radio", "Trạng Thái Server"),
     ["Stats"]    = createTab("Stats", "bar-chart-2"),
     ["Player"]   = createTab("PVP", "user"),
     ["Teleport"] = createTab("Teleport Island", "map-pin"),
@@ -5025,9 +5025,10 @@ Tabs = {
     ["Race"]     = createTab("Upgrade Race", "zap"),
     ["Draco"]    = createTab("Draco/Prehistoric", "flame"),
     ["Boss"]     = createTab("Raid Boss", "swords"),
-    ["Setting"]  = createTab("Settings", "settings", "Config"),
+    ["Setting"]  = createTab("Settings", "settings", "Cài Đặt"),
 }
-Tabs.Misc = Tabs.Status   -- [Settings] gộp tab "Khác" vào tab "Server"
+Tabs.Misc = Tabs.Status   -- Tabs.Misc CHỈ còn dùng cho mục liên quan server (vào lại/đổi server)
+Tabs.SettingTab = Tabs.Setting   -- tab Settings thật (mọi mục không liên quan Server đưa về đây)
 
 -- [GỘP TAB] Item -> Shop (Raid đã tách thành tab riêng)
 -- Code cũ vẫn gọi Tabs.Item / Tabs.Raid nên cho chúng trỏ về cùng 1 tab (không phải sửa 30+ chỗ)
@@ -13769,7 +13770,8 @@ end
 --   * mục không có trong ảnh -> chuyển sang tab "Khác" (không mất tính năng)
 -- ============================================================
 do
-    local Real, Misc = Tabs.Setting, Tabs.Misc
+    local Real = Tabs.Setting
+    local Misc = Real   -- [Fix] mục cũ của Settings đổ về tab Settings (không còn nằm ở tab Server)
     _G.AbyRealSetting = Real
     local H = {}
     _G.AbyHidden = H
@@ -13788,7 +13790,7 @@ do
         if pending then
             local n = pending
             pending = nil
-            Misc:AddSection(n)
+            if n == "Cài Đặt" and not _G.AbyFirstSecUsed then _G.AbyFirstSecUsed = true else Misc:AddSection(n) end
         end
     end
     local function newStub(id, opts)
@@ -14711,6 +14713,7 @@ do
     end
 
     -- ===================== Config =====================
+    Real:AddSection("Config")
     B("Copy Config", "Copy config. Dán vào executor trước khi chạy Abysslix.", function()
         local C = _G.AbyCfg
         local json = game:GetService("HttpService"):JSONEncode(C and C.data or {})
@@ -15019,6 +15022,121 @@ do
     -- Disable Notify
     T("ToggleDisableNotify", "Disable Notify", "Tắt thông báo hạ quái", true, function(on) drive("ToggleRemoveNotify", on) end)
 end
+;(function() -- (bọc hàm riêng để không vượt giới hạn 200 biến local)
+-- ==========================================
+-- [TRẠNG THÁI SERVER] Đo ping / FPS / độ giật / băng thông, đánh giá tình trạng, cảnh báo & tự đổi server khi lag
+-- ==========================================
+local function srvNotify(msg)
+    pcall(function() Library:Notify({["Title"] = "Server", ["Content"] = msg}) end)
+end
+local stSvc = game:GetService("Stats")
+local stPara = Tabs.Status:AddParagraph({["Title"] = "Tình Trạng Server", ["Description"] = "Đang đo..."})
+local stHist, stFpsCount, stFps = {}, 0, 60
+pcall(function()
+    RunService.Heartbeat:Connect(function() stFpsCount = stFpsCount + 1 end)
+end)
+local function stPing()
+    local v = 0
+    pcall(function() v = stSvc.Network.ServerStatsItem["Data Ping"]:GetValue() end)
+    return math.floor(v + 0.5)
+end
+local function stKbps(name)
+    local v = 0
+    pcall(function() v = stSvc[name] end)
+    return tonumber(v) or 0
+end
+-- Tính chỉ số từ danh sách mẫu ping (n mẫu gần nhất)
+local function stCompute(n)
+    local count = math.min(#stHist, n or #stHist)
+    if count == 0 then return nil end
+    local sum, mn, mx, jit = 0, math.huge, 0, 0
+    for i = #stHist - count + 1, #stHist do
+        local p = stHist[i]
+        sum = sum + p
+        if p < mn then mn = p end
+        if p > mx then mx = p end
+        if i > #stHist - count + 1 then jit = jit + math.abs(p - stHist[i - 1]) end
+    end
+    local avg = sum / count
+    jit = count > 1 and jit / (count - 1) or 0
+    -- điểm 0-100
+    local score = 100
+    if avg > 400 then score = score - 60 elseif avg > 250 then score = score - 40
+    elseif avg > 150 then score = score - 25 elseif avg > 80 then score = score - 10 end
+    if jit > 150 then score = score - 25 elseif jit > 60 then score = score - 12 elseif jit > 30 then score = score - 5 end
+    if stFps < 15 then score = score - 25 elseif stFps < 30 then score = score - 12 end
+    score = math.max(score, 0)
+    local label = score >= 80 and "TỐT" or score >= 55 and "TRUNG BÌNH" or score >= 30 and "LAG" or "RẤT LAG"
+    return {avg = avg, min = mn, max = mx, jit = jit, score = score, label = label}
+end
+local function stReport(r)
+    local up = math.floor(workspace.DistributedGameTime + 0.5)
+    local mem = 0
+    pcall(function() mem = stSvc:GetTotalMemoryUsageMb() end)
+    return string.format(
+        "Đánh giá: %s (%d/100)\nPing: %dms (TB %dms | Min %d | Max %d)\nĐộ giật ping: %dms\nFPS: %d\nNhận/Gửi: %d / %d KB/s\nBộ nhớ client: %d MB\nNgười chơi: %d/%d\nServer chạy: %02d:%02d:%02d",
+        r.label, r.score, stPing(), r.avg, r.min, r.max, r.jit, stFps,
+        stKbps("DataReceiveKbps"), stKbps("DataSendKbps"), mem,
+        #__PL:GetPlayers(), __PL.MaxPlayers,
+        math.floor(up / 3600), math.floor(up / 60) % 60, up % 60)
+end
+
+_G.SrvLagAlert, _G.SrvLagHop, _G.SrvLagPing = false, false, 300
+local stBad, stLastAlert = 0, 0
+spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            stFps = stFpsCount; stFpsCount = 0
+            table.insert(stHist, stPing())
+            if #stHist > 30 then table.remove(stHist, 1) end
+            local r = stCompute(30)
+            if not r then return end
+            stPara:SetDesc(stReport(r))
+            -- phát hiện lag kéo dài (10 giây liên tiếp)
+            local recent = stCompute(5)
+            if recent and (recent.avg > (_G.SrvLagPing or 300) or recent.score < 30) then
+                stBad = stBad + 1
+            else
+                stBad = 0
+            end
+            if stBad >= 10 then
+                stBad = 0
+                if _G.SrvLagAlert and tick() - stLastAlert > 60 then
+                    stLastAlert = tick()
+                    srvNotify("Server đang lag nặng (ping TB " .. math.floor(recent.avg) .. "ms)")
+                end
+                if _G.SrvLagHop and _G.AbySrvHop then _G.AbySrvHop(false) end
+            end
+        end)
+    end
+end)
+
+Tabs.Status:AddButton({["Title"] = "Kiểm Tra Server Ngay", ["Description"] = "Đo ping 6 lần rồi báo kết quả đánh giá", ["Callback"] = function()
+    task.spawn(function()
+        local samples = {}
+        for i = 1, 6 do
+            table.insert(samples, stPing())
+            task.wait(0.5)
+        end
+        local sum, mn, mx = 0, math.huge, 0
+        for _, p in ipairs(samples) do sum = sum + p; mn = math.min(mn, p); mx = math.max(mx, p) end
+        local avg = sum / #samples
+        local label = (avg <= 80 and stFps >= 30) and "TỐT" or (avg <= 150 and stFps >= 20) and "TRUNG BÌNH" or avg <= 300 and "LAG" or "RẤT LAG"
+        srvNotify(string.format("Server %s | Ping TB %dms (%d-%d) | FPS %d | %d/%d người",
+            label, avg, mn, mx, stFps, #__PL:GetPlayers(), __PL.MaxPlayers))
+    end)
+end})
+Tabs.Status:AddButton({["Title"] = "Copy Báo Cáo Server", ["Description"] = "Copy toàn bộ thông số trạng thái server hiện tại", ["Callback"] = function()
+    pcall(function()
+        local r = stCompute(30)
+        if r then setclipboard(stReport(r)); srvNotify("Đã copy báo cáo server") end
+    end)
+end})
+Tabs.Status:AddToggle("SrvLagAlertToggle", {["Title"] = "Cảnh Báo Khi Server Lag", ["Description"] = "Thông báo khi ping cao liên tục 10 giây", ["Default"] = false, ["Callback"] = function() end}):OnChanged(function(v) _G.SrvLagAlert = v end)
+Tabs.Status:AddInput("SrvLagPingInput", {["Title"] = "Ngưỡng Ping Lag (ms)", ["Default"] = "300", ["Placeholder"] = "300", ["Callback"] = function(v) _G.SrvLagPing = tonumber(v) or 300 end})
+Tabs.Status:AddToggle("SrvLagHopToggle", {["Title"] = "Tự Đổi Server Khi Lag", ["Description"] = "Tự nhảy server khác khi lag kéo dài vượt ngưỡng ping", ["Default"] = false, ["Callback"] = function() end}):OnChanged(function(v) _G.SrvLagHop = v end)
+
+end)()
 Tabs.Status:AddSection("Server")
 Tabs.Status:AddParagraph({
     ["Title"] = "Thông Tin",
@@ -15063,7 +15181,8 @@ spawn(function()
         pcall(vu884)
     end
 end)
-local vu885 = Tabs.Status:AddParagraph({
+Tabs.SettingTab:AddSection("Trạng Thái Đảo Leviathan")
+local vu885 = Tabs.SettingTab:AddParagraph({
     ["Title"] = "Đảo Leviathan",
 })
 spawn(function()
@@ -15145,6 +15264,7 @@ local function srvHop(preferLow)
     end)
     if not ok then pcall(function() Hop() end) end
 end
+_G.AbySrvHop = srvHop
 Tabs.Status:AddButton({["Title"] = "Đổi Server", ["Description"] = "Nhảy sang server khác", ["Callback"] = function() srvHop(false) end})
 Tabs.Status:AddButton({["Title"] = "Server Ít Người", ["Description"] = "Nhảy sang server ít người nhất", ["Callback"] = function() srvHop(true) end})
 Tabs.Status:AddButton({["Title"] = "Vào Lại Server (Rejoin)", ["Description"] = "Vào lại đúng server hiện tại", ["Callback"] = function()
@@ -15184,12 +15304,7 @@ spawn(function()
     end
 end)
 
-Tabs.Status:AddSection("Chống AFK & Tự Đổi Server")
-Tabs.Status:AddToggle("AntiAFKToggle", {
-    ["Title"] = "Anti AFK (Luôn Bật)",
-    ["Description"] = "Chống bị đá khỏi game khi đứng yên. Mỗi lần vào game đều tự bật.",
-    ["Default"] = true
-}):OnChanged(function(v) _G.AntiAFK = v end)
+Tabs.Status:AddSection("Tự Đổi Server Mỗi 30 Phút")
 _G.AutoHop30 = false
 Tabs.Status:AddToggle("AutoHop30Toggle", {
     ["Title"] = "Tự Đổi Server Mỗi 30 Phút",
@@ -15315,6 +15430,7 @@ end)
 __PL.PlayerRemoving:Connect(function(p)
     if _G.PlayerNotify then srvNotify(p.DisplayName .. " (@" .. p.Name .. ") đã rời server") end
 end)
+
 
 end
 Tabs.Stats:AddSection("Chỉ Số")
@@ -17978,7 +18094,7 @@ Tabs.Shop:AddButton({
         __RS.Modules.Net:FindFirstChild("RF/InteractDragonQuest"):InvokeServer(unpack(v1066))
     end
 })
-Tabs.Misc:AddSection("Khác")
+Tabs.Misc:AddSection("Đổi / Vào Lại Server")
 Tabs.Misc:AddButton({
     ["Title"] = "Tham Gia Máy Ch\225\187\167 Lại",
     ["Callback"] = function()
@@ -18054,7 +18170,7 @@ function Hop()
     end
     vu916()
 end
-Tabs.Misc:AddSection("Kinh Nghiậm")
+Tabs.SettingTab:AddSection("Kinh Nghiậm")
 local vu1083 = {
     "KITT_RESET",
     "Sub2UncleKizaru",
@@ -18100,7 +18216,7 @@ local vu1083 = {
     "Bignews",
     "SECRET_ADMIN"
 }
-Tabs.Misc:AddButton({
+Tabs.SettingTab:AddButton({
     ["Title"] = "Nhắp Hết",
     ["Callback"] = function()
         for v1086, v1087 in ipairs(vu1083) do
@@ -18111,8 +18227,8 @@ Tabs.Misc:AddButton({
 function RedeemCode(p1088)
     __RS.Remotes.Redeem:InvokeServer(p1088)
 end
-Tabs.Misc:AddSection("Danh Hiậu")
-Tabs.Misc:AddButton({
+Tabs.SettingTab:AddSection("Danh Hiậu")
+Tabs.SettingTab:AddButton({
     ["Title"] = "Danh Hiệu",
     ["Callback"] = function()
         __RS.Remotes.CommF_:InvokeServer(unpack({
@@ -18121,14 +18237,14 @@ Tabs.Misc:AddButton({
         __PL.localPlayer.PlayerGui.Main.Titles.Visible = true
     end
 })
-Tabs.Misc:AddSection("Thủc Tỉnh")
-Tabs.Misc:AddButton({
+Tabs.SettingTab:AddSection("Thủc Tỉnh")
+Tabs.SettingTab:AddButton({
     ["Title"] = "Thức Tỉnh",
     ["Callback"] = function()
         __LP.PlayerGui.Main.AwakeningToggler.Visible = true
     end
 })
-Tabs.Misc:AddSection("Khác")
+Tabs.Misc:AddSection("Tự Rejoin")
 Tabs.Misc:AddToggle("ToggleRejoin", {
     ["Title"] = "Tham Gia Máy Ch\225\187\167 Lại",
     ["Default"] = true
@@ -18147,7 +18263,7 @@ spawn(function()
         end
     end
 end)
-Tabs.Misc:AddSection("Sương")
+Tabs.SettingTab:AddSection("Sương")
 local function vu1092()
     local v1091 = game:GetService("Lighting")
     if v1091:FindFirstChild("BaseAtmosphere") then
@@ -18167,13 +18283,13 @@ local function vu1092()
     end
     v1091.FogEnd = 100000
 end
-Tabs.Misc:AddButton({
+Tabs.SettingTab:AddButton({
     ["Title"] = "Xóa Sương Mù",
     ["Callback"] = function()
         vu1092()
     end
 })
-Tabs.Misc:AddToggle("ToggleAntiBand", {
+Tabs.SettingTab:AddToggle("ToggleAntiBand", {
     ["Title"] = "Chống Band",
     ["Default"] = true
 }):OnChanged(function(p1093)
@@ -19291,8 +19407,8 @@ spawn(function()
 end)
 
 -- ========== FPS BOOST ==========
-Tabs.Misc:AddSection("FPS & Hiệu Suất")
-Tabs.Misc:AddButton({
+Tabs.SettingTab:AddSection("FPS & Hiệu Suất")
+Tabs.SettingTab:AddButton({
     ["Title"] = "FPS Boost",
     ["Callback"] = function()
         pcall(function()
@@ -19308,8 +19424,8 @@ Tabs.Misc:AddButton({
     end
 })
 
-Tabs.Misc:AddSection("Tiện Ích Chat & Khác")
-Tabs.Misc:AddButton({
+Tabs.SettingTab:AddSection("Tiện Ích Chat & Khác")
+Tabs.SettingTab:AddButton({
     ["Title"] = "Bật Chat Spy (Đọc Tin Nhắn Ẩn)",
     ["Description"] = "Xem tin nhắn riêng/ẩn của tất cả người chơi trong server",
     ["Callback"] = function()
