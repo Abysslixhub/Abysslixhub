@@ -27,13 +27,17 @@ local CollectionService = game:GetService("CollectionService")
 -- ==========================================
 _G.AutoTeam = true
 _G.TeamChoice = "Marines"
-pcall(function()   -- đọc lựa chọn đã lưu từ lần trước (nếu có)
-    if isfile and readfile and isfile("Abysslix_Config.json") then
-        local d = game:GetService("HttpService"):JSONDecode(readfile("Abysslix_Config.json"))
-        local at = d["Cài Đặt|AutoTeamToggle|Tự Chọn Phe Khi Chưa Chọn"]
-        if type(at) == "boolean" then _G.AutoTeam = at end
-        local tc = d["Cài Đặt|AutoTeamDropdown|Phe Tự Chọn"]
-        if tc == "Hải Tặc" then _G.TeamChoice = "Pirates" elseif tc == "Hải Quân" then _G.TeamChoice = "Marines" end
+pcall(function()   -- đọc phe đã lưu từ lần trước (nút "Choose Team" trong tab Cài Đặt)
+    local HS = game:GetService("HttpService")
+    local d = nil
+    if getgenv and type(getgenv().AbysslixConfig) == "string" then
+        d = HS:JSONDecode(getgenv().AbysslixConfig)
+    elseif isfile and readfile and isfile("Abysslix_Config.json") then
+        d = HS:JSONDecode(readfile("Abysslix_Config.json"))
+    end
+    if type(d) == "table" then
+        local tc = d["Config|ChooseTeamDropdown|Choose Team"]
+        if tc == "Pirates" or tc == "Marines" then _G.TeamChoice = tc end
     end
 end)
 task.spawn(function()
@@ -4422,6 +4426,13 @@ _G.AbyCfg = _G.AbyCfg or (function()
             if type(d) == "table" then C.data = d end
         end
     end)
+    pcall(function()   -- config dán từ nút "Copy Config": getgenv().AbysslixConfig = [===[json]===]
+        local s = getgenv and getgenv().AbysslixConfig
+        if type(s) == "string" and s ~= "" then
+            local d = game:GetService("HttpService"):JSONDecode(s)
+            if type(d) == "table" then C.data = d end
+        end
+    end)
     local pending = false
     function C.get(key) return C.data[key] end
     function C.set(key, val)
@@ -5014,7 +5025,7 @@ Tabs = {
     ["Draco"]    = createTab("Draco", "flame"),
     ["Boss"]     = createTab("Raid Boss", "swords"),
     ["Misc"]     = createTab("Khác", "folder"),
-    ["Setting"]  = createTab("Cài Đặt", "settings"),
+    ["Setting"]  = createTab("Settings", "settings", "Config"),
 }
 
 -- [GỘP TAB] Item -> Shop (Raid đã tách thành tab riêng)
@@ -13751,6 +13762,89 @@ if Sea2 then
         end)
     end)
 end
+-- ============================================================
+-- [SETTINGS THEO ẢNH 100%] Các mục CŨ của tab Cài Đặt không còn hiện ở tab này:
+--   * mục có trong ảnh  -> ẩn khỏi UI, logic cũ giữ nguyên và được nút mới (bên dưới) điều khiển
+--   * mục không có trong ảnh -> chuyển sang tab "Khác" (không mất tính năng)
+-- ============================================================
+do
+    local Real, Misc = Tabs.Setting, Tabs.Misc
+    _G.AbyRealSetting = Real
+    local H = {}
+    _G.AbyHidden = H
+    local HIDE_ID = {
+        ToggleFastAttack = true, SliderTweenSpeed = true, ToggleAutoT = true, ToggleAutoY = true,
+        ToggleAutoKen = true, ToggleBringMob = true, SliderBringSpeed = true, SliderBringCount = true,
+        ToggleUseFruitM1 = true, ToggleUseGun = true, ToggleRemoveNotify = true,
+        AutoTeamToggle = true, AutoTeamDropdown = true, AutoBusoToggle = true, AutoKenToggle = true,
+    }
+    local HIDE_TITLE = {
+        ["Vào Phe Hải Quân (Marines)"] = true,
+        ["Vào Phe Hải Tặc (Pirates)"] = true,
+    }
+    local pending = nil
+    local function ensure()
+        if pending then
+            local n = pending
+            pending = nil
+            Misc:AddSection(n)
+        end
+    end
+    local function newStub(id, opts)
+        local s = { id = id, value = opts and opts.Default }
+        local cb = opts and opts.Callback
+        function s:Fire(v)
+            s.value = v
+            if cb then pcall(cb, v) end
+            if s.fn then pcall(s.fn, v) end
+        end
+        function s:OnChanged(fn) s.fn = fn; return s end
+        function s:SetValue(v) s:Fire(v) end
+        s.SetStage = s.SetValue
+        s.Set = s.SetValue
+        function s:GetValue() return s.value end
+        function s:Destroy() end
+        function s:Visible() end
+        return s
+    end
+    local function idOf(a, b)
+        if type(a) == "table" then return a.Title or a.Name, a end
+        return a, b
+    end
+    local P = {}
+    function P:AddSection(n) pending = n end
+    function P:AddToggle(...)
+        local id, o = idOf(...)
+        if HIDE_ID[id] then local s = newStub(id, o); H[id] = s; return s end
+        ensure()
+        return Misc:AddToggle(...)
+    end
+    function P:AddSlider(...)
+        local id, o = idOf(...)
+        if HIDE_ID[id] then local s = newStub(id, o); H[id] = s; return s end
+        ensure()
+        return Misc:AddSlider(...)
+    end
+    function P:AddDropdown(...)
+        local id, o = idOf(...)
+        if HIDE_ID[id] then local s = newStub(id, o); H[id] = s; return s end
+        ensure()
+        return Misc:AddDropdown(...)
+    end
+    function P:AddButton(...)
+        local a = ...
+        local t = type(a) == "table" and (a.Title or a.Name) or nil
+        if t and HIDE_TITLE[t] then return newStub(t, a) end
+        ensure()
+        return Misc:AddButton(...)
+    end
+    function P:AddInput(...) ensure(); return Misc:AddInput(...) end
+    function P:AddTextBox(...) ensure(); return Misc:AddTextBox(...) end
+    function P:AddParagraph(...) ensure(); return Misc:AddParagraph(...) end
+    function P:AddLabel(...) ensure(); return Misc:AddLabel(...) end
+    function P:AddSeperator(...) ensure(); return Misc:AddSeperator(...) end
+    Tabs.Setting = P
+end
 Tabs.Setting:AddSection("Bắn M1 Trái / Súng")
 _G.UseFruitM1 = false
 _G.UseGun = false
@@ -14582,6 +14676,348 @@ Tabs.Setting:AddButton({
         end)
     end
 })
+-- ============================================================
+-- [SETTINGS THEO ẢNH 100%] Tab Cài Đặt mới: 2 mục Config + 28 mục "Teleports & Misc" đúng thứ tự trong ảnh
+-- ============================================================
+do
+    local Real = _G.AbyRealSetting
+    local H = _G.AbyHidden or {}
+    local LightingS = game:GetService("Lighting")
+
+    local function notify(t, c)
+        pcall(function() Library:Notify({ Title = t, Content = c }) end)
+    end
+    -- điều khiển logic cũ (đã ẩn khỏi UI) bằng nút mới
+    local function drive(id, v)
+        local s = H[id]
+        if s then s:Fire(v) end
+    end
+    -- toggle: gọi fn(trạng thái ban đầu) 1 lần để cờ _G.* khớp với nút (mặc định hoặc giá trị đã lưu)
+    local function T(id, title, desc, def, fn)
+        local t = Real:AddToggle(id, { Title = title, Description = desc, Default = def }):OnChanged(function(v)
+            pcall(fn, v == true)
+        end)
+        local ok, cur = pcall(function() return t:GetValue() end)
+        if ok and type(cur) == "boolean" then pcall(fn, cur) end
+        return t
+    end
+    local function B(title, desc, fn)
+        Real:AddButton({
+            Title = title,
+            Description = desc,
+            Callback = function() task.spawn(function() pcall(fn) end) end,
+        })
+    end
+
+    -- ===================== Config =====================
+    B("Copy Config", "Copy config. Dán vào executor trước khi chạy Abysslix.", function()
+        local C = _G.AbyCfg
+        local json = game:GetService("HttpService"):JSONEncode(C and C.data or {})
+        local txt = "getgenv().AbysslixConfig = [===[" .. json .. "]===]"
+        if setclipboard then setclipboard(txt)
+        elseif toclipboard then toclipboard(txt)
+        else notify("Config", "Executor không hỗ trợ setclipboard"); return end
+        notify("Config", "Đã copy config vào clipboard")
+    end)
+    B("Reset Config", "Xóa toàn bộ cài đặt đã lưu trước đó", function()
+        local C = _G.AbyCfg
+        if C then for k in pairs(C.data) do C.data[k] = nil end end
+        pcall(function() if writefile then writefile("Abysslix_Config.json", "{}") end end)
+        pcall(function() if getgenv then getgenv().AbysslixConfig = nil end end)
+        notify("Config", "Đã xóa toàn bộ cài đặt đã lưu. Vào lại game để áp dụng.")
+    end)
+
+    -- ===================== Teleports & Misc =====================
+    Real:AddSection("Teleports & Misc")
+
+    _G.TweenSpeed = 350
+    Real:AddSlider({
+        Title = "Tween Speed", Min = 10, Max = 500, Default = 350,
+        Callback = function(v) _G.TweenSpeed = math.clamp(math.floor((tonumber(v) or 350) + 0.5), 10, 500) end,
+    })
+
+    -- Auto Destroy Lava
+    local lavaConn = nil
+    local function killLava(o)
+        if o:IsA("BasePart") and string.find(string.lower(o.Name), "lava", 1, true) then
+            pcall(function() o:Destroy() end)
+        end
+    end
+    T("ToggleAutoDestroyLava", "Auto Destroy Lava", "Tự động xóa lava", true, function(on)
+        _G.AbyDestroyLava = on
+        if not on then return end
+        task.spawn(function()
+            local n = 0
+            for _, o in ipairs(__WS:GetDescendants()) do
+                if not _G.AbyDestroyLava then return end
+                killLava(o)
+                n = n + 1
+                if n % 2000 == 0 then task.wait() end
+            end
+        end)
+        if not lavaConn then
+            lavaConn = __WS.DescendantAdded:Connect(function(o)
+                if _G.AbyDestroyLava then killLava(o) end
+            end)
+        end
+    end)
+
+    -- Use Portal Teleport (TryPortal ở phần Dịch Chuyển đọc cờ này)
+    T("TogglePortalTeleport", "Use Portal Teleport", "Dùng Cổng Dịch Chuyển", true, function(on)
+        _G.UsePortalTeleport = on
+    end)
+
+    -- Auto Load Script (chạy lại script sau khi teleport/đổi server)
+    local tpConn = nil
+    local warned = false
+    T("ToggleAutoLoadScript", "Auto Load Script", "Tự chạy lại sau khi teleport", true, function(on)
+        if tpConn then tpConn:Disconnect(); tpConn = nil end
+        if not on then return end
+        local q = queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
+        if not q then return end
+        tpConn = __LP.OnTeleport:Connect(function(state)
+            if state ~= Enum.TeleportState.Started then return end
+            local src = nil
+            local url = getgenv and getgenv().AbysslixSource
+            if type(url) == "string" and url ~= "" then
+                src = "loadstring(game:HttpGet(" .. string.format("%q", url) .. "))()"
+            elseif isfile and isfile("Abysslixhub.lua") then
+                src = 'loadstring(readfile("Abysslixhub.lua"))()'
+            end
+            if src then
+                pcall(q, src)
+            elseif not warned then
+                warned = true
+                notify("Auto Load Script", "Chưa có nguồn script: đặt getgenv().AbysslixSource = 'link raw' hoặc lưu file Abysslixhub.lua vào workspace")
+            end
+        end)
+    end)
+
+    B("Auto Redeem All Codes", "Tự động nhập toàn bộ Code", function()
+        if RedeemAllCodes then RedeemAllCodes() end
+    end)
+
+    -- Bring Mob Max / Mode
+    local cnt = {}
+    for i = 1, 10 do cnt[i] = tostring(i) end
+    _G.BringCount = 10
+    Real:AddDropdown("BringMobMaxDropdown", {
+        Title = "Bring Mob Max", Values = cnt, Default = "10", Multi = false,
+        Callback = function(v) _G.BringCount = math.clamp(math.floor(tonumber(v) or 10), 1, 10) end,
+    })
+    local spd = {}
+    for i = 1, 10 do spd[i] = tostring(i * 50) end
+    _G.BringSpeed = 500
+    Real:AddDropdown("BringMobModeDropdown", {
+        Title = "Bring Mob Mode", Values = spd, Default = "500", Multi = false,
+        Callback = function(v) _G.BringSpeed = math.clamp(math.floor(tonumber(v) or 500), 50, 500) end,
+    })
+
+    -- Choose Team / Join Selected Team
+    _G.TeamChoice = (_G.TeamChoice == "Pirates") and "Pirates" or "Marines"
+    Real:AddDropdown("ChooseTeamDropdown", {
+        Title = "Choose Team", Values = { "Marines", "Pirates" }, Default = _G.TeamChoice, Multi = false,
+        Callback = function(v) _G.TeamChoice = (v == "Pirates") and "Pirates" or "Marines" end,
+    })
+    B("Join Selected Team", "Đổi sang team đang chọn", function()
+        __RS.Remotes.CommF_:InvokeServer("SetTeam", _G.TeamChoice)
+    end)
+
+    -- Low CPU
+    local function lowCPU()
+        pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level01 end)
+        pcall(function() LightingS.GlobalShadows = false end)
+        pcall(function() if setfpscap then setfpscap(30) end end)
+        pcall(function()
+            local t = __WS.Terrain
+            t.WaterWaveSize = 0; t.WaterWaveSpeed = 0; t.WaterReflectance = 0; t.WaterTransparency = 0
+        end)
+        pcall(function()
+            for _, v in ipairs(LightingS:GetChildren()) do
+                if v:IsA("PostEffect") then v.Enabled = false end
+            end
+        end)
+        local n = 0
+        for _, o in ipairs(__WS:GetDescendants()) do
+            pcall(function()
+                if o:IsA("ParticleEmitter") or o:IsA("Trail") or o:IsA("Smoke") or o:IsA("Fire") or o:IsA("Sparkles") then
+                    o.Enabled = false
+                end
+            end)
+            n = n + 1
+            if n % 1500 == 0 then task.wait() end
+        end
+    end
+    B("Turn on Low CPU", "Giảm tải CPU, tăng FPS", lowCPU)
+    T("ToggleAutoLowCPU", "Auto Turn on Low CPU", "Tự bật Low CPU khi tải script", false, function(on)
+        if on and not _G.AbyLowCPUAuto then
+            _G.AbyLowCPUAuto = true
+            task.spawn(lowCPU)
+        end
+    end)
+
+    -- Remove Sky Fog
+    local function removeFog()
+        pcall(function()
+            for _, nm in ipairs({ "BaseAtmosphere", "SeaTerrorCC", "FantasySky" }) do
+                local o = LightingS:FindFirstChild(nm)
+                if o then o:Destroy() end
+            end
+            local LL = LightingS:FindFirstChild("LightingLayers")
+            if LL then
+                for _, nm in ipairs({ "Atmosphere", "DarkFog" }) do
+                    local o = LL:FindFirstChild(nm)
+                    if o then o:Destroy() end
+                end
+            end
+            for _, o in ipairs(LightingS:GetChildren()) do
+                if o:IsA("Atmosphere") then o:Destroy() end
+            end
+            LightingS.FogEnd = 100000
+        end)
+    end
+    B("Remove Sky Fog", "Xóa sương mù, hiệu ứng trời để tăng FPS", removeFog)
+    local fogConn = nil
+    T("ToggleAutoRemoveSkyFog", "Auto Remove Sky Fog", "Tự động xóa sương mù, hiệu ứng trời để tăng FPS", true, function(on)
+        _G.AbyAutoFog = on
+        if on then
+            removeFog()
+            if not fogConn then
+                fogConn = LightingS.ChildAdded:Connect(function()
+                    if _G.AbyAutoFog then task.defer(removeFog) end
+                end)
+            end
+        end
+    end)
+    task.spawn(function()
+        while task.wait(5) do
+            if _G.AbyAutoFog then removeFog() end
+        end
+    end)
+
+    -- Stop when got God's Chalice / Fist of Darkness
+    T("ToggleStopChalice", "Stop when got God's Chalice/Fist of Darkness", "Dừng mọi thứ khi có chén thánh/key râu đen", true, function(on)
+        _G.AbyStopChalice = on
+    end)
+    task.spawn(function()
+        local stopped = false
+        while task.wait(2) do
+            if _G.AbyStopChalice then
+                local has = false
+                pcall(function()
+                    local ch = __LP.Character
+                    for _, nm in ipairs({ "God's Chalice", "Fist of Darkness" }) do
+                        if __LP.Backpack:FindFirstChild(nm) or (ch and ch:FindFirstChild(nm)) then has = true end
+                    end
+                end)
+                if has and not stopped then
+                    stopped = true
+                    for _, e in ipairs(_G.AbyToggles or {}) do
+                        if e.holder.value == true and e.def ~= true and e.id ~= "ToggleStopChalice" then
+                            pcall(function() e.proxy:SetValue(false) end)
+                        end
+                    end
+                    pcall(function() if StopMovement then StopMovement() end end)
+                    notify("Đã có vật phẩm", "Đã dừng mọi chức năng vì có God's Chalice / Fist of Darkness")
+                elseif not has then
+                    stopped = false
+                end
+            end
+        end
+    end)
+
+    -- Bring Mobs / Fast Attack / Magic Fast Fruit / Auto Shoot Gun (điều khiển logic cũ)
+    T("ToggleBringMobs", "Bring Mobs", "Gom quái", true, function(on) drive("ToggleBringMob", on) end)
+    T("ToggleFastAttackNew", "Fast Attack", "Đánh Nhanh", true, function(on) drive("ToggleFastAttack", on) end)
+    T("ToggleMagicFastFruit", "Magic Fast Fruit", "Đánh trái ác quỷ không cần cầm", false, function(on) _G.UseFruitM1 = on end)
+    T("ToggleAutoShootGun", "Auto Shoot Gun (Risk)", "Tự Động Bắn Súng", false, function(on) _G.UseGun = on end)
+
+    -- Haki / Tộc
+    T("ToggleAutoBuso", "Auto Turn on Buso", "Bật Haki Tay", true, function(on) drive("AutoBusoToggle", on) end)
+    T("ToggleAutoKenNew", "Auto Turn on Ken", "Bật Haki Quan Sát", false, function(on) drive("AutoKenToggle", on) end)
+    T("ToggleAutoRaceV3", "Auto Turn on Race V3", "Bật tộc V3", true, function(on) drive("ToggleAutoT", on) end)
+    T("ToggleAutoRaceV4", "Auto Turn on Race V4", "Bật tộc V4", true, function(on) drive("ToggleAutoY", on) end)
+
+    -- Spin Position
+    T("ToggleSpinPosition", "Auto Turn on Spin Position", "Khá bánh quay tròn", false, function(on) _G.AbySpin = on end)
+    RunService.Heartbeat:Connect(function(dt)
+        if _G.AbySpin then
+            pcall(function()
+                local r = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
+                if r then r.CFrame = r.CFrame * CFrame.Angles(0, math.rad(720) * dt, 0) end
+            end)
+        end
+    end)
+
+    -- Panic Mode: máu thấp -> bay lên cao, hết nguy hiểm thì thôi
+    T("TogglePanicMode", "Panic Mode", "Chế độ an toàn", true, function(on) _G.AbyPanic = on end)
+    task.spawn(function()
+        local active = false
+        while task.wait(0.25) do
+            if _G.AbyPanic then
+                pcall(function()
+                    local ch = __LP.Character
+                    local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+                    local root = ch and ch:FindFirstChild("HumanoidRootPart")
+                    if not (hum and root) or hum.Health <= 0 then active = false; return end
+                    local ratio = hum.Health / math.max(hum.MaxHealth, 1)
+                    if not active and ratio < 0.3 then
+                        active = true
+                        if StopMovement then StopMovement() end
+                        root.CFrame = root.CFrame + Vector3.new(0, 300, 0)
+                        notify("Panic Mode", "Máu thấp, đã bay lên cao để hồi máu")
+                    elseif active and ratio > 0.75 then
+                        active = false
+                    end
+                end)
+            end
+        end
+    end)
+
+    -- Anti AFK
+    T("ToggleAntiAFKNew", "Anti AFK", "Chống AFK", true, function(on) _G.AntiAFK = on end)
+
+    -- Remove Hit VFX
+    local vfxConn = nil
+    local function killFx(o)
+        pcall(function()
+            if o:IsA("ParticleEmitter") or o:IsA("Trail") or o:IsA("Beam") or o:IsA("Smoke") or o:IsA("Fire") or o:IsA("Sparkles") then
+                o.Enabled = false
+            end
+        end)
+    end
+    T("ToggleRemoveHitVFX", "Remove Hit VFX", "Xóa hiệu ứng đánh", true, function(on)
+        _G.AbyNoHitVFX = on
+        if on and not vfxConn then
+            task.spawn(function()
+                local wo = __WS:WaitForChild("_WorldOrigin", 30)
+                if wo and not vfxConn then
+                    vfxConn = wo.DescendantAdded:Connect(function(o)
+                        if _G.AbyNoHitVFX then killFx(o) end
+                    end)
+                end
+            end)
+        end
+    end)
+
+    -- Remove Death & Respawn VFX
+    T("ToggleRemoveDeathVFX", "Remove Death & Respawn VFX", "Xóa hiệu ứng ngỏm và hồi sinh", true, function(on)
+        if not on then return end
+        pcall(function()
+            local eff = __RS:FindFirstChild("Effect")
+            local c = eff and eff:FindFirstChild("Container")
+            if c then
+                for _, nm in ipairs({ "Death", "Respawn" }) do
+                    local o = c:FindFirstChild(nm)
+                    if o then o:Destroy() end
+                end
+            end
+        end)
+    end)
+
+    -- Disable Notify
+    T("ToggleDisableNotify", "Disable Notify", "Tắt thông báo hạ quái", true, function(on) drive("ToggleRemoveNotify", on) end)
+end
 Tabs.Status:AddSection("Server")
 Tabs.Status:AddParagraph({
     ["Title"] = "Thông Tin",
@@ -27476,6 +27912,7 @@ local Islands = {
 }
 
 local function TryPortal(position)
+    if _G.UsePortalTeleport == false then return false end   -- [Settings] tắt "Use Portal Teleport"
     local success = pcall(function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", position)
     end)
@@ -29688,7 +30125,7 @@ v496:AddToggle({
             ["Misc"] = {
                 default = { "Misc", "Tiện Ích" },
                 { "Status", "Job ID", { "Job ID", "Join Clipboard" } },
-                { "Setting", "Tấn Công", { "Fast Attack", "Bring Mob" } },
+                { "Misc", "Tấn Công", { "Fast Attack", "Bring Mob" } },   -- [Settings] tab Cài Đặt chỉ giữ đúng các mục theo ảnh
                 { "Player", "Tốc Độ & Nhảy", { "Speed", "Jump" } },
                 { "Race", "Tộc V3/V4", { "Race V3", "Race V4" } },
                 { "Player", "Di Chuyển", { "Infinite", "Dodge", "Walk on Water" } },
