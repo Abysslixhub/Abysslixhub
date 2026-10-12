@@ -1,3 +1,223 @@
+-- [BẮT LỖI] Bọc toàn bộ script: nếu bị dừng giữa chừng sẽ báo đúng dòng lỗi (thông báo + console F9) thay vì im lặng.
+local __AbyOk, __AbyErr = xpcall(function()
+-- ============================================================
+-- [BẢNG NÚT NỔI] Dựng trực tiếp bằng Instance thường, đặt ĐẦU FILE, không dùng thư viện UI.
+-- Luôn hiện ra ngay khi script được chạy (kéo thả được). Nếu bảng này không hiện = file này CHƯA được chạy.
+-- ============================================================
+do
+    local okP, errP = pcall(function()
+        local Players = game:GetService("Players")
+        local UIS = game:GetService("UserInputService")
+        local RSv = game:GetService("ReplicatedStorage")
+        local VIMv = game:GetService("VirtualInputManager")
+        local parent
+        pcall(function() if gethui then parent = gethui() end end)
+        if not parent then pcall(function() parent = game:GetService("CoreGui") end) end
+        local function usable(p)
+            if not p then return false end
+            return pcall(function() local t = Instance.new("Folder"); t.Parent = p; t:Destroy() end)
+        end
+        if not usable(parent) then parent = Players.LocalPlayer:WaitForChild("PlayerGui", 20) end
+        pcall(function() local old = parent:FindFirstChild("AbyQuickPanel"); if old then old:Destroy() end end)
+
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "AbyQuickPanel"
+        gui.ResetOnSpawn = false
+        gui.DisplayOrder = 999
+        gui.Parent = parent
+
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 210, 0, 30)
+        frame.Position = UDim2.new(0, 12, 0.35, 0)
+        frame.BackgroundColor3 = Color3.fromRGB(14, 18, 24)
+        frame.BorderSizePixel = 0
+        frame.Active = true
+        frame.ClipsDescendants = true
+        frame.Parent = gui
+        local corner = Instance.new("UICorner"); corner.CornerRadius = UDim.new(0, 8); corner.Parent = frame
+        local stroke = Instance.new("UIStroke"); stroke.Color = Color3.fromRGB(0, 240, 255); stroke.Thickness = 1; stroke.Parent = frame
+
+        local title = Instance.new("TextLabel")
+        title.Size = UDim2.new(1, -34, 0, 30)
+        title.Position = UDim2.new(0, 10, 0, 0)
+        title.BackgroundTransparency = 1
+        title.Font = Enum.Font.GothamBold
+        title.TextSize = 14
+        title.TextXAlignment = Enum.TextXAlignment.Left
+        title.TextColor3 = Color3.fromRGB(0, 240, 255)
+        title.Text = "Abysslix • Nút Nhanh"
+        title.Parent = frame
+
+        local fold = Instance.new("TextButton")
+        fold.Size = UDim2.new(0, 26, 0, 22)
+        fold.Position = UDim2.new(1, -30, 0, 4)
+        fold.BackgroundColor3 = Color3.fromRGB(30, 38, 48)
+        fold.BorderSizePixel = 0
+        fold.Font = Enum.Font.GothamBold
+        fold.TextSize = 14
+        fold.TextColor3 = Color3.fromRGB(255, 255, 255)
+        fold.Text = "+"
+        fold.Parent = frame
+        local fc = Instance.new("UICorner"); fc.CornerRadius = UDim.new(0, 6); fc.Parent = fold
+
+        local body = Instance.new("Frame")
+        body.Position = UDim2.new(0, 0, 0, 32)
+        body.Size = UDim2.new(1, 0, 0, 0)
+        body.BackgroundTransparency = 1
+        body.Parent = frame
+        local list = Instance.new("UIListLayout")
+        list.Padding = UDim.new(0, 5)
+        list.SortOrder = Enum.SortOrder.LayoutOrder
+        list.Parent = body
+        local pad = Instance.new("UIPadding")
+        pad.PaddingLeft = UDim.new(0, 8); pad.PaddingRight = UDim.new(0, 8); pad.PaddingBottom = UDim.new(0, 8)
+        pad.Parent = body
+
+        local open = false
+        local rows = 0
+        local HEIGHT = 0
+        local function relayout()
+            HEIGHT = 32 + rows * 31 + 8
+            frame.Size = UDim2.new(0, 210, 0, open and HEIGHT or 30)
+            body.Visible = open
+            fold.Text = open and "–" or "+"
+        end
+
+        local refreshers = {}
+        local function refreshAll() for _, f in ipairs(refreshers) do pcall(f) end end
+
+        local function addToggle(label, getFlag, setFlag)
+            rows = rows + 1
+            local b = Instance.new("TextButton")
+            b.Size = UDim2.new(1, 0, 0, 26)
+            b.BorderSizePixel = 0
+            b.Font = Enum.Font.GothamMedium
+            b.TextSize = 13
+            b.TextColor3 = Color3.fromRGB(255, 255, 255)
+            b.LayoutOrder = rows
+            b.AutoButtonColor = true
+            b.Parent = body
+            local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 6); bc.Parent = b
+            local function refresh()
+                local on = getFlag() == true
+                b.Text = label .. ": " .. (on and "BẬT" or "TẮT")
+                b.BackgroundColor3 = on and Color3.fromRGB(0, 140, 160) or Color3.fromRGB(40, 48, 60)
+            end
+            refreshers[#refreshers + 1] = refresh
+            b.MouseButton1Click:Connect(function()
+                setFlag(not (getFlag() == true))
+                refreshAll()
+            end)
+            refresh()
+        end
+
+        local function addStepper(label, getVal, setVal, step, lo, hi)
+            rows = rows + 1
+            local row = Instance.new("Frame")
+            row.Size = UDim2.new(1, 0, 0, 26)
+            row.BackgroundTransparency = 1
+            row.LayoutOrder = rows
+            row.Parent = body
+            local lab = Instance.new("TextLabel")
+            lab.Size = UDim2.new(1, -60, 1, 0)
+            lab.BackgroundTransparency = 1
+            lab.Font = Enum.Font.GothamMedium
+            lab.TextSize = 13
+            lab.TextXAlignment = Enum.TextXAlignment.Left
+            lab.TextColor3 = Color3.fromRGB(255, 255, 255)
+            lab.Parent = row
+            local function mk(txt, x)
+                local b = Instance.new("TextButton")
+                b.Size = UDim2.new(0, 26, 0, 26)
+                b.Position = UDim2.new(1, x, 0, 0)
+                b.BackgroundColor3 = Color3.fromRGB(40, 48, 60)
+                b.BorderSizePixel = 0
+                b.Font = Enum.Font.GothamBold
+                b.TextSize = 15
+                b.TextColor3 = Color3.fromRGB(255, 255, 255)
+                b.Text = txt
+                b.Parent = row
+                local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 6); c.Parent = b
+                return b
+            end
+            local function refresh() lab.Text = label .. ": " .. tostring(getVal()) end
+            refreshers[#refreshers + 1] = refresh
+            mk("-", -56).MouseButton1Click:Connect(function() setVal(math.max(lo, getVal() - step)); refreshAll() end)
+            mk("+", -28).MouseButton1Click:Connect(function() setVal(math.min(hi, getVal() + step)); refreshAll() end)
+            refresh()
+        end
+
+        -- khởi tạo cờ mặc định (không ghi đè nếu đã có)
+        if _G.TweenSpeed == nil then _G.TweenSpeed = 350 end
+        if _G.BringMob == nil then _G.BringMob = true end
+        if _G.BringCount == nil then _G.BringCount = 10 end
+
+        addToggle("Tộc V3", function() return _G.AutoT end, function(v) _G.AutoT = v end)
+        addToggle("Tộc V4", function() return _G.AutoY end, function(v) _G.AutoY = v end)
+        addToggle("M1 Trái", function() return _G.UseFruitM1 end, function(v)
+            _G.UseFruitM1 = v
+            if v then _G.UseGun = false end
+        end)
+        addToggle("Bắn Súng", function() return _G.UseGun end, function(v)
+            _G.UseGun = v
+            if v then _G.UseFruitM1 = false end
+        end)
+        addToggle("Bring Mob", function() return _G.BringMob end, function(v) _G.BringMob = v end)
+        addStepper("Tween Speed", function() return tonumber(_G.TweenSpeed) or 350 end,
+            function(v) _G.TweenSpeed = v end, 50, 10, 500)
+        addStepper("Bring Max", function() return tonumber(_G.BringCount) or 10 end,
+            function(v) _G.BringCount = v end, 1, 1, 10)
+
+        fold.MouseButton1Click:Connect(function() open = not open; relayout() end)
+        open = true
+        relayout()
+
+        -- kéo thả bằng thanh tiêu đề
+        local dragging, dragStart, startPos = false, nil, nil
+        title.Active = true
+        frame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                if input.Position.Y - frame.AbsolutePosition.Y <= 30 then
+                    dragging, dragStart, startPos = true, input.Position, frame.Position
+                end
+            end
+        end)
+        UIS.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local d = input.Position - dragStart
+                frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+            end
+        end)
+        UIS.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+        end)
+
+        -- vòng lặp tộc V3 / V4 (độc lập, không phụ thuộc phần script phía sau)
+        _G.AbyEarlyRace = true
+        task.spawn(function()
+            while task.wait(0.1) do
+                if _G.AutoT then pcall(function() RSv.Remotes.CommE:FireServer("ActivateAbility") end) end
+            end
+        end)
+        task.spawn(function()
+            while task.wait(0.1) do
+                if _G.AutoY then
+                    pcall(function()
+                        VIMv:SendKeyEvent(true, "Y", false, game)
+                        task.wait()
+                        VIMv:SendKeyEvent(false, "Y", false, game)
+                    end)
+                end
+            end
+        end)
+    end)
+    if not okP then
+        warn("[Abysslix] Bảng nút nổi lỗi: " .. tostring(errP))
+        pcall(function()
+            game:GetService("StarterGui"):SetCore("SendNotification", { Title = "Bảng nút lỗi", Text = tostring(errP), Duration = 30 })
+        end)
+    end
+end
 -- [OPT] Cache service / LocalPlayer 1 lần (trước: ~1700 lần gọi game:GetService(...) / game.Players.LocalPlayer rải rác)
 local __PL  = game:GetService("Players")
 local __RS  = game:GetService("ReplicatedStorage")
@@ -5028,6 +5248,107 @@ Tabs = {
 }
 Tabs.Misc = Tabs.Status   -- Tabs.Misc CHỈ còn dùng cho mục liên quan server (vào lại/đổi server)
 Tabs.SettingTab = Tabs.Setting   -- tab Settings thật (mọi mục không liên quan Server đưa về đây)
+
+-- ============================================================
+-- [SETTINGS NHANH] Tộc V3/V4, M1 Trái, Bắn Súng, Config, Tween Speed, Bring Mob
+-- Đặt NGAY sau khi tạo tab Settings (rất sớm) -> không phụ thuộc phần code phía sau có chạy tới hay không.
+-- Mỗi mục có pcall riêng, logic độc lập (chỉ set cờ _G.* mà các vòng lặp có sẵn đọc).
+-- ============================================================
+do
+    local Real = Tabs.Setting
+    local built, failed = 0, 0
+    local function notify(t, c) pcall(function() Library:Notify({ Title = t, Content = c }) end) end
+    local function safe(name, fn)
+        local ok, e = pcall(fn)
+        if ok then built = built + 1
+        else
+            failed = failed + 1
+            warn("[Settings] " .. name .. " lỗi: " .. tostring(e))
+            notify("Settings lỗi: " .. name, tostring(e))
+        end
+    end
+
+    safe("Chiến Đấu Nhanh", function()
+        Real:AddSection("Chiến Đấu Nhanh")
+        local fruitT, gunT
+        Real:AddToggle("QuickRaceV3", { Title = "Bật Tộc V3", Description = "Tự động bật kỹ năng tộc V3", Default = false })
+            :OnChanged(function(v) _G.AutoT = (v == true) end)
+        Real:AddToggle("QuickRaceV4", { Title = "Bật Tộc V4", Description = "Tự động bật tộc V4 (bấm phím Y)", Default = false })
+            :OnChanged(function(v) _G.AutoY = (v == true) end)
+        fruitT = Real:AddToggle("QuickFruitM1", { Title = "Đánh Bằng M1 Trái", Description = "Cầm trái và bắn M1 vào quái gần nhất", Default = false })
+        fruitT:OnChanged(function(v)
+            _G.UseFruitM1 = (v == true)
+            if v and gunT then gunT:SetValue(false) end
+        end)
+        gunT = Real:AddToggle("QuickGun", { Title = "Bắn Súng", Description = "Cầm súng và bắn vào quái gần nhất", Default = false })
+        gunT:OnChanged(function(v)
+            _G.UseGun = (v == true)
+            if v and fruitT then fruitT:SetValue(false) end
+        end)
+    end)
+
+    safe("Config", function()
+        Real:AddSection("Config")
+        Real:AddButton({
+            Title = "Copy Config",
+            Description = "Copy config. Dán vào executor trước khi chạy Abysslix.",
+            Callback = function()
+                local C = _G.AbyCfg
+                local json = game:GetService("HttpService"):JSONEncode(C and C.data or {})
+                local txt = "getgenv().AbysslixConfig = [===[" .. json .. "]===]"
+                if setclipboard then setclipboard(txt)
+                elseif toclipboard then toclipboard(txt)
+                else notify("Config", "Executor không hỗ trợ setclipboard"); return end
+                notify("Config", "Đã copy config vào clipboard")
+            end,
+        })
+        Real:AddButton({
+            Title = "Reset Config",
+            Description = "Xóa toàn bộ cài đặt đã lưu trước đó",
+            Callback = function()
+                local C = _G.AbyCfg
+                if C then for k in pairs(C.data) do C.data[k] = nil end end
+                pcall(function() if writefile then writefile("Abysslix_Config.json", "{}") end end)
+                pcall(function() if getgenv then getgenv().AbysslixConfig = nil end end)
+                notify("Config", "Đã xóa toàn bộ cài đặt đã lưu. Vào lại game để áp dụng.")
+            end,
+        })
+    end)
+
+    safe("Tween Speed", function()
+        Real:AddSection("Tween Speed")
+        _G.TweenSpeed = 350
+        Real:AddSlider({
+            Title = "Tween Speed", Description = "10 - 500. Bị server kéo lại thì giảm xuống.",
+            Min = 10, Max = 500, Default = 350,
+            Callback = function(v) _G.TweenSpeed = math.clamp(math.floor((tonumber(v) or 350) + 0.5), 10, 500) end,
+        })
+    end)
+
+    safe("Bring Mob", function()
+        Real:AddSection("Bring Mob")
+        _G.BringMob = true
+        Real:AddToggle("QuickBringMob", { Title = "Bring Mobs", Description = "Gom quái", Default = true })
+            :OnChanged(function(v) _G.BringMob = (v == true) end)
+        local cnt = {}
+        for i = 1, 10 do cnt[i] = tostring(i) end
+        _G.BringCount = 10
+        Real:AddDropdown("QuickBringMax", {
+            Title = "Bring Mob Max", Description = "Số quái gom tối đa", Values = cnt, Default = "10", Multi = false,
+            Callback = function(v) _G.BringCount = math.clamp(math.floor(tonumber(v) or 10), 1, 10) end,
+        })
+        local spd = {}
+        for i = 1, 10 do spd[i] = tostring(i * 50) end
+        _G.BringSpeed = 500
+        Real:AddDropdown("QuickBringSpeed", {
+            Title = "Bring Mob Mode", Description = "Tốc độ kéo quái", Values = spd, Default = "500", Multi = false,
+            Callback = function(v) _G.BringSpeed = math.clamp(math.floor(tonumber(v) or 500), 50, 500) end,
+        })
+    end)
+
+    _G.AbySettingsBuilt = built
+    notify("Settings", "Đã dựng " .. built .. " nhóm nút" .. (failed > 0 and (", lỗi " .. failed .. " nhóm") or ""))
+end
 
 -- [GỘP TAB] Item -> Shop (Raid đã tách thành tab riêng)
 -- Code cũ vẫn gọi Tabs.Item / Tabs.Raid nên cho chúng trỏ về cùng 1 tab (không phải sửa 30+ chỗ)
@@ -13899,7 +14220,7 @@ end)
 spawn(function()
     while task.wait(0.1) do
         pcall(function()
-            if _G.AutoT then
+            if _G.AutoT and not _G.AbyEarlyRace then
                 __RS.Remotes.CommE:FireServer("ActivateAbility")
             end
         end)
@@ -13915,7 +14236,7 @@ end)
 spawn(function()
     while task.wait(0.1) do
         pcall(function()
-            if _G.AutoY then
+            if _G.AutoY and not _G.AbyEarlyRace then
                 __VIM:SendKeyEvent(true, "Y", false, game)
                 wait()
                 __VIM:SendKeyEvent(false, "Y", false, game)
@@ -14680,121 +15001,6 @@ Tabs.Setting:AddButton({
         end)
     end
 })
--- ============================================================
--- [NÚT NHANH] Tộc V3 / Tộc V4 / M1 Trái / Bắn Súng -> tab Settings
--- Khối riêng (pcall riêng) nên không bị mất nút khi khối Settings bên dưới gặp lỗi.
--- ============================================================
-do
-    local okQ, errQ = pcall(function()
-        local Real = _G.AbyRealSetting or Tabs.Setting
-        local H = _G.AbyHidden or {}
-        Real:AddSection("Chiến Đấu Nhanh")
-        local fruitT, gunT
-        local function tg(id, title, desc, fn)
-            local t = Real:AddToggle(id, { Title = title, Description = desc, Default = false })
-            t:OnChanged(function(v) pcall(fn, v == true) end)
-            return t
-        end
-        tg("QuickRaceV3", "Bật Tộc V3", "Tự động bật kỹ năng tộc V3", function(on)
-            if H.ToggleAutoT then H.ToggleAutoT:Fire(on) else _G.AutoT = on end
-        end)
-        tg("QuickRaceV4", "Bật Tộc V4", "Tự động bật tộc V4 (bấm phím Y)", function(on)
-            if H.ToggleAutoY then H.ToggleAutoY:Fire(on) else _G.AutoY = on end
-        end)
-        fruitT = tg("QuickFruitM1", "Đánh Bằng M1 Trái", "Cầm trái và bắn M1 vào quái gần nhất", function(on)
-            _G.UseFruitM1 = on
-            if on and gunT then gunT:SetValue(false) end
-        end)
-        gunT = tg("QuickGun", "Bắn Súng", "Cầm súng và bắn vào quái gần nhất", function(on)
-            _G.UseGun = on
-            if on and fruitT then fruitT:SetValue(false) end
-        end)
-    end)
-    if not okQ then
-        warn("[Settings] Lỗi khối Chiến Đấu Nhanh: " .. tostring(errQ))
-        pcall(function() Library:Notify({ Title = "Settings lỗi", Content = tostring(errQ) }) end)
-    end
-end
--- ============================================================
--- [NÚT NHANH 2] Config / Tween Speed / Bring Mob -> tab Settings
--- Mỗi mục có pcall riêng: mục nào lỗi chỉ báo mục đó, không làm mất các mục còn lại.
--- ============================================================
-do
-    local Real = _G.AbyRealSetting or Tabs.Setting
-    local H = _G.AbyHidden or {}
-    local function notify(t, c) pcall(function() Library:Notify({ Title = t, Content = c }) end) end
-    local function safe(name, fn)
-        local ok, e = pcall(fn)
-        if not ok then
-            warn("[Settings] " .. name .. " lỗi: " .. tostring(e))
-            notify("Settings lỗi: " .. name, tostring(e))
-        end
-    end
-
-    safe("Config", function()
-        Real:AddSection("Config")
-        Real:AddButton({
-            Title = "Copy Config",
-            Description = "Copy config. Dán vào executor trước khi chạy Abysslix.",
-            Callback = function()
-                local C = _G.AbyCfg
-                local json = game:GetService("HttpService"):JSONEncode(C and C.data or {})
-                local txt = "getgenv().AbysslixConfig = [===[" .. json .. "]===]"
-                if setclipboard then setclipboard(txt)
-                elseif toclipboard then toclipboard(txt)
-                else notify("Config", "Executor không hỗ trợ setclipboard"); return end
-                notify("Config", "Đã copy config vào clipboard")
-            end,
-        })
-        Real:AddButton({
-            Title = "Reset Config",
-            Description = "Xóa toàn bộ cài đặt đã lưu trước đó",
-            Callback = function()
-                local C = _G.AbyCfg
-                if C then for k in pairs(C.data) do C.data[k] = nil end end
-                pcall(function() if writefile then writefile("Abysslix_Config.json", "{}") end end)
-                pcall(function() if getgenv then getgenv().AbysslixConfig = nil end end)
-                notify("Config", "Đã xóa toàn bộ cài đặt đã lưu. Vào lại game để áp dụng.")
-            end,
-        })
-    end)
-
-    safe("Tween Speed", function()
-        Real:AddSection("Tween Speed")
-        _G.TweenSpeed = 350
-        Real:AddSlider({
-            Title = "Tween Speed", Description = "10 - 500. Bị server kéo lại thì giảm xuống.",
-            Min = 10, Max = 500, Default = 350,
-            Callback = function(v) _G.TweenSpeed = math.clamp(math.floor((tonumber(v) or 350) + 0.5), 10, 500) end,
-        })
-    end)
-
-    safe("Bring Mob", function()
-        Real:AddSection("Bring Mob")
-        local t = Real:AddToggle("QuickBringMob", { Title = "Bring Mobs", Description = "Gom quái", Default = true })
-        t:OnChanged(function(v)
-            if H.ToggleBringMob then H.ToggleBringMob:Fire(v == true) else _G.BringMob = (v == true) end
-        end)
-        local okc, cur = pcall(function() return t:GetValue() end)
-        local on0 = (okc and type(cur) == "boolean") and cur or true
-        if H.ToggleBringMob then H.ToggleBringMob:Fire(on0) else _G.BringMob = on0 end
-
-        local cnt = {}
-        for i = 1, 10 do cnt[i] = tostring(i) end
-        _G.BringCount = 10
-        Real:AddDropdown("QuickBringMax", {
-            Title = "Bring Mob Max", Description = "Số quái gom tối đa", Values = cnt, Default = "10", Multi = false,
-            Callback = function(v) _G.BringCount = math.clamp(math.floor(tonumber(v) or 10), 1, 10) end,
-        })
-        local spd = {}
-        for i = 1, 10 do spd[i] = tostring(i * 50) end
-        _G.BringSpeed = 500
-        Real:AddDropdown("QuickBringSpeed", {
-            Title = "Bring Mob Mode", Description = "Tốc độ kéo quái", Values = spd, Default = "500", Multi = false,
-            Callback = function(v) _G.BringSpeed = math.clamp(math.floor(tonumber(v) or 500), 50, 500) end,
-        })
-    end)
-end
 -- ============================================================
 -- [SETTINGS THEO ẢNH 100%] Tab Cài Đặt mới: 2 mục Config + 28 mục "Teleports & Misc" đúng thứ tự trong ảnh
 -- ============================================================
@@ -30397,3 +30603,16 @@ end
 
 task.delay(6, function() _G.AbyLoaded = true end)   -- từ đây mới bắt đầu ghi cấu hình
 print('✅ Abysslixhub - Tất cả tính năng đã được load!')
+
+end, function(e) return debug.traceback(tostring(e), 2) end)
+if not __AbyOk then
+    _G.AbyLastError = tostring(__AbyErr)
+    warn("[Abysslixhub] SCRIPT BỊ DỪNG GIỮA CHỪNG:\n" .. tostring(__AbyErr))
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Abysslixhub dừng giữa chừng",
+            Text = string.sub(tostring(__AbyErr):match("^[^\n]*") or tostring(__AbyErr), 1, 200),
+            Duration = 30,
+        })
+    end)
+end
