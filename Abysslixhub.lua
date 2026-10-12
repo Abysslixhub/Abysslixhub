@@ -14681,6 +14681,121 @@ Tabs.Setting:AddButton({
     end
 })
 -- ============================================================
+-- [NÚT NHANH] Tộc V3 / Tộc V4 / M1 Trái / Bắn Súng -> tab Settings
+-- Khối riêng (pcall riêng) nên không bị mất nút khi khối Settings bên dưới gặp lỗi.
+-- ============================================================
+do
+    local okQ, errQ = pcall(function()
+        local Real = _G.AbyRealSetting or Tabs.Setting
+        local H = _G.AbyHidden or {}
+        Real:AddSection("Chiến Đấu Nhanh")
+        local fruitT, gunT
+        local function tg(id, title, desc, fn)
+            local t = Real:AddToggle(id, { Title = title, Description = desc, Default = false })
+            t:OnChanged(function(v) pcall(fn, v == true) end)
+            return t
+        end
+        tg("QuickRaceV3", "Bật Tộc V3", "Tự động bật kỹ năng tộc V3", function(on)
+            if H.ToggleAutoT then H.ToggleAutoT:Fire(on) else _G.AutoT = on end
+        end)
+        tg("QuickRaceV4", "Bật Tộc V4", "Tự động bật tộc V4 (bấm phím Y)", function(on)
+            if H.ToggleAutoY then H.ToggleAutoY:Fire(on) else _G.AutoY = on end
+        end)
+        fruitT = tg("QuickFruitM1", "Đánh Bằng M1 Trái", "Cầm trái và bắn M1 vào quái gần nhất", function(on)
+            _G.UseFruitM1 = on
+            if on and gunT then gunT:SetValue(false) end
+        end)
+        gunT = tg("QuickGun", "Bắn Súng", "Cầm súng và bắn vào quái gần nhất", function(on)
+            _G.UseGun = on
+            if on and fruitT then fruitT:SetValue(false) end
+        end)
+    end)
+    if not okQ then
+        warn("[Settings] Lỗi khối Chiến Đấu Nhanh: " .. tostring(errQ))
+        pcall(function() Library:Notify({ Title = "Settings lỗi", Content = tostring(errQ) }) end)
+    end
+end
+-- ============================================================
+-- [NÚT NHANH 2] Config / Tween Speed / Bring Mob -> tab Settings
+-- Mỗi mục có pcall riêng: mục nào lỗi chỉ báo mục đó, không làm mất các mục còn lại.
+-- ============================================================
+do
+    local Real = _G.AbyRealSetting or Tabs.Setting
+    local H = _G.AbyHidden or {}
+    local function notify(t, c) pcall(function() Library:Notify({ Title = t, Content = c }) end) end
+    local function safe(name, fn)
+        local ok, e = pcall(fn)
+        if not ok then
+            warn("[Settings] " .. name .. " lỗi: " .. tostring(e))
+            notify("Settings lỗi: " .. name, tostring(e))
+        end
+    end
+
+    safe("Config", function()
+        Real:AddSection("Config")
+        Real:AddButton({
+            Title = "Copy Config",
+            Description = "Copy config. Dán vào executor trước khi chạy Abysslix.",
+            Callback = function()
+                local C = _G.AbyCfg
+                local json = game:GetService("HttpService"):JSONEncode(C and C.data or {})
+                local txt = "getgenv().AbysslixConfig = [===[" .. json .. "]===]"
+                if setclipboard then setclipboard(txt)
+                elseif toclipboard then toclipboard(txt)
+                else notify("Config", "Executor không hỗ trợ setclipboard"); return end
+                notify("Config", "Đã copy config vào clipboard")
+            end,
+        })
+        Real:AddButton({
+            Title = "Reset Config",
+            Description = "Xóa toàn bộ cài đặt đã lưu trước đó",
+            Callback = function()
+                local C = _G.AbyCfg
+                if C then for k in pairs(C.data) do C.data[k] = nil end end
+                pcall(function() if writefile then writefile("Abysslix_Config.json", "{}") end end)
+                pcall(function() if getgenv then getgenv().AbysslixConfig = nil end end)
+                notify("Config", "Đã xóa toàn bộ cài đặt đã lưu. Vào lại game để áp dụng.")
+            end,
+        })
+    end)
+
+    safe("Tween Speed", function()
+        Real:AddSection("Tween Speed")
+        _G.TweenSpeed = 350
+        Real:AddSlider({
+            Title = "Tween Speed", Description = "10 - 500. Bị server kéo lại thì giảm xuống.",
+            Min = 10, Max = 500, Default = 350,
+            Callback = function(v) _G.TweenSpeed = math.clamp(math.floor((tonumber(v) or 350) + 0.5), 10, 500) end,
+        })
+    end)
+
+    safe("Bring Mob", function()
+        Real:AddSection("Bring Mob")
+        local t = Real:AddToggle("QuickBringMob", { Title = "Bring Mobs", Description = "Gom quái", Default = true })
+        t:OnChanged(function(v)
+            if H.ToggleBringMob then H.ToggleBringMob:Fire(v == true) else _G.BringMob = (v == true) end
+        end)
+        local okc, cur = pcall(function() return t:GetValue() end)
+        local on0 = (okc and type(cur) == "boolean") and cur or true
+        if H.ToggleBringMob then H.ToggleBringMob:Fire(on0) else _G.BringMob = on0 end
+
+        local cnt = {}
+        for i = 1, 10 do cnt[i] = tostring(i) end
+        _G.BringCount = 10
+        Real:AddDropdown("QuickBringMax", {
+            Title = "Bring Mob Max", Description = "Số quái gom tối đa", Values = cnt, Default = "10", Multi = false,
+            Callback = function(v) _G.BringCount = math.clamp(math.floor(tonumber(v) or 10), 1, 10) end,
+        })
+        local spd = {}
+        for i = 1, 10 do spd[i] = tostring(i * 50) end
+        _G.BringSpeed = 500
+        Real:AddDropdown("QuickBringSpeed", {
+            Title = "Bring Mob Mode", Description = "Tốc độ kéo quái", Values = spd, Default = "500", Multi = false,
+            Callback = function(v) _G.BringSpeed = math.clamp(math.floor(tonumber(v) or 500), 50, 500) end,
+        })
+    end)
+end
+-- ============================================================
 -- [SETTINGS THEO ẢNH 100%] Tab Cài Đặt mới: 2 mục Config + 28 mục "Teleports & Misc" đúng thứ tự trong ảnh
 -- ============================================================
 _G.__okSet, _G.__errSet = pcall(function()
@@ -14724,32 +14839,9 @@ _G.__okSet, _G.__errSet = pcall(function()
         if not okB then warn("[Settings] Button lỗi: " .. tostring(title) .. " -> " .. tostring(eB)) end
     end
 
-    -- ===================== Config =====================
-    B("Copy Config", "Copy config. Dán vào executor trước khi chạy Abysslix.", function()
-        local C = _G.AbyCfg
-        local json = game:GetService("HttpService"):JSONEncode(C and C.data or {})
-        local txt = "getgenv().AbysslixConfig = [===[" .. json .. "]===]"
-        if setclipboard then setclipboard(txt)
-        elseif toclipboard then toclipboard(txt)
-        else notify("Config", "Executor không hỗ trợ setclipboard"); return end
-        notify("Config", "Đã copy config vào clipboard")
-    end)
-    B("Reset Config", "Xóa toàn bộ cài đặt đã lưu trước đó", function()
-        local C = _G.AbyCfg
-        if C then for k in pairs(C.data) do C.data[k] = nil end end
-        pcall(function() if writefile then writefile("Abysslix_Config.json", "{}") end end)
-        pcall(function() if getgenv then getgenv().AbysslixConfig = nil end end)
-        notify("Config", "Đã xóa toàn bộ cài đặt đã lưu. Vào lại game để áp dụng.")
-    end)
 
     -- ===================== Teleports & Misc =====================
     Real:AddSection("Teleports & Misc")
-
-    _G.TweenSpeed = 350
-    Real:AddSlider({
-        Title = "Tween Speed", Min = 10, Max = 500, Default = 350,
-        Callback = function(v) _G.TweenSpeed = math.clamp(math.floor((tonumber(v) or 350) + 0.5), 10, 500) end,
-    })
 
     -- Auto Destroy Lava
     local lavaConn = nil
@@ -14811,22 +14903,6 @@ _G.__okSet, _G.__errSet = pcall(function()
     B("Auto Redeem All Codes", "Tự động nhập toàn bộ Code", function()
         if RedeemAllCodes then RedeemAllCodes() end
     end)
-
-    -- Bring Mob Max / Mode
-    local cnt = {}
-    for i = 1, 10 do cnt[i] = tostring(i) end
-    _G.BringCount = 10
-    Real:AddDropdown("BringMobMaxDropdown", {
-        Title = "Bring Mob Max", Values = cnt, Default = "10", Multi = false,
-        Callback = function(v) _G.BringCount = math.clamp(math.floor(tonumber(v) or 10), 1, 10) end,
-    })
-    local spd = {}
-    for i = 1, 10 do spd[i] = tostring(i * 50) end
-    _G.BringSpeed = 500
-    Real:AddDropdown("BringMobModeDropdown", {
-        Title = "Bring Mob Mode", Values = spd, Default = "500", Multi = false,
-        Callback = function(v) _G.BringSpeed = math.clamp(math.floor(tonumber(v) or 500), 50, 500) end,
-    })
 
     -- Choose Team / Join Selected Team
     _G.TeamChoice = (_G.TeamChoice == "Marines") and "Marines" or "Pirates"
@@ -14942,16 +15018,11 @@ _G.__okSet, _G.__errSet = pcall(function()
     end)
 
     -- Bring Mobs / Fast Attack / Magic Fast Fruit / Auto Shoot Gun (điều khiển logic cũ)
-    T("ToggleBringMobs", "Bring Mobs", "Gom quái", true, function(on) drive("ToggleBringMob", on) end)
     T("ToggleFastAttackNew", "Fast Attack", "Đánh Nhanh", true, function(on) drive("ToggleFastAttack", on) end)
-    T("ToggleMagicFastFruit", "Magic Fast Fruit", "Đánh trái ác quỷ không cần cầm", false, function(on) _G.UseFruitM1 = on end)
-    T("ToggleAutoShootGun", "Auto Shoot Gun (Risk)", "Tự Động Bắn Súng", true, function(on) _G.UseGun = on end)
 
     -- Haki / Tộc
     T("ToggleAutoBuso", "Auto Turn on Buso", "Bật Haki Tay", true, function(on) drive("AutoBusoToggle", on) end)
     T("ToggleAutoKenNew", "Auto Turn on Ken", "Bật Haki Quan Sát", false, function(on) drive("AutoKenToggle", on) end)
-    T("ToggleAutoRaceV3", "Auto Turn on Race V3", "Bật tộc V3", true, function(on) drive("ToggleAutoT", on) end)
-    T("ToggleAutoRaceV4", "Auto Turn on Race V4", "Bật tộc V4", true, function(on) drive("ToggleAutoY", on) end)
 
     -- Spin Position
     T("ToggleSpinPosition", "Auto Turn on Spin Position", "Khá bánh quay tròn", false, function(on) _G.AbySpin = on end)
