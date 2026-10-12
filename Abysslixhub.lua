@@ -95,7 +95,7 @@ end)
 
 -- EXPLOIT COMPATIBILITY (Hỗ trợ mọi Executor, không kick người chơi)
 local executor = (getexecutorname and getexecutorname()) or (identifyexecutor and identifyexecutor()) or "Universal"
-print("[Abysslix Hub] Đang chạy trên Executor: " .. tostring(executor))
+print("[Abysslixhub] Đang chạy trên Executor: " .. tostring(executor))
 
 -- ALIASES
 local ply = Players
@@ -609,7 +609,9 @@ local libCreateNoti = function(Setting)
 	local colorG = tostring(Library_Function.Getcolor(getgenv().UIColor['Title Text Color'])[2])
 	local colorB = tostring(Library_Function.Getcolor(getgenv().UIColor['Title Text Color'])[3])
 	local color = colorR .. ',' .. colorG .. ',' .. colorB
-    TextLabelNoti.Text = "<font color=\"rgb(" .. tostring(color or "255,80,80") .. ")\">" .. tostring(TitleNameMain or "Abysslixhub") .. "</font> " .. tostring(getgenv().TitleNameNoti or "")
+    local _notiTitle = tostring(getgenv().TitleNameNoti or "")
+    if string.lower((_notiTitle:gsub("%s", ""))) == "abysslixhub" then _notiTitle = "" end -- tránh in 2 lần tên hub
+    TextLabelNoti.Text = "<font color=\"rgb(" .. tostring(color or "255,80,80") .. ")\">" .. tostring(TitleNameMain or "Abysslixhub") .. "</font> " .. _notiTitle
     
 	TextLabelNoti.Name = "TextLabelNoti"
 	TextLabelNoti.Parent = Topnoti
@@ -4041,7 +4043,7 @@ end
 -- TẠO CỬA SỔ CHÍNH (WINDOW) CHUẨN BANANA HUB 100%
 -- ==========================================
 local Window = Library:CreateWindow({
-    Title = "ABYSSLIX HUB",
+    Title = "Abysslixhub",
     Desc = "",
     Image = HUB_ICON
 })
@@ -4366,7 +4368,7 @@ local OrionLib = {}
 
 function OrionLib:MakeNotification(options)
     options = options or {}
-    local title = options.Title or options.Name or "Abysslix Hub"
+    local title = options.Title or options.Name or "Abysslixhub"
     local text = options.Content or options.Description or options.Text or ""
     pcall(function()
         if Library and Library.Notify then
@@ -5016,8 +5018,8 @@ Tabs.Discord:AddButton({
 task.wait(0.5)
 
 Library:Notify({
-    Title = "ABYSSLIX HUB",
-    Content = "Đã load xong AbysslixHub! Cảm ơn bạn đã sử dụng script."
+    Title = "Abysslixhub",
+    Content = "Đã load xong Abysslixhub! Cảm ơn bạn đã sử dụng script."
 })
 
 -- Anti AFK (bật/tắt bằng _G.AntiAFK, mặc định BẬT; nút ở tab Server)
@@ -7891,14 +7893,14 @@ task.defer(function()
 end)
 Tabs.Info:AddSection("Thông Tin")
 Tabs.Info:AddButton({
-    ["Title"] = "Abysslix Hub",
+    ["Title"] = "Abysslixhub",
     ["Description"] = "Youtube",
     ["Callback"] = function()
         setclipboard(tostring("https://youtube.com/@nopermc"))
     end
 })
 Tabs.Info:AddButton({
-    ["Title"] = "Abysslix Hub",
+    ["Title"] = "Abysslixhub",
     ["Description"] = "Tiktok",
     ["Callback"] = function()
         setclipboard(tostring("www.tiktok.com/@uytins1vn._"))
@@ -15792,6 +15794,7 @@ Tabs.Teleport:AddButton({
 --  • Phần ESP đã chuyển hẳn sang tab ESP
 -- ==========================================
 do
+local _fok, _ferr = pcall(function()
     local Tab = Tabs.Fruit
     local CommF = __RS:WaitForChild("Remotes"):WaitForChild("CommF_")
     local unpack_ = table.unpack or unpack
@@ -16251,6 +16254,11 @@ do
             end)
         end
     })
+end)
+if not _fok then
+    warn("[Abysslixhub] Lỗi tab Fruit: " .. tostring(_ferr))
+    pcall(function() Library:Notify({ Title = "Lỗi tab Fruit", Content = tostring(_ferr), Duration = 15 }) end)
+end
 end
 Tabs.Raid:AddSection("Đột Kích")
 local v999 = Tabs.Raid:AddDropdown("DropdownRaid", {
@@ -16272,6 +16280,7 @@ local v999 = Tabs.Raid:AddDropdown("DropdownRaid", {
     ["Multi"] = false,
     ["Default"] = 1
 })
+SelectChip = SelectChip or "Flame" -- trước đây nil cho tới khi tự chọn chip => Mua Chip không có chip để mua
 v999:SetValue(SelectChip)
 v999:OnChanged(function(p1000)
     SelectChip = p1000
@@ -25512,7 +25521,7 @@ if World3 then
                                     if not l_Character_7:FindFirstChild("Tushita") and not l_Backpack_1:FindFirstChild("Tushita") then
                                         if not v798 then
                                             game.StarterGui:SetCore("SendNotification", {
-                                                Title = "ABYSSLIX HUB",
+                                                Title = "Abysslixhub",
                                                 Text = "Use! - Yama or Tushita",
                                                 Duration = 10
                                             })
@@ -29721,7 +29730,7 @@ v496:AddToggle({
     end
 
     local function _extraNotify(msg)
-        pcall(function() Library:Notify({ Title = "ABYSSLIX HUB", Content = msg }) end)
+        pcall(function() Library:Notify({ Title = "Abysslixhub", Content = msg }) end)
     end
 
     task.spawn(function()
@@ -29751,4 +29760,4 @@ v496:AddToggle({
 end
 
 task.delay(6, function() _G.AbyLoaded = true end)   -- từ đây mới bắt đầu ghi cấu hình
-print('✅ Abysslix Hub - Tất cả tính năng đã được load!')
+print('✅ Abysslixhub - Tất cả tính năng đã được load!')
