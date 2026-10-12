@@ -114,6 +114,28 @@ local Root = HumanoidRootPart
 -- Phím tắt Ctrl (LeftControl / RightControl) & Nút nổi kéo thả
 -- ==========================================
 local HUB_ICON = "rbxassetid://132431272043343"
+-- Tự chọn ID logo nào tải được (ID Image mới -> ID Decal mới -> logo cũ)
+do
+    pcall(function()
+        local CP = game:GetService("ContentProvider")
+        for _, id in ipairs({
+            "rbxassetid://132431272043343",
+            "rbxassetid://118975851631674",
+            "rbxassetid://107755537229053",
+        }) do
+            local probe = Instance.new("ImageLabel")
+            probe.Image = id
+            pcall(function() CP:PreloadAsync({ probe }) end)
+            local okS, st = pcall(function() return CP:GetAssetFetchStatus(probe.Image) end)
+            probe:Destroy()
+            if okS and st == Enum.AssetFetchStatus.Success then
+                HUB_ICON = id
+                break
+            end
+        end
+        print("[Abysslixhub] Logo dùng: " .. HUB_ICON)
+    end)
+end
 local UserInputService = game:GetService("UserInputService")
 local TweenService = TweenService
 
@@ -139,7 +161,7 @@ local T1UIColor = {
     ["Border Color"] = Color3.fromRGB(0, 180, 255),
     ["Click Effect Color"] = Color3.fromRGB(0, 240, 255),
     ["Setting Icon Color"] = Color3.fromRGB(0, 240, 255),
-    ["Logo Image"] = "rbxassetid://132431272043343",
+    ["Logo Image"] = HUB_ICON,
     ["Search Icon Color"] = Color3.fromRGB(0, 240, 255),
     ["Search Icon Highlight Color"] = Color3.fromRGB(0, 255, 255),
     ["GUI Text Color"] = Color3.fromRGB(0, 240, 255),
@@ -296,7 +318,7 @@ icon.AnchorPoint = Vector2.new(0.5, 0.5)
 icon.Position = UDim2.new(0.5, 0, 0.5, 0)
 icon.Size = UDim2.new(0, 36, 0, 36)
 icon.BackgroundTransparency = 1
-icon.Image = "rbxassetid://132431272043343" -- ID ẢNH
+icon.Image = HUB_ICON -- ID ẢNH (tự chọn ở đầu file)
 icon.ScaleType = Enum.ScaleType.Fit
 icon.ZIndex = 11
 
@@ -5021,7 +5043,7 @@ task.wait(0.5)
 
 Library:Notify({
     Title = "Abysslixhub",
-    Content = "Đã load xong Abysslixhub! Cảm ơn bạn đã sử dụng script."
+    Content = "Đã load xong Abysslixhub! (build 12/10-r8) Cảm ơn bạn đã sử dụng script."
 })
 
 -- Anti AFK (bật/tắt bằng _G.AntiAFK, mặc định BẬT; nút ở tab Server)
