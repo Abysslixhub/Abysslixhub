@@ -5414,72 +5414,7 @@ end
 
 -- [SỬA TRIỆT ĐỂ] Tab Settings: thay khung cuộn lỗi của UI bằng 1 khung cuộn MỚI do script tự tạo.
 -- Toàn bộ section/nút (kể cả nút thêm vào sau) được chuyển sang khung mới nên luôn hiện đủ và kéo xuống được.
-task.spawn(function()
-    local function findHubs()
-        local out = {}
-        for _, r in ipairs({ (gethui and gethui()), game:GetService("CoreGui"), __LP:FindFirstChild("PlayerGui") }) do
-            if r then
-                local g = r:FindFirstChild("Abysslixhub GUI")
-                if g then out[#out + 1] = g end
-            end
-        end
-        return out
-    end
-    local swapped = {}   -- [PageList] = scroller
-    local order = 0
-    local function adopt(scroller, c)
-        if c:IsA("GuiObject") then
-            order = order + 1
-            c.LayoutOrder = order
-            c.Parent = scroller
-        end
-    end
-    local function swap(pl)
-        if swapped[pl] or not pl.Parent then return end
-        local sc = Instance.new("ScrollingFrame")
-        sc.Name = "AbyPageFix"
-        sc.BackgroundTransparency = 1
-        sc.BorderSizePixel = 0
-        sc.Position = pl.Position
-        sc.Size = pl.Size
-        sc.ZIndex = pl.ZIndex
-        sc.Active = true
-        sc.ScrollingEnabled = true
-        sc.ScrollingDirection = Enum.ScrollingDirection.Y
-        sc.ScrollBarThickness = 6
-        sc.VerticalScrollBarInset = Enum.ScrollBarInset.Always
-        sc.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        sc.CanvasSize = UDim2.new(0, 0, 0, 0)
-        local lay = Instance.new("UIListLayout")
-        lay.SortOrder = Enum.SortOrder.LayoutOrder
-        lay.Padding = UDim.new(0, 5)
-        lay.Parent = sc
-        sc.Parent = pl.Parent
-        swapped[pl] = sc
-        local n = 0
-        for _, c in ipairs(pl:GetChildren()) do
-            if c:IsA("GuiObject") then adopt(sc, c); n = n + 1 end
-        end
-        pl.ChildAdded:Connect(function(c)       -- nút nào được thêm vào sau cũng chuyển sang khung mới
-            task.defer(function() pcall(adopt, sc, c) end)
-        end)
-        pl.Visible = false
-        pcall(function() Library:Notify({ Title = "Settings", Content = "Đã chuyển " .. n .. " mục sang khung cuộn mới", Duration = 8 }) end)
-    end
-    for i = 1, 120 do
-        task.wait(1)
-        for _, g in ipairs(findHubs()) do
-            for _, d in ipairs(g:GetDescendants()) do
-                if d.Name == "PageList" and d:IsA("ScrollingFrame") and not swapped[d] then
-                    local t = d.Parent and d.Parent:FindFirstChild("GUITextColor")
-                    if t and t:IsA("TextLabel") and t.Text == "Settings" and i >= 6 then
-                        pcall(swap, d)
-                    end
-                end
-            end
-        end
-    end
-end)
+-- [ĐÃ XÓA] Scroll hack cũ bị ẩn PageList làm Settings trống -> đã xóa để Settings hiện bình thường
 
 -- [GỘP TAB] Item -> Shop (Raid đã tách thành tab riêng)
 -- Code cũ vẫn gọi Tabs.Item / Tabs.Raid nên cho chúng trỏ về cùng 1 tab (không phải sửa 30+ chỗ)
@@ -14314,8 +14249,11 @@ do
             Library:Notify({ Title = "Settings (mục cũ)", Content = "Đã thêm " .. DIAG.ok .. " mục, lỗi " .. DIAG.fail .. (DIAG.firstErr and (" | " .. DIAG.firstErr) or ""), Duration = 15 })
         end)
     end)
-    Tabs.Setting = P
+    -- [SỬA] Không thay Tabs.Setting bằng proxy P nữa - giữ nguyên Real để Settings hiện đủ
+    -- Tabs.Setting = P  -- BỎ DÒNG NÀY: gây ẩn mục, lazy section, và HIDE_ID lọc nhầm
 end
+-- Khôi phục Tabs.Setting về tab thật để các AddToggle/AddSection phía sau hiện đúng
+Tabs.Setting = Tabs.SettingTab
 _G.UseFruitM1 = false
 _G.UseGun = false
 Tabs.Setting:AddSection("Cài Đặt")
