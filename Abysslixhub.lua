@@ -5404,9 +5404,82 @@ _G.__okSet, _G.__errSet = pcall(function()
     end)
 end)
 if not _G.__okSet then
+    pcall(function()   -- [CHẨN ĐOÁN] hiện lỗi ngay trong tab Settings
+        Tabs.Setting:AddSection("LỖI TAB SETTINGS (gửi dòng này cho người sửa)")
+        Tabs.Setting:AddParagraph({ Title = "Lỗi", Description = tostring(_G.__errSet) })
+    end)
     warn("[Settings] Lỗi khi dựng tab Settings: " .. tostring(_G.__errSet))
     pcall(function() Library:Notify({ Title = "Settings lỗi", Content = tostring(_G.__errSet) }) end)
 end
+
+-- [SỬA TRIỆT ĐỂ] Tab Settings: thay khung cuộn lỗi của UI bằng 1 khung cuộn MỚI do script tự tạo.
+-- Toàn bộ section/nút (kể cả nút thêm vào sau) được chuyển sang khung mới nên luôn hiện đủ và kéo xuống được.
+task.spawn(function()
+    local function findHubs()
+        local out = {}
+        for _, r in ipairs({ (gethui and gethui()), game:GetService("CoreGui"), __LP:FindFirstChild("PlayerGui") }) do
+            if r then
+                local g = r:FindFirstChild("Abysslixhub GUI")
+                if g then out[#out + 1] = g end
+            end
+        end
+        return out
+    end
+    local swapped = {}   -- [PageList] = scroller
+    local order = 0
+    local function adopt(scroller, c)
+        if c:IsA("GuiObject") then
+            order = order + 1
+            c.LayoutOrder = order
+            c.Parent = scroller
+        end
+    end
+    local function swap(pl)
+        if swapped[pl] or not pl.Parent then return end
+        local sc = Instance.new("ScrollingFrame")
+        sc.Name = "AbyPageFix"
+        sc.BackgroundTransparency = 1
+        sc.BorderSizePixel = 0
+        sc.Position = pl.Position
+        sc.Size = pl.Size
+        sc.ZIndex = pl.ZIndex
+        sc.Active = true
+        sc.ScrollingEnabled = true
+        sc.ScrollingDirection = Enum.ScrollingDirection.Y
+        sc.ScrollBarThickness = 6
+        sc.VerticalScrollBarInset = Enum.ScrollBarInset.Always
+        sc.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        sc.CanvasSize = UDim2.new(0, 0, 0, 0)
+        local lay = Instance.new("UIListLayout")
+        lay.SortOrder = Enum.SortOrder.LayoutOrder
+        lay.Padding = UDim.new(0, 5)
+        lay.Parent = sc
+        sc.Parent = pl.Parent
+        swapped[pl] = sc
+        local n = 0
+        for _, c in ipairs(pl:GetChildren()) do
+            if c:IsA("GuiObject") then adopt(sc, c); n = n + 1 end
+        end
+        pl.ChildAdded:Connect(function(c)       -- nút nào được thêm vào sau cũng chuyển sang khung mới
+            task.defer(function() pcall(adopt, sc, c) end)
+        end)
+        pl.Visible = false
+        pcall(function() Library:Notify({ Title = "Settings", Content = "Đã chuyển " .. n .. " mục sang khung cuộn mới", Duration = 8 }) end)
+    end
+    for i = 1, 120 do
+        task.wait(1)
+        for _, g in ipairs(findHubs()) do
+            for _, d in ipairs(g:GetDescendants()) do
+                if d.Name == "PageList" and d:IsA("ScrollingFrame") and not swapped[d] then
+                    local t = d.Parent and d.Parent:FindFirstChild("GUITextColor")
+                    if t and t:IsA("TextLabel") and t.Text == "Settings" and i >= 6 then
+                        pcall(swap, d)
+                    end
+                end
+            end
+        end
+    end
+end)
 
 -- [GỘP TAB] Item -> Shop (Raid đã tách thành tab riêng)
 -- Code cũ vẫn gọi Tabs.Item / Tabs.Raid nên cho chúng trỏ về cùng 1 tab (không phải sửa 30+ chỗ)
@@ -14194,37 +14267,53 @@ do
         return a, b
     end
     local P = {}
+    local DIAG = { ok = 0, fail = 0, firstErr = nil }
+    _G.AbySettingDiag = DIAG
+    local function safeAdd(method, ...)
+        local args = table.pack(...)
+        local okc, res = pcall(function() return Misc[method](Misc, table.unpack(args, 1, args.n)) end)
+        if okc then DIAG.ok = DIAG.ok + 1; return res end
+        DIAG.fail = DIAG.fail + 1
+        DIAG.firstErr = DIAG.firstErr or (method .. ": " .. tostring(res))
+        warn("[Settings] " .. method .. " lỗi: " .. tostring(res))
+        return newStub(method, type((...)) == "table" and (...) or nil)
+    end
     function P:AddSection(n) pending = n end
     function P:AddToggle(...)
         local id, o = idOf(...)
         if HIDE_ID[id] then local s = newStub(id, o); H[id] = s; return s end
         ensure()
-        return Misc:AddToggle(...)
+        return safeAdd("AddToggle", ...)
     end
     function P:AddSlider(...)
         local id, o = idOf(...)
         if HIDE_ID[id] then local s = newStub(id, o); H[id] = s; return s end
         ensure()
-        return Misc:AddSlider(...)
+        return safeAdd("AddSlider", ...)
     end
     function P:AddDropdown(...)
         local id, o = idOf(...)
         if HIDE_ID[id] then local s = newStub(id, o); H[id] = s; return s end
         ensure()
-        return Misc:AddDropdown(...)
+        return safeAdd("AddDropdown", ...)
     end
     function P:AddButton(...)
         local a = ...
         local t = type(a) == "table" and (a.Title or a.Name) or nil
         if t and HIDE_TITLE[t] then return newStub(t, a) end
         ensure()
-        return Misc:AddButton(...)
+        return safeAdd("AddButton", ...)
     end
-    function P:AddInput(...) ensure(); return Misc:AddInput(...) end
-    function P:AddTextBox(...) ensure(); return Misc:AddTextBox(...) end
-    function P:AddParagraph(...) ensure(); return Misc:AddParagraph(...) end
-    function P:AddLabel(...) ensure(); return Misc:AddLabel(...) end
-    function P:AddSeperator(...) ensure(); return Misc:AddSeperator(...) end
+    function P:AddInput(...) ensure(); return safeAdd("AddInput", ...) end
+    function P:AddTextBox(...) ensure(); return safeAdd("AddTextBox", ...) end
+    function P:AddParagraph(...) ensure(); return safeAdd("AddParagraph", ...) end
+    function P:AddLabel(...) ensure(); return safeAdd("AddLabel", ...) end
+    function P:AddSeperator(...) ensure(); return safeAdd("AddSeperator", ...) end
+    task.delay(8, function()
+        pcall(function()
+            Library:Notify({ Title = "Settings (mục cũ)", Content = "Đã thêm " .. DIAG.ok .. " mục, lỗi " .. DIAG.fail .. (DIAG.firstErr and (" | " .. DIAG.firstErr) or ""), Duration = 15 })
+        end)
+    end)
     Tabs.Setting = P
 end
 _G.UseFruitM1 = false
