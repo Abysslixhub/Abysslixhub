@@ -5304,8 +5304,6 @@ _G.__okSet, _G.__errSet = pcall(function()
     -- Bring Mobs / Fast Attack / Magic Fast Fruit / Auto Shoot Gun (điều khiển logic cũ)
     T("ToggleBringMobs", "Bring Mobs", "Gom quái", true, function(on) drive("ToggleBringMob", on) end)
     T("ToggleFastAttackNew", "Fast Attack", "Đánh Nhanh", true, function(on) drive("ToggleFastAttack", on) end)
-    T("ToggleMagicFastFruit", "Magic Fast Fruit", "Đánh trái ác quỷ không cần cầm", false, function(on) _G.UseFruitM1 = on end)
-    T("ToggleAutoShootGun", "Auto Shoot Gun (Risk)", "Tự Động Bắn Súng", true, function(on) _G.UseGun = on end)
 
     -- Haki / Tộc
     T("ToggleAutoBuso", "Auto Turn on Buso", "Bật Haki Tay", true, function(on) drive("AutoBusoToggle", on) end)
@@ -14151,22 +14149,21 @@ end
 -- ============================================================
 do
     local Real = Tabs.Setting
-    local Misc = Tabs.Status   -- mục cũ (không có trong ảnh) chuyển sang tab Server
+    local Misc = Real   -- [SỬA] mục cũ hiện ngay tại tab Settings
     _G.AbyFirstSecUsed = true
-    Tabs.SettingTab = Tabs.Status
+    Tabs.SettingTab = Real
     _G.AbyRealSetting = Real
     local H = {}
     _G.AbyHidden = H
-    local HIDE_ID = {
+    -- [SỬA] Đặt true nếu muốn hiện LẠI cả các mục trùng chức năng với nút mới (sẽ bị lặp 2 nút)
+    local SHOW_DUPLICATES = false
+    local HIDE_ID = SHOW_DUPLICATES and {} or {
+        -- chỉ ẩn các mục đã có nút tương đương hiển thị sẵn (Fast Attack, Bring Mobs, Buso, Ken, Race V3/V4, Disable Notify, Tween Speed, Choose Team)
         ToggleFastAttack = true, SliderTweenSpeed = true, ToggleAutoT = true, ToggleAutoY = true,
         ToggleAutoKen = true, ToggleBringMob = true, SliderBringSpeed = true, SliderBringCount = true,
-        ToggleUseFruitM1 = true, ToggleUseGun = true, ToggleRemoveNotify = true,
-        AutoTeamToggle = true, AutoTeamDropdown = true, AutoBusoToggle = true, AutoKenToggle = true,
+        ToggleRemoveNotify = true, AutoTeamDropdown = true, AutoBusoToggle = true, AutoKenToggle = true,
     }
-    local HIDE_TITLE = {
-        ["Vào Phe Hải Quân (Marines)"] = true,
-        ["Vào Phe Hải Tặc (Pirates)"] = true,
-    }
+    local HIDE_TITLE = {}
     local pending = nil
     local function ensure()
         if pending then
@@ -14230,28 +14227,8 @@ do
     function P:AddSeperator(...) ensure(); return Misc:AddSeperator(...) end
     Tabs.Setting = P
 end
-Tabs.Setting:AddSection("Bắn M1 Trái / Súng")
 _G.UseFruitM1 = false
 _G.UseGun = false
-do
-    local gunT, fruitT
-    fruitT = Tabs.Setting:AddToggle("ToggleUseFruitM1", {
-        ["Title"] = "Dùng M1 Trái Ác Quỷ",
-        ["Description"] = "Cầm trái và bắn M1 vào quái gần nhất",
-        ["Default"] = false
-    }):OnChanged(function(v)
-        _G.UseFruitM1 = (v == true)
-        if v and gunT then gunT:SetValue(false) end
-    end)
-    gunT = Tabs.Setting:AddToggle("ToggleUseGun", {
-        ["Title"] = "Dùng Súng",
-        ["Description"] = "Cầm súng và bắn vào quái gần nhất",
-        ["Default"] = false
-    }):OnChanged(function(v)
-        _G.UseGun = (v == true)
-        if v and fruitT then fruitT:SetValue(false) end
-    end)
-end
 Tabs.Setting:AddSection("Cài Đặt")
 Tabs.Setting:AddToggle("ToggleFastAttack", {
     ["Title"] = "Đánh Nhanh (Bật/Tắt)",
