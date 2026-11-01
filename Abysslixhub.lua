@@ -8640,7 +8640,8 @@ do
     _G.SkillDelay = 0.3          -- giây nghỉ giữa các lượt dùng chiêu
     _G.SkillRange = 60           -- chỉ dùng chiêu khi có quái trong tầm này (studs)
 
-    Tabs.Skill:AddToggle("ToggleFarmSkill", {
+    Tabs.Skill:AddSection("⚡ Dùng Skill Tự Động")
+Tabs.Skill:AddToggle("ToggleFarmSkill", {
         ["Title"] = "Farm Bằng Skill (Z X C V)",
         ["Description"] = "Tự dùng chiêu khi đang farm (Cày Cấp / Xương / Đánh Quái Gần) và có quái trong tầm",
         ["Default"] = false
@@ -14615,36 +14616,36 @@ Tabs.Setting:AddToggle("ToggleWhite", {
     end
 end)
 -- [SetValue skipped - Library không cần]
-Tabs.Setting:AddSection("Kỹ Năng Thông Thạo")
-Tabs.Setting:AddToggle("ToggleZ", {
+Tabs.Skill:AddSection("🔑 Kỹ Năng Thông Thạo (Z/X/C/V/F)")
+Tabs.Skill:AddToggle("ToggleZ", {
     ["Title"] = "Kỹ Năng Z",
     ["Default"] = true
 }):OnChanged(function(p863)
     SkillZ = p863
 end)
 -- [SetValue skipped - Library không cần]
-Tabs.Setting:AddToggle("ToggleX", {
+Tabs.Skill:AddToggle("ToggleX", {
     ["Title"] = "Kỹ Năng X",
     ["Default"] = true
 }):OnChanged(function(p864)
     SkillX = p864
 end)
 -- [SetValue skipped - Library không cần]
-Tabs.Setting:AddToggle("ToggleC", {
+Tabs.Skill:AddToggle("ToggleC", {
     ["Title"] = "Kỹ Năng C",
     ["Default"] = true
 }):OnChanged(function(p865)
     SkillC = p865
 end)
 -- [SetValue skipped - Library không cần]
-Tabs.Setting:AddToggle("ToggleV", {
+Tabs.Skill:AddToggle("ToggleV", {
     ["Title"] = "Kỹ Năng V",
     ["Default"] = true
 }):OnChanged(function(p866)
     SkillV = p866
 end)
 -- [SetValue skipped - Library không cần]
-Tabs.Setting:AddToggle("ToggleF", {
+Tabs.Skill:AddToggle("ToggleF", {
     ["Title"] = "Kỹ Năng F",
     ["Default"] = false
 }):OnChanged(function(p867)
@@ -19359,13 +19360,13 @@ if Sea3 then
 end
 
 -- ========== NÂNG ĐIỂM KỸ NĂNG ==========
-Tabs.Setting:AddSection("Nâng Điểm Kỹ Năng")
+Tabs.Skill:AddSection("📈 Nâng Điểm Kỹ Năng")
 local _spMelee, _spDef, _spSword, _spGun, _spFruit = false,false,false,false,false
-Tabs.Setting:AddToggle("ToggleSPMelee", {["Title"] = "Melee", ["Default"] = false}):OnChanged(function(v) _spMelee = v end)
-Tabs.Setting:AddToggle("ToggleSPDef", {["Title"] = "Defense", ["Default"] = false}):OnChanged(function(v) _spDef = v end)
-Tabs.Setting:AddToggle("ToggleSPSword", {["Title"] = "Sword", ["Default"] = false}):OnChanged(function(v) _spSword = v end)
-Tabs.Setting:AddToggle("ToggleSPGun", {["Title"] = "Gun", ["Default"] = false}):OnChanged(function(v) _spGun = v end)
-Tabs.Setting:AddToggle("ToggleSPFruit", {["Title"] = "Trái Ác Quỷ", ["Default"] = false}):OnChanged(function(v) _spFruit = v end)
+Tabs.Skill:AddToggle("ToggleSPMelee", {["Title"] = "Melee", ["Default"] = false}):OnChanged(function(v) _spMelee = v end)
+Tabs.Skill:AddToggle("ToggleSPDef", {["Title"] = "Defense", ["Default"] = false}):OnChanged(function(v) _spDef = v end)
+Tabs.Skill:AddToggle("ToggleSPSword", {["Title"] = "Sword", ["Default"] = false}):OnChanged(function(v) _spSword = v end)
+Tabs.Skill:AddToggle("ToggleSPGun", {["Title"] = "Gun", ["Default"] = false}):OnChanged(function(v) _spGun = v end)
+Tabs.Skill:AddToggle("ToggleSPFruit", {["Title"] = "Trái Ác Quỷ", ["Default"] = false}):OnChanged(function(v) _spFruit = v end)
 spawn(function()
     while task.wait(0.1) do pcall(function()
         if __LP.Data.Points.Value >= 1 then
@@ -19378,9 +19379,9 @@ spawn(function()
 end)
 
 -- ========== KỸ NĂNG ĐẶC BIỆT ==========
-Tabs.Setting:AddSection("Kỹ Năng Đặc Biệt")
+Tabs.Skill:AddSection("✨ Kỹ Năng Đặc Biệt")
 local InfiniteSoru, InfiniteGeppo, DodgeNoCD = false, false, false
-Tabs.Setting:AddToggle("ToggleInfSoru", {["Title"] = "Infinite Soru", ["Default"] = false}):OnChanged(function(v) InfiniteSoru = v end)
+Tabs.Skill:AddToggle("ToggleInfSoru", {["Title"] = "Infinite Soru", ["Default"] = false}):OnChanged(function(v) InfiniteSoru = v end)
 spawn(function()
     while task.wait(1) do
         if InfiniteSoru then pcall(function()
@@ -19397,7 +19398,7 @@ spawn(function()
         end) end
     end
 end)
-Tabs.Setting:AddToggle("ToggleInfGeppo", {["Title"] = "Infinite Geppo", ["Default"] = false}):OnChanged(function(v) InfiniteGeppo = v end)
+Tabs.Skill:AddToggle("ToggleInfGeppo", {["Title"] = "Infinite Geppo", ["Default"] = false}):OnChanged(function(v) InfiniteGeppo = v end)
 spawn(function()
     while task.wait(1) do
         if InfiniteGeppo then pcall(function()
@@ -19414,7 +19415,7 @@ spawn(function()
         end) end
     end
 end)
-Tabs.Setting:AddToggle("ToggleDodgeNoCD", {["Title"] = "Dodge No Cooldown", ["Default"] = false}):OnChanged(function(v) DodgeNoCD = v end)
+Tabs.Skill:AddToggle("ToggleDodgeNoCD", {["Title"] = "Dodge No Cooldown", ["Default"] = false}):OnChanged(function(v) DodgeNoCD = v end)
 spawn(function()
     while task.wait(0.1) do
         if DodgeNoCD then pcall(function()
