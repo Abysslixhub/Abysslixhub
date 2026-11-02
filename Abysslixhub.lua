@@ -14227,28 +14227,9 @@ end
 Tabs.Setting = Tabs.SettingTab
 _G.UseFruitM1 = false
 _G.UseGun = false
-Tabs.Setting:AddSection("Cài Đặt")
-Tabs.Setting:AddToggle("ToggleFastAttack", {
-    ["Title"] = "Đánh Nhanh (Bật/Tắt)",
-    ["Default"] = true
-}):OnChanged(function(v)
     _G.FastAttackEnabled = v
     if _ExtraG then _ExtraG.AutoAttack = v end -- đồng bộ luôn vòng Fast Attack mở rộng
 end)
-Tabs.Setting:AddSlider("SliderTweenSpeed", {
-    ["Title"] = "Tốc Độ Bay",
-    ["Description"] = "10 - 500 (studs/giây). Bị server kéo lại thì giảm xuống.",
-    ["Default"] = math.clamp(tonumber(_G.TweenSpeed) or 300, 10, 500),
-    ["Min"] = 10,
-    ["Max"] = 500,
-    ["Callback"] = function(v)
-        _G.TweenSpeed = math.clamp(math.floor((tonumber(v) or 300) + 0.5), 10, 500)
-    end
-})
-Tabs.Setting:AddToggle("ToggleAutoT", {
-    ["Title"] = "Bật Tộc V3",
-    ["Default"] = false
-}):OnChanged(function(p839)
     _G.AutoT = p839
 end)
 -- [SetValue skipped - Library không cần]
@@ -14261,10 +14242,6 @@ spawn(function()
         end)
     end
 end)
-Tabs.Setting:AddToggle("ToggleAutoY", {
-    ["Title"] = "Bật Tộc V4",
-    ["Default"] = false
-}):OnChanged(function(p840)
     _G.AutoY = p840
 end)
 -- [SetValue skipped - Library không cần]
@@ -14279,10 +14256,6 @@ spawn(function()
         end)
     end
 end)
-Tabs.Setting:AddToggle("ToggleAutoKen", {
-    ["Title"] = "Bật Haki Quan Sât",
-    ["Default"] = false
-}):OnChanged(function(p841)
     _G.AutoKen = p841
     if p841 then
         __RS.Remotes.CommE:FireServer("Ken", true)
@@ -14300,10 +14273,6 @@ spawn(function()
         end)
     end
 end)
-Tabs.Setting:AddToggle("ToggleSaveSpawn", {
-    ["Title"] = "Lưu Điểm Hồi Sinh",
-    ["Default"] = false
-}):OnChanged(function(p842)
     _G.SaveSpawn = p842
     if p842 then
         __RS.Remotes.CommF_:InvokeServer(unpack({
@@ -14323,83 +14292,11 @@ spawn(function()
         end)
     end
 end)
-Tabs.Setting:AddButton({
-    ["Title"] = "Fps Boost",
-    ["Callback"] = function()
-        local v843 = game
-        local v844 = v843.Workspace
-        local v845 = v843.Lighting
-        local v846 = v844.Terrain
-        v846.WaterWaveSize = 0
-        v846.WaterWaveSpeed = 0
-        v846.WaterReflectance = 0
-        v846.WaterTransparency = 0
-        v845.GlobalShadows = false
-        v845.FogEnd = 9000000000
-        v845.Brightness = 0
-        settings().Rendering.QualityLevel = "Level01"
-        local v847, v848, v849 = pairs(v843:GetDescendants())
-        local v850 = false
-        while true do
-            local v851
-            v849, v851 = v847(v848, v849)
-            if v849 == nil then
-                break
-            end
-            if v851:IsA("Part") or (v851:IsA("Union") or (v851:IsA("CornerWedgePart") or v851:IsA("TrussPart"))) then
-                v851.Material = "Plastic"
-                v851.Reflectance = 0
-            elseif v851:IsA("Decal") or v851:IsA("Texture") and v850 then
-                v851.Transparency = 1
-            elseif v851:IsA("ParticleEmitter") or v851:IsA("Trail") then
-                v851.Lifetime = NumberRange.new(0)
-            elseif v851:IsA("Explosion") then
-                v851.BlastPressure = 1
-                v851.BlastRadius = 1
-            elseif v851:IsA("Fire") or (v851:IsA("SpotLight") or (v851:IsA("Smoke") or v851:IsA("Sparkles"))) then
-                v851.Enabled = false
-            elseif v851:IsA("MeshPart") then
-                v851.Material = "Plastic"
-                v851.Reflectance = 0
-                v851.TextureID = 1.0385902758728956e16
-            end
-        end
-        for v854, v855 in pairs(v845:GetChildren()) do
-            if v855:IsA("BlurEffect") or (v855:IsA("SunRaysEffect") or (v855:IsA("ColorCorrectionEffect") or (v855:IsA("BloomEffect") or v855:IsA("DepthOfFieldEffect")))) then
-                v855.Enabled = false
-            end
-        end
-    end
-})
-Tabs.Setting:AddToggle("ToggleBringMob", {
-    ["Title"] = "Gom Quái",
-    ["Default"] = true
-}):OnChanged(function(p856)
     _G.BringMob = p856
 end)
 _G.BringMob = true
 _G.BringSpeed = 500   -- studs/giây, kéo quái về chỗ đánh (50 - 500)
 _G.BringCount = 10    -- số quái gom mỗi lần (1 - 10)
-Tabs.Setting:AddSlider("SliderBringSpeed", {
-    ["Title"] = "Tốc Độ Gom Quái",
-    ["Description"] = "50 - 500 (studs/giây)",
-    ["Default"] = 500,
-    ["Min"] = 50,
-    ["Max"] = 500,
-    ["Callback"] = function(v)
-        _G.BringSpeed = math.clamp(math.floor((tonumber(v) or 500) + 0.5), 50, 500)
-    end
-})
-Tabs.Setting:AddSlider("SliderBringCount", {
-    ["Title"] = "Số Lượng Quái Mỗi Lần Gom",
-    ["Description"] = "1 - 10 con",
-    ["Default"] = 10,
-    ["Min"] = 1,
-    ["Max"] = 10,
-    ["Callback"] = function(v)
-        _G.BringCount = math.clamp(math.floor((tonumber(v) or 10) + 0.5), 1, 10)
-    end
-})
 -- ============================================================
 -- [NEW] NÚT BẬT/TẮT DÙNG M1 TRÁI / DÙNG SÚNG (tab Setting)
 -- Bật 1 trong 2: script tự cầm trái/súng và bắn vào quái (và Vua Biển) ở gần. Hai nút loại trừ nhau.
@@ -14558,10 +14455,6 @@ spawn(function()
         end
     end
 end)
-Tabs.Setting:AddToggle("ToggleRemoveNotify", {
-    ["Title"] = "Xóa Thông Báo",
-    ["Default"] = false
-}):OnChanged(function(p861)
     RemoveNotify = p861
 end)
 -- [SetValue skipped - Library không cần]
@@ -14572,10 +14465,6 @@ spawn(function()
         if _n and _n.Enabled ~= _want then _n.Enabled = _want end -- [OPT] chỉ ghi khi đổi
     end
 end)
-Tabs.Setting:AddToggle("ToggleWhite", {
-    ["Title"] = "Màn Hình Trằng",
-    ["Default"] = false
-}):OnChanged(function(p862)
     _G.WhiteScreen = p862
     if _G.WhiteScreen ~= true then
         if _G.WhiteScreen == false then
@@ -14829,34 +14718,6 @@ do
 end
 end
 
-Tabs.Setting:AddSection("Chọn Phe")
-Tabs.Setting:AddToggle("AutoTeamToggle", {
-    ["Title"] = "Tự Chọn Phe Khi Chưa Chọn",
-    ["Description"] = "Ở màn hình chọn phe sẽ tự vào phe đã chọn bên dưới (mặc định: Hải Quân)",
-    ["Default"] = true,
-    ["Callback"] = function(v) _G.AutoTeam = v end
-})
-Tabs.Setting:AddDropdown("AutoTeamDropdown", {
-    ["Title"] = "Phe Tự Chọn",
-    ["Values"] = {"Hải Quân", "Hải Tặc"},
-    ["Multi"] = false,
-    ["Default"] = ((_G.TeamChoice == "Pirates") and 2 or 1),
-    ["Callback"] = function(v) _G.TeamChoice = (v == "Hải Tặc") and "Pirates" or "Marines" end
-})
-Tabs.Setting:AddButton({
-    ["Title"] = "Vào Phe Hải Quân (Marines)",
-    ["Description"] = "Bấm 1 lần là vào phe ngay",
-    ["Callback"] = function()
-        task.spawn(function() pcall(function() __RS.Remotes.CommF_:InvokeServer("SetTeam", "Marines") end) end)
-    end
-})
-Tabs.Setting:AddButton({
-    ["Title"] = "Vào Phe Hải Tặc (Pirates)",
-    ["Description"] = "Bấm 1 lần là vào phe ngay",
-    ["Callback"] = function()
-        task.spawn(function() pcall(function() __RS.Remotes.CommF_:InvokeServer("SetTeam", "Pirates") end) end)
-    end
-})
 -- ==========================================
 -- [MỞ RỘNG TAB SHOP] Mua bằng Beli, mua bằng Fragments (F), đổi tộc (chọn từ danh sách rồi bấm mua)
 -- Giá lấy từ các nút mua có sẵn của script.
@@ -14981,20 +14842,7 @@ do
     end})
 end
 
-Tabs.Setting:AddSection("Haki Tự Động")
 _G.AutoBuso, _G.AutoKen = true, true
-Tabs.Setting:AddToggle("AutoBusoToggle", {
-    ["Title"] = "Tự Bật Haki Tay (Buso)",
-    ["Description"] = "Tự bật Haki vũ trang khi chưa có, và bật lại sau khi hồi sinh",
-    ["Default"] = true,
-    ["Callback"] = function(v) _G.AutoBuso = v end
-})
-Tabs.Setting:AddToggle("AutoKenToggle", {
-    ["Title"] = "Tự Bật Haki Quan Sát",
-    ["Description"] = "Tự bật Haki quan sát 1 lần mỗi khi vào game / hồi sinh",
-    ["Default"] = true,
-    ["Callback"] = function(v) _G.AutoKen = v; _G._kenChar = nil end
-})
 spawn(function()
     while task.wait(1) do
         pcall(function()
@@ -15015,27 +14863,6 @@ spawn(function()
         end)
     end
 end)
-Tabs.Setting:AddSection("Đặt Lại")
-Tabs.Setting:AddButton({
-    ["Title"] = "Reset Chức Năng Đang Bật",
-    ["Description"] = "Tắt toàn bộ chức năng đang bật, đưa về trạng thái mặc định (1 lần bấm)",
-    ["Callback"] = function()
-        task.spawn(function()
-            local n = 0
-            for i, e in ipairs(_G.AbyToggles or {}) do
-                if e.holder.value ~= e.def then
-                    pcall(function() e.proxy:SetValue(e.def) end)
-                    n = n + 1
-                    if n % 8 == 0 then task.wait() end
-                end
-            end
-            pcall(function() if StopMovement then StopMovement() end end)
-            pcall(function()
-                Library:Notify({["Title"] = "Reset", ["Content"] = "Đã đặt lại " .. n .. " chức năng về mặc định"})
-            end)
-        end)
-    end
-})
 ;(function() -- (bọc hàm riêng để không vượt giới hạn 200 biến local)
 -- ==========================================
 -- [TRẠNG THÁI SERVER] Đo ping / FPS / độ giật / băng thông, đánh giá tình trạng, cảnh báo & tự đổi server khi lag
