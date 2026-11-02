@@ -14334,11 +14334,6 @@ end
 Tabs.Setting = Tabs.SettingTab
 _G.UseFruitM1 = false
 _G.UseGun = false
-    _G.FastAttackEnabled = v
-    if _ExtraG then _ExtraG.AutoAttack = v end -- đồng bộ luôn vòng Fast Attack mở rộng
-end)
-    _G.AutoT = p839
-end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     while task.wait(0.1) do
@@ -14348,8 +14343,6 @@ spawn(function()
             end
         end)
     end
-end)
-    _G.AutoY = p840
 end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
@@ -14363,13 +14356,6 @@ spawn(function()
         end)
     end
 end)
-    _G.AutoKen = p841
-    if p841 then
-        __RS.Remotes.CommE:FireServer("Ken", true)
-    else
-        __RS.Remotes.CommE:FireServer("Ken", false)
-    end
-end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     while task.wait(0.1) do
@@ -14378,13 +14364,6 @@ spawn(function()
                 __RS.Remotes.CommE:FireServer("Ken", true)
             end
         end)
-    end
-end)
-    _G.SaveSpawn = p842
-    if p842 then
-        __RS.Remotes.CommF_:InvokeServer(unpack({
-            "SetSpawnPoint"
-        }))
     end
 end)
 -- [SetValue skipped - Library không cần]
@@ -14398,8 +14377,6 @@ spawn(function()
             end
         end)
     end
-end)
-    _G.BringMob = p856
 end)
 _G.BringMob = true
 _G.BringSpeed = 500   -- studs/giây, kéo quái về chỗ đánh (50 - 500)
@@ -14562,23 +14539,12 @@ spawn(function()
         end
     end
 end)
-    RemoveNotify = p861
-end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     while task.wait(0.1) do
         local _n = __LP.PlayerGui:FindFirstChild("Notifications")
         local _want = not RemoveNotify
         if _n and _n.Enabled ~= _want then _n.Enabled = _want end -- [OPT] chỉ ghi khi đổi
-    end
-end)
-    _G.WhiteScreen = p862
-    if _G.WhiteScreen ~= true then
-        if _G.WhiteScreen == false then
-            RunService:Set3dRenderingEnabled(true)
-        end
-    else
-        RunService:Set3dRenderingEnabled(false)
     end
 end)
 -- [SetValue skipped - Library không cần]
