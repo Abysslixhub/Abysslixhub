@@ -5058,7 +5058,7 @@ _G.__okSet, _G.__errSet = pcall(function()
     -- toggle: gọi fn(trạng thái ban đầu) 1 lần để cờ _G.* khớp với nút (mặc định hoặc giá trị đã lưu)
     local function T(id, title, desc, def, fn)
         local okT, t = pcall(function()
-            return Real:AddToggle(id, { Title = title, Description = desc, Default = def }):OnChanged(function(v)
+            return Real:AddToggle(id, { ["Title"] = title, ["Description"] = desc, ["Default"] = def }):OnChanged(function(v)
                 pcall(fn, v == true)
             end)
         end)
@@ -5071,9 +5071,9 @@ _G.__okSet, _G.__errSet = pcall(function()
     local function B(title, desc, fn)
         local okB, eB = pcall(function()
             Real:AddButton({
-                Title = title,
-                Description = desc,
-                Callback = function()
+                ["Title"] = title,
+                ["Description"] = desc,
+                ["Callback"] = function()
                     task.spawn(function()
                         local ok, e = pcall(fn)
                         if not ok then notify(title, "Lỗi: " .. tostring(e)) end
@@ -5107,8 +5107,8 @@ _G.__okSet, _G.__errSet = pcall(function()
 
     _G.TweenSpeed = 350
     Real:AddSlider({
-        Title = "Tween Speed", Min = 10, Max = 500, Default = 350,
-        Callback = function(v) _G.TweenSpeed = math.clamp(math.floor((tonumber(v) or 350) + 0.5), 10, 500) end,
+        ["Title"] = "Tween Speed", ["Min"] = 10, ["Max"] = 500, ["Default"] = 350,
+        ["Callback"] = function(v) _G.TweenSpeed = math.clamp(math.floor((tonumber(v) or 350) + 0.5), 10, 500) end,
     })
 
     -- Auto Destroy Lava
@@ -5177,22 +5177,22 @@ _G.__okSet, _G.__errSet = pcall(function()
     for i = 1, 10 do cnt[i] = tostring(i) end
     _G.BringCount = 10
     Real:AddDropdown("BringMobMaxDropdown", {
-        Title = "Bring Mob Max", Values = cnt, Default = "10", Multi = false,
-        Callback = function(v) _G.BringCount = math.clamp(math.floor(tonumber(v) or 10), 1, 10) end,
+        ["Title"] = "Bring Mob Max", ["Values"] = cnt, ["Default"] = "10", ["Multi"] = false,
+        ["Callback"] = function(v) _G.BringCount = math.clamp(math.floor(tonumber(v) or 10), 1, 10) end,
     })
     local spd = {}
     for i = 1, 10 do spd[i] = tostring(i * 50) end
     _G.BringSpeed = 500
     Real:AddDropdown("BringMobModeDropdown", {
-        Title = "Bring Mob Mode", Values = spd, Default = "500", Multi = false,
-        Callback = function(v) _G.BringSpeed = math.clamp(math.floor(tonumber(v) or 500), 50, 500) end,
+        ["Title"] = "Bring Mob Mode", ["Values"] = spd, ["Default"] = "500", ["Multi"] = false,
+        ["Callback"] = function(v) _G.BringSpeed = math.clamp(math.floor(tonumber(v) or 500), 50, 500) end,
     })
 
     -- Choose Team / Join Selected Team
     _G.TeamChoice = (_G.TeamChoice == "Marines") and "Marines" or "Pirates"
     Real:AddDropdown("ChooseTeamDropdown", {
-        Title = "Choose Team", Values = { "Marines", "Pirates" }, Default = _G.TeamChoice, Multi = false,
-        Callback = function(v) _G.TeamChoice = (v == "Pirates") and "Pirates" or "Marines" end,
+        ["Title"] = "Choose Team", ["Values"] = { "Marines", "Pirates" }, ["Default"] = _G.TeamChoice, ["Multi"] = false,
+        ["Callback"] = function(v) _G.TeamChoice = (v == "Pirates") and "Pirates" or "Marines" end,
     })
     B("Join Selected Team", "Đổi sang team đang chọn", function()
         __RS.Remotes.CommF_:InvokeServer("SetTeam", _G.TeamChoice)
