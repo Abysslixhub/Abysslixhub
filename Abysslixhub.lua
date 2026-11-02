@@ -16519,6 +16519,103 @@ local _fok, _ferr = pcall(function()
         end
     end)
 
+    -- ---------- TRÁI ĐANG RƠI TRÊN BẢN ĐỒ ----------
+    Tab:AddSection("🍎 Trái Đang Có Trong Server")
+    local worldFruitLabel = Tab:AddParagraph({
+        ["Title"] = "Trái Trên Bản Đồ",
+        ["Description"] = "Bấm 'Quét Trái' để xem trái đang rơi..."
+    })
+    local function scanWorldFruits()
+        local found = {}
+        pcall(function()
+            local hrp = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
+            for _, v in ipairs(__WS:GetChildren()) do
+                if v:IsA("Tool") and string.find(v.Name, "Fruit", 1, true) then
+                    local h = v:FindFirstChild("Handle")
+                    local dist = hrp and h and math.floor((h.Position - hrp.Position).Magnitude) or -1
+                    table.insert(found, { name = v.Name, dist = dist })
+                end
+            end
+        end)
+        pcall(function()
+            local wo = __WS:FindFirstChild("_WorldOrigin")
+            if not wo then return end
+            local hrp = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
+            for _, v in ipairs(wo:GetDescendants()) do
+                if v:IsA("Tool") and string.find(v.Name, "Fruit", 1, true) then
+                    local h = v:FindFirstChild("Handle")
+                    local dist = hrp and h and math.floor((h.Position - hrp.Position).Magnitude) or -1
+                    table.insert(found, { name = v.Name, dist = dist })
+                end
+            end
+        end)
+        table.sort(found, function(a, b)
+            return (a.dist >= 0 and a.dist or math.huge) < (b.dist >= 0 and b.dist or math.huge)
+        end)
+        return found
+    end
+    Tab:AddButton({
+        ["Title"] = "🔍 Quét Trái Trên Bản Đồ",
+        ["Description"] = "Hiển thị tất cả trái đang rơi trong server (sắp xếp theo khoảng cách)",
+        ["Callback"] = function()
+            task.spawn(function()
+                pcall(function() worldFruitLabel:Set("Đang quét...") end)
+                local list = scanWorldFruits()
+                if #list == 0 then
+                    pcall(function() worldFruitLabel:Set("Không có trái nào đang rơi trong server.") end)
+                    notify("Không có trái nào trên bản đồ.")
+                    return
+                end
+                local txt = "🍎 Tìm thấy " .. #list .. " trái:
+"
+                for i, f in ipairs(list) do
+                    local d = f.dist >= 0 and (" — " .. f.dist .. " studs") or ""
+                    txt = txt .. "  " .. i .. ". " .. f.name .. d .. "
+"
+                    if i >= 15 then
+                        txt = txt .. "  ... (còn " .. (#list - 15) .. " trái nữa)
+"
+                        break
+                    end
+                end
+                pcall(function() worldFruitLabel:Set(txt) end)
+                notify("Tìm thấy " .. #list .. " trái trên bản đồ.")
+            end)
+        end
+    })
+    Tab:AddToggle("ToggleAutoScanFruit", {
+        ["Title"] = "🔁 Tự Quét Trái Mỗi 10 Giây",
+        ["Description"] = "Cập nhật danh sách trái tự động, kết hợp với ESP để thấy vị trí",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.AutoScanFruit = v end)
+    task.spawn(function()
+        while task.wait(10) do
+            if _G.AutoScanFruit then
+                pcall(function()
+                    local list = scanWorldFruits()
+                    local txt
+                    if #list == 0 then
+                        txt = "Không có trái nào đang rơi."
+                    else
+                        txt = "🍎 " .. #list .. " trái (" .. os.date("%H:%M:%S") .. "):
+"
+                        for i, f in ipairs(list) do
+                            local d = f.dist >= 0 and (" — " .. f.dist .. " studs") or ""
+                            txt = txt .. "  " .. i .. ". " .. f.name .. d .. "
+"
+                            if i >= 10 then
+                                txt = txt .. "  ... (+" .. (#list - 10) .. " nữa)
+"
+                                break
+                            end
+                        end
+                    end
+                    worldFruitLabel:Set(txt)
+                end)
+            end
+        end
+    end)
+
     -- ---------- [NEW] CỬA HÀNG / TỰ BAY TỚI TRÁI ----------
     Tab:AddSection("Cửa Hàng & Nhặt Trái")
     Tab:AddButton({
