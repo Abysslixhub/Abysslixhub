@@ -4502,7 +4502,7 @@ local function wrapTab(rawTab, defaultTitle)
         return currentSection
     end
 
-    currentSection = getSection()
+    -- getSection() gọi lazily khi item đầu tiên được thêm (tránh tạo section rỗng đầu tab)
 
     -- 1. SECTION
     function wrapped:AddSection(arg1)
@@ -8684,6 +8684,113 @@ Tabs.Skill:AddToggle("ToggleFarmSkill", {
 end
 
 -- [ĐÃ XÓA] Vòng lặp AutoClick (click 20 lần/giây)
+
+Tabs.Skill:AddSection("🔑 Kỹ Năng Thông Thạo (Z/X/C/V/F)")
+Tabs.Skill:AddToggle("ToggleZ", {
+    ["Title"] = "Kỹ Năng Z",
+    ["Default"] = true
+}):OnChanged(function(p863)
+    SkillZ = p863
+end)
+-- [SetValue skipped - Library không cần]
+Tabs.Skill:AddToggle("ToggleX", {
+    ["Title"] = "Kỹ Năng X",
+    ["Default"] = true
+}):OnChanged(function(p864)
+    SkillX = p864
+end)
+-- [SetValue skipped - Library không cần]
+Tabs.Skill:AddToggle("ToggleC", {
+    ["Title"] = "Kỹ Năng C",
+    ["Default"] = true
+}):OnChanged(function(p865)
+    SkillC = p865
+end)
+-- [SetValue skipped - Library không cần]
+Tabs.Skill:AddToggle("ToggleV", {
+    ["Title"] = "Kỹ Năng V",
+    ["Default"] = true
+}):OnChanged(function(p866)
+    SkillV = p866
+end)
+-- [SetValue skipped - Library không cần]
+Tabs.Skill:AddToggle("ToggleF", {
+    ["Title"] = "Kỹ Năng F",
+    ["Default"] = false
+}):OnChanged(function(p867)
+    SkillF = p867
+end)
+-- [SetValue skipped - Library không cần]
+Tabs.Skill:AddSection("📈 Nâng Điểm Kỹ Năng")
+local _spMelee, _spDef, _spSword, _spGun, _spFruit = false,false,false,false,false
+Tabs.Skill:AddToggle("ToggleSPMelee", {["Title"] = "Melee", ["Default"] = false}):OnChanged(function(v) _spMelee = v end)
+Tabs.Skill:AddToggle("ToggleSPDef", {["Title"] = "Defense", ["Default"] = false}):OnChanged(function(v) _spDef = v end)
+Tabs.Skill:AddToggle("ToggleSPSword", {["Title"] = "Sword", ["Default"] = false}):OnChanged(function(v) _spSword = v end)
+Tabs.Skill:AddToggle("ToggleSPGun", {["Title"] = "Gun", ["Default"] = false}):OnChanged(function(v) _spGun = v end)
+Tabs.Skill:AddToggle("ToggleSPFruit", {["Title"] = "Trái Ác Quỷ", ["Default"] = false}):OnChanged(function(v) _spFruit = v end)
+spawn(function()
+    while task.wait(0.1) do pcall(function()
+        if __LP.Data.Points.Value >= 1 then
+            local function ap(s) __RS.Remotes.CommF_:InvokeServer("AddPoint",s,1) end
+            if _spMelee then ap("Melee") end; if _spDef then ap("Defense") end
+            if _spSword then ap("Sword") end; if _spGun then ap("Gun") end
+            if _spFruit then ap("Demon Fruit") end
+        end
+    end) end
+end)
+
+-- ========== KỸ NĂNG ĐẶC BIỆT ==========
+Tabs.Skill:AddSection("✨ Kỹ Năng Đặc Biệt")
+local InfiniteSoru, InfiniteGeppo, DodgeNoCD = false, false, false
+Tabs.Skill:AddToggle("ToggleInfSoru", {["Title"] = "Infinite Soru", ["Default"] = false}):OnChanged(function(v) InfiniteSoru = v end)
+spawn(function()
+    while task.wait(1) do
+        if InfiniteSoru then pcall(function()
+            for _, v in next, getgc() do
+                if getfenv(v).script == __LP.Character:WaitForChild("Soru") then
+                    for idx, val in pairs(debug.getupvalues(v)) do
+                        if type(val)=="table" and val.LastUse then
+                            repeat task.wait(0.1); setupvalue(v,idx,{LastAfter=0,LastUse=0})
+                            until not InfiniteSoru or __LP.Character.Humanoid.Health <= 0
+                        end
+                    end
+                end
+            end
+        end) end
+    end
+end)
+Tabs.Skill:AddToggle("ToggleInfGeppo", {["Title"] = "Infinite Geppo", ["Default"] = false}):OnChanged(function(v) InfiniteGeppo = v end)
+spawn(function()
+    while task.wait(1) do
+        if InfiniteGeppo then pcall(function()
+            for _, v in next, getgc() do
+                if getfenv(v).script == __LP.Character:WaitForChild("Geppo") then
+                    for idx, val in next, getupvalues(v) do
+                        if tostring(val)=="0" then
+                            repeat wait(0.1); setupvalue(v,idx,0)
+                            until not InfiniteGeppo or __LP.Character.Humanoid.Health <= 0
+                        end
+                    end
+                end
+            end
+        end) end
+    end
+end)
+Tabs.Skill:AddToggle("ToggleDodgeNoCD", {["Title"] = "Dodge No Cooldown", ["Default"] = false}):OnChanged(function(v) DodgeNoCD = v end)
+spawn(function()
+    while task.wait(0.1) do
+        if DodgeNoCD then pcall(function()
+            for _, v in next, getgc() do
+                if typeof(v)=="function" and getfenv(v).script == __LP.Character:WaitForChild("Dodge") then
+                    for idx, val in next, getupvalues(v) do
+                        if tostring(val)=="0.4" then setupvalue(v,idx,0) end
+                    end
+                end
+            end
+        end) end
+    end
+end)
+
 -- ============================================================
 -- HỆ THỐNG HIỆU ỨNG ĐÁNH: Tia lửa đóm đóm CỰC NHIỀU phủ toàn thân quái
 -- ============================================================
@@ -14475,42 +14582,6 @@ end)
     end
 end)
 -- [SetValue skipped - Library không cần]
-Tabs.Skill:AddSection("🔑 Kỹ Năng Thông Thạo (Z/X/C/V/F)")
-Tabs.Skill:AddToggle("ToggleZ", {
-    ["Title"] = "Kỹ Năng Z",
-    ["Default"] = true
-}):OnChanged(function(p863)
-    SkillZ = p863
-end)
--- [SetValue skipped - Library không cần]
-Tabs.Skill:AddToggle("ToggleX", {
-    ["Title"] = "Kỹ Năng X",
-    ["Default"] = true
-}):OnChanged(function(p864)
-    SkillX = p864
-end)
--- [SetValue skipped - Library không cần]
-Tabs.Skill:AddToggle("ToggleC", {
-    ["Title"] = "Kỹ Năng C",
-    ["Default"] = true
-}):OnChanged(function(p865)
-    SkillC = p865
-end)
--- [SetValue skipped - Library không cần]
-Tabs.Skill:AddToggle("ToggleV", {
-    ["Title"] = "Kỹ Năng V",
-    ["Default"] = true
-}):OnChanged(function(p866)
-    SkillV = p866
-end)
--- [SetValue skipped - Library không cần]
-Tabs.Skill:AddToggle("ToggleF", {
-    ["Title"] = "Kỹ Năng F",
-    ["Default"] = false
-}):OnChanged(function(p867)
-    SkillF = p867
-end)
--- [SetValue skipped - Library không cần]
 -- ==========================================
 -- [MỞ RỘNG TAB SEA EVENT] Trạng thái sự kiện, thông báo, bay tới đảo/sự kiện, tăng tốc thuyền, đổi server tìm đảo
 -- ==========================================
@@ -19157,76 +19228,6 @@ if Sea3 then
 end
 
 -- ========== NÂNG ĐIỂM KỸ NĂNG ==========
-Tabs.Skill:AddSection("📈 Nâng Điểm Kỹ Năng")
-local _spMelee, _spDef, _spSword, _spGun, _spFruit = false,false,false,false,false
-Tabs.Skill:AddToggle("ToggleSPMelee", {["Title"] = "Melee", ["Default"] = false}):OnChanged(function(v) _spMelee = v end)
-Tabs.Skill:AddToggle("ToggleSPDef", {["Title"] = "Defense", ["Default"] = false}):OnChanged(function(v) _spDef = v end)
-Tabs.Skill:AddToggle("ToggleSPSword", {["Title"] = "Sword", ["Default"] = false}):OnChanged(function(v) _spSword = v end)
-Tabs.Skill:AddToggle("ToggleSPGun", {["Title"] = "Gun", ["Default"] = false}):OnChanged(function(v) _spGun = v end)
-Tabs.Skill:AddToggle("ToggleSPFruit", {["Title"] = "Trái Ác Quỷ", ["Default"] = false}):OnChanged(function(v) _spFruit = v end)
-spawn(function()
-    while task.wait(0.1) do pcall(function()
-        if __LP.Data.Points.Value >= 1 then
-            local function ap(s) __RS.Remotes.CommF_:InvokeServer("AddPoint",s,1) end
-            if _spMelee then ap("Melee") end; if _spDef then ap("Defense") end
-            if _spSword then ap("Sword") end; if _spGun then ap("Gun") end
-            if _spFruit then ap("Demon Fruit") end
-        end
-    end) end
-end)
-
--- ========== KỸ NĂNG ĐẶC BIỆT ==========
-Tabs.Skill:AddSection("✨ Kỹ Năng Đặc Biệt")
-local InfiniteSoru, InfiniteGeppo, DodgeNoCD = false, false, false
-Tabs.Skill:AddToggle("ToggleInfSoru", {["Title"] = "Infinite Soru", ["Default"] = false}):OnChanged(function(v) InfiniteSoru = v end)
-spawn(function()
-    while task.wait(1) do
-        if InfiniteSoru then pcall(function()
-            for _, v in next, getgc() do
-                if getfenv(v).script == __LP.Character:WaitForChild("Soru") then
-                    for idx, val in pairs(debug.getupvalues(v)) do
-                        if type(val)=="table" and val.LastUse then
-                            repeat task.wait(0.1); setupvalue(v,idx,{LastAfter=0,LastUse=0})
-                            until not InfiniteSoru or __LP.Character.Humanoid.Health <= 0
-                        end
-                    end
-                end
-            end
-        end) end
-    end
-end)
-Tabs.Skill:AddToggle("ToggleInfGeppo", {["Title"] = "Infinite Geppo", ["Default"] = false}):OnChanged(function(v) InfiniteGeppo = v end)
-spawn(function()
-    while task.wait(1) do
-        if InfiniteGeppo then pcall(function()
-            for _, v in next, getgc() do
-                if getfenv(v).script == __LP.Character:WaitForChild("Geppo") then
-                    for idx, val in next, getupvalues(v) do
-                        if tostring(val)=="0" then
-                            repeat wait(0.1); setupvalue(v,idx,0)
-                            until not InfiniteGeppo or __LP.Character.Humanoid.Health <= 0
-                        end
-                    end
-                end
-            end
-        end) end
-    end
-end)
-Tabs.Skill:AddToggle("ToggleDodgeNoCD", {["Title"] = "Dodge No Cooldown", ["Default"] = false}):OnChanged(function(v) DodgeNoCD = v end)
-spawn(function()
-    while task.wait(0.1) do
-        if DodgeNoCD then pcall(function()
-            for _, v in next, getgc() do
-                if typeof(v)=="function" and getfenv(v).script == __LP.Character:WaitForChild("Dodge") then
-                    for idx, val in next, getupvalues(v) do
-                        if tostring(val)=="0.4" then setupvalue(v,idx,0) end
-                    end
-                end
-            end
-        end) end
-    end
-end)
-
 -- ========== FPS BOOST ==========
 Tabs.SettingTab:AddSection("FPS & Hiệu Suất")
 Tabs.SettingTab:AddButton({
