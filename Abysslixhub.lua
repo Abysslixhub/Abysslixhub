@@ -16533,15 +16533,12 @@ local _fok, _ferr = pcall(function()
                     notify("Không có trái nào trên bản đồ.")
                     return
                 end
-                local txt = "🍎 Tìm thấy " .. #list .. " trái:
-"
+                local txt = "🍎 Tìm thấy " .. #list .. " trái:\n"
                 for i, f in ipairs(list) do
                     local d = f.dist >= 0 and (" — " .. f.dist .. " studs") or ""
-                    txt = txt .. "  " .. i .. ". " .. f.name .. d .. "
-"
+                    txt = txt .. "  " .. i .. ". " .. f.name .. d .. "\n"
                     if i >= 15 then
-                        txt = txt .. "  ... (còn " .. (#list - 15) .. " trái nữa)
-"
+                        txt = txt .. "  ... (còn " .. (#list - 15) .. " trái nữa)\n"
                         break
                     end
                 end
@@ -16564,15 +16561,12 @@ local _fok, _ferr = pcall(function()
                     if #list == 0 then
                         txt = "Không có trái nào đang rơi."
                     else
-                        txt = "🍎 " .. #list .. " trái (" .. os.date("%H:%M:%S") .. "):
-"
+                        txt = "🍎 " .. #list .. " trái (" .. os.date("%H:%M:%S") .. "):\n"
                         for i, f in ipairs(list) do
                             local d = f.dist >= 0 and (" — " .. f.dist .. " studs") or ""
-                            txt = txt .. "  " .. i .. ". " .. f.name .. d .. "
-"
+                            txt = txt .. "  " .. i .. ". " .. f.name .. d .. "\n"
                             if i >= 10 then
-                                txt = txt .. "  ... (+" .. (#list - 10) .. " nữa)
-"
+                                txt = txt .. "  ... (+" .. (#list - 10) .. " nữa)\n"
                                 break
                             end
                         end
