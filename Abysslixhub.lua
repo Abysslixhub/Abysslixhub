@@ -12691,7 +12691,7 @@ spawn(function()
         end)
     end
 end)
-Tabs.Item:AddSection("Kiếm")
+Tabs.Item:AddSection("🗡️ Nhiệm Vụ Lấy Kiếm & Vật Phẩm")
 Tabs.Item:AddToggle("ToggleAutoSaber", {
     ["Title"] = "Saber",
     ["Default"] = false
@@ -15059,17 +15059,18 @@ spawn(function()
         pcall(vu884)
     end
 end)
-Tabs.SettingTab:AddSection("Trạng Thái Đảo Leviathan")
-local vu885 = Tabs.SettingTab:AddParagraph({
+Tabs.Sea:AddSection("Trạng Thái Đảo Leviathan")
+local vu885 = Tabs.Sea:AddParagraph({
     ["Title"] = "Đảo Leviathan",
+    ["Description"] = "Đang kiểm tra...",
 })
 spawn(function()
     pcall(function()
-        while task.wait(0.1) do
+        while task.wait(1) do
             if __WS.Map:FindFirstChild("FrozenDimension") then
-                vu885:SetDesc("\239\191\189\239\191\189")
+                vu885:SetDesc("Đã Xuất Hiện (Frozen Dimension)")
             else
-                vu885:SetDesc("\239\191\189\239\191\189")
+                vu885:SetDesc("Chưa Xuất Hiện")
             end
         end
     end)
@@ -18125,7 +18126,7 @@ function Hop()
     end
     vu916()
 end
-Tabs.SettingTab:AddSection("Kinh Nghiậm")
+Tabs.Shop:AddSection("🎁 Mã Quà Tặng (Codes)")
 local vu1083 = {
     "KITT_RESET",
     "Sub2UncleKizaru",
@@ -18171,32 +18172,44 @@ local vu1083 = {
     "Bignews",
     "SECRET_ADMIN"
 }
-Tabs.SettingTab:AddButton({
-    ["Title"] = "Nhắp Hết",
+Tabs.Shop:AddButton({
+    ["Title"] = "Nhập Toàn Bộ Code",
+    ["Description"] = "Tự động nhập tất cả mã quà tặng nhận Beli, EXP x2, Reset Stat",
     ["Callback"] = function()
-        for v1086, v1087 in ipairs(vu1083) do
-            RedeemCode(v1087)
-        end
+        RedeemAllCodes()
     end
 })
 function RedeemCode(p1088)
-    __RS.Remotes.Redeem:InvokeServer(p1088)
+    pcall(function() __RS.Remotes.Redeem:InvokeServer(p1088) end)
 end
-Tabs.SettingTab:AddSection("Danh Hiậu")
-Tabs.SettingTab:AddButton({
-    ["Title"] = "Danh Hiệu",
+function RedeemAllCodes()
+    task.spawn(function()
+        for _, code in ipairs(vu1083 or {}) do
+            RedeemCode(code)
+            task.wait(0.15)
+        end
+        pcall(function() Library:Notify({ Title = "Code", Content = "Đã nhập xong toàn bộ code!" }) end)
+    end)
+end
+Tabs.Stats:AddSection("🎖️ Danh Hiệu")
+Tabs.Stats:AddButton({
+    ["Title"] = "Mở Bảng Danh Hiệu",
+    ["Description"] = "Xem và chọn danh hiệu nhân vật",
     ["Callback"] = function()
-        __RS.Remotes.CommF_:InvokeServer(unpack({
-            "getTitles"
-        }))
-        __PL.localPlayer.PlayerGui.Main.Titles.Visible = true
+        pcall(function()
+            __RS.Remotes.CommF_:InvokeServer("getTitles")
+            __LP.PlayerGui.Main.Titles.Visible = true
+        end)
     end
 })
-Tabs.SettingTab:AddSection("Thủc Tỉnh")
-Tabs.SettingTab:AddButton({
-    ["Title"] = "Thức Tỉnh",
+Tabs.Raid:AddSection("⚡ Bảng Thức Tỉnh (Awakening)")
+Tabs.Raid:AddButton({
+    ["Title"] = "Mở Bảng Thức Tỉnh",
+    ["Description"] = "Bật giao diện thức tỉnh kỹ năng trái ác quỷ",
     ["Callback"] = function()
-        __LP.PlayerGui.Main.AwakeningToggler.Visible = true
+        pcall(function()
+            __LP.PlayerGui.Main.AwakeningToggler.Visible = true
+        end)
     end
 })
 Tabs.Misc:AddSection("Tự Rejoin")
@@ -18218,7 +18231,7 @@ spawn(function()
         end
     end
 end)
-Tabs.SettingTab:AddSection("Sương")
+Tabs.SettingTab:AddSection("🌫️ Xóa Sương Mù")
 local function vu1092()
     local v1091 = game:GetService("Lighting")
     if v1091:FindFirstChild("BaseAtmosphere") then
@@ -18244,8 +18257,9 @@ Tabs.SettingTab:AddButton({
         vu1092()
     end
 })
+Tabs.SettingTab:AddSection("🛡️ Bảo Vệ & Chống Ban (Anti-Ban)")
 Tabs.SettingTab:AddToggle("ToggleAntiBand", {
-    ["Title"] = "Chống Band",
+    ["Title"] = "Chống Ban (Tự Đổi Server Khi Có Admin / Mod)",
     ["Default"] = true
 }):OnChanged(function(p1093)
     _G.AntiBand = p1093
