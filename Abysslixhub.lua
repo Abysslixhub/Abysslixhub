@@ -5789,66 +5789,27 @@ do
             end
         end)
 
-        T("TogglePanicMode", "Panic Mode", "Chế độ an toàn - bay lên cao khi máu thấp, hết thấp mới bay xuống", true, function(on) _G.AbyPanic = on end)
-        _G.AbyPanicPct = _G.AbyPanicPct or 30
-        Real:AddSlider({
-            Title = "% Máu Thấp (Panic Mode)", Min = 5, Max = 95, Default = 30,
-            Callback = function(v) _G.AbyPanicPct = math.clamp(math.floor((tonumber(v) or 30) + 0.5), 5, 95) end,
-        })
+        T("TogglePanicMode", "Panic Mode", "Chế độ an toàn - bay lên khi máu thấp", true, function(on) _G.AbyPanic = on end)
         task.spawn(function()
             local active = false
-            local origin = nil
-            local PANIC_HEIGHT = 300
-            local function flyDown(root)
-                local target = origin
-                origin = nil
-                if not (root and target) then return end
-                local startPos = root.Position
-                local goal = target.Position
-                local steps = 20
-                for i = 1, steps do
-                    if not root.Parent then return end
-                    local pos = startPos:Lerp(goal, i / steps)
-                    root.CFrame = CFrame.new(pos) * (target - target.Position)
-                    root.AssemblyLinearVelocity = Vector3.zero
-                    task.wait(0.03)
-                end
-            end
-            while task.wait(0.1) do
-                pcall(function()
-                    local ch = __LP.Character
-                    local hum = ch and ch:FindFirstChildOfClass("Humanoid")
-                    local root = ch and ch:FindFirstChild("HumanoidRootPart")
-                    if not (hum and root) or hum.Health <= 0 then active = false; origin = nil; return end
-                    if not _G.AbyPanic then
-                        if active then active = false; flyDown(root) end
-                        return
-                    end
-                    local pct = (_G.AbyPanicPct or 30) / 100
-                    local ratio = hum.Health / math.max(hum.MaxHealth, 1)
-                    if not active then
-                        if ratio < pct then
+            while task.wait(0.25) do
+                if _G.AbyPanic then
+                    pcall(function()
+                        local ch = __LP.Character
+                        local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+                        local root = ch and ch:FindFirstChild("HumanoidRootPart")
+                        if not (hum and root) or hum.Health <= 0 then active = false; return end
+                        local ratio = hum.Health / math.max(hum.MaxHealth, 1)
+                        if not active and ratio < 0.3 then
                             active = true
-                            origin = root.CFrame
                             if StopMovement then StopMovement() end
-                            root.CFrame = origin + Vector3.new(0, PANIC_HEIGHT, 0)
-                            root.AssemblyLinearVelocity = Vector3.zero
+                            root.CFrame = root.CFrame + Vector3.new(0, 300, 0)
                             notify("Panic Mode", "Máu thấp, đã bay lên cao để hồi máu")
+                        elseif active and ratio > 0.75 then
+                            active = false
                         end
-                    elseif ratio > pct then
-                        active = false
-                        notify("Panic Mode", "Máu đã hồi, đang bay xuống")
-                        flyDown(root)
-                    else
-                        -- giữ nhân vật ở trên cao, chống các vòng lặp farm kéo xuống
-                        if StopMovement then StopMovement() end
-                        local holdY = origin.Y + PANIC_HEIGHT
-                        if math.abs(root.Position.Y - holdY) > 5 then
-                            root.CFrame = CFrame.new(origin.X, holdY, origin.Z) * (root.CFrame - root.CFrame.Position)
-                        end
-                        root.AssemblyLinearVelocity = Vector3.zero
-                    end
-                end)
+                    end)
+                end
             end
         end)
 
@@ -14930,20 +14891,6 @@ end
 Tabs.Setting = Tabs.SettingTab
 _G.UseFruitM1 = false
 _G.UseGun = false
-_G.UseGunM1 = false
-Tabs.SettingTab:AddSection("⚔️ Đánh Thường (M1)")
-Tabs.SettingTab:AddToggle("ToggleUseFruitM1", {
-    ["Title"] = "Dùng M1 Trái Ác Quỷ",
-    ["Default"] = false
-}):OnChanged(function(v)
-    _G.UseFruitM1 = v
-end)
-Tabs.SettingTab:AddToggle("ToggleUseGunM1", {
-    ["Title"] = "Dùng M1 Súng",
-    ["Default"] = false
-}):OnChanged(function(v)
-    _G.UseGunM1 = v
-end)
 -- [SetValue skipped - Library không cần]
 spawn(function()
     while task.wait(0.1) do
@@ -15053,13 +15000,12 @@ task.spawn(function()
                 if ev then ev:FireServer(targetPart.Position, { targetPart }) end
             end)
         end
-        -- M1 trái/súng: KHÔNG gọi tool:Activate() (script cục bộ của trái sẽ khóa di chuyển/chơi animation => nhân vật đứng im).
-        -- Chỉ bắn remote từ xa nên người chơi vẫn chạy/nhảy/bay bình thường khi đang tự đánh.
+        pcall(function() tool:Activate() end)
     end
     while true do
         task.wait(0.1)
         local seaBusy = _G.SeaEventFarm and _G.SeaAttackMode and _G.SeaAttackMode ~= "default"
-        local wantFruit, wantGun = _G.UseFruitM1, (_G.UseGunM1 or _G.UseGun)
+        local wantFruit, wantGun = _G.UseFruitM1, _G.UseGun
         if (wantFruit or wantGun) and not seaBusy then
             pcall(function()
                 local char = __LP.Character
@@ -15085,52 +15031,18 @@ task.spawn(function()
                     end
                     return
                 end
-                -- KHÔNG tự cầm vũ khí: người chơi tự cầm trái/súng bằng tay. Khi đang cầm đúng trái/súng thì script mới tự M1;
-                -- chưa cầm hoặc đang cầm vũ khí khác thì script đứng yên và nhả khóa vũ khí cho các chức năng khác.
-                if tool.Parent ~= char then
-                    if savedChoose ~= nil then ChooseWeapon = savedChoose; savedChoose = nil end
-                    return
-                end
                 if savedChoose == nil then if ChooseWeapon ~= "SeaMode" then _G.PrevChoose = ChooseWeapon end savedChoose = _G.PrevChoose end
-                ChooseWeapon = "SeaMode"   -- khóa vòng chọn vũ khí chung khi đang đánh bằng trái/súng
+                ChooseWeapon = "SeaMode"   -- khóa vòng chọn vũ khí chung, không đổi lại vũ khí khác
                 SelectWeapon = tool.Name
-                -- Đánh kiểu M1 võ: dùng chung hàm đánh nhanh (RegisterAttack/RegisterHit) lên tất cả quái trong tầm,
-                -- không cần quay mặt/đứng im. Vua Biển/tàu (không nằm trong Enemies) vẫn bắn thẳng như cũ.
-                if type(AttackNoCoolDown) == "function" then AttackNoCoolDown() end
+                if tool.Parent ~= char then hum:EquipTool(tool) end
                 local tgt = nearest(root, wantFruit and 100 or 200)
-                local en = __WS:FindFirstChild("Enemies")
-                if tgt and not (en and tgt:IsDescendantOf(en)) then fire(tool, tgt, root) end
+                if tgt then fire(tool, tgt, root) end
             end)
-        else
-            if savedChoose ~= nil then
-                ChooseWeapon = savedChoose
-                savedChoose = nil
-            end
+        elseif savedChoose ~= nil then
+            ChooseWeapon = savedChoose
+            savedChoose = nil
         end
     end
-end)
--- [NEW] CHỐNG KHỰNG khi đang tự M1 trái/súng: game đặt Stun/Busy hoặc hạ WalkSpeed sau mỗi đòn => nhân vật đứng im.
--- Chỉ chạy khi 1 trong 2 nút M1 đang bật: trả WalkSpeed/JumpPower về mức bình thường và xóa Stun/Busy ở phía client.
-task.spawn(function()
-    local goodWS, goodJP = nil, nil
-    game:GetService("RunService").Heartbeat:Connect(function()
-        if not (_G.UseFruitM1 or _G.UseGunM1 or _G.UseGun) then goodWS, goodJP = nil, nil return end
-        pcall(function()
-            local char = __LP.Character
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if not hum or hum.Health <= 0 then return end
-            if hum.WalkSpeed >= 8 then goodWS = hum.WalkSpeed
-            elseif goodWS then hum.WalkSpeed = goodWS end
-            if hum.JumpPower >= 10 then goodJP = hum.JumpPower
-            elseif goodJP then hum.JumpPower = goodJP end
-            for _, n in ipairs({ "Stun", "Busy", "Slowed" }) do
-                local v = char:FindFirstChild(n)
-                if v and v:IsA("ValueBase") and (v.Value == true or (type(v.Value) == "number" and v.Value > 0)) then
-                    v.Value = (type(v.Value) == "boolean") and false or 0
-                end
-            end
-        end)
-    end)
 end)
 -- [OPT] Gom quái: thoát sớm khi không cần, chỉ lọc đúng loại quái, guard Head/Animator.
 -- [NEW] Chỉ gom N con gần điểm đánh nhất (_G.BringCount) và kéo về với tốc độ _G.BringSpeed (theo dt, mượt).
