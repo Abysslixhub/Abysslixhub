@@ -2081,8 +2081,7 @@ end)
                 TextColor.TextSize = 14
                 TextColor.TextStrokeTransparency = 0.8500000238418579
                 TextColor.TextWrapped = true
-                TextColor.TextXAlignment = Enum.TextXAlignment.Left
-
+                TextColor.TextXAlignment = Enum.TextXAlignment.Left
 				-- FIX: tính chiều cao cố định theo chữ, tránh chuỗi AutomaticSize bị vòng lặp làm hàng phình to
 				LabelFrame.AutomaticSize = Enum.AutomaticSize.None
 				LabelBG.AutomaticSize = Enum.AutomaticSize.None
@@ -5561,7 +5560,7 @@ task.wait(0.5)
 
 Library:Notify({
     Title = "Abysslixhub",
-    Content = "Đã load xong Abysslixhub!Cảm ơn bạn đã sử dụng script."
+    Content = "Đã load xong Abysslixhub! (build 12/10-r8) Cảm ơn bạn đã sử dụng script."
 })
 
 -- Anti AFK (bật/tắt bằng _G.AntiAFK, mặc định BẬT; nút ở tab Server)
@@ -14555,11 +14554,7 @@ do
     function P:AddParagraph(...) ensure(); return safeAdd("AddParagraph", ...) end
     function P:AddLabel(...) ensure(); return safeAdd("AddLabel", ...) end
     function P:AddSeperator(...) ensure(); return safeAdd("AddSeperator", ...) end
-    task.delay(8, function()
-        pcall(function()
-            Library:Notify({ Title = "Settings (mục cũ)", Content = "Đã thêm " .. DIAG.ok .. " mục, lỗi " .. DIAG.fail .. (DIAG.firstErr and (" | " .. DIAG.firstErr) or ""), Duration = 15 })
-        end)
-    end)
+    -- [ĐÃ XÓA] thông báo "Settings (mục cũ): Đã thêm X mục, lỗi Y"
     -- [SỬA] Không thay Tabs.Setting bằng proxy P nữa - giữ nguyên Real để Settings hiện đủ
     -- Tabs.Setting = P  -- BỎ DÒNG NÀY: gây ẩn mục, lazy section, và HIDE_ID lọc nhầm
 end
@@ -30426,7 +30421,7 @@ v496:AddToggle({
     end
 
     local function _extraNotify(msg)
-        pcall(function() Library:Notify({ Title = "Abysslixhub", Content = msg }) end)
+        -- [ĐÃ TẮT] không hiện thông báo tính năng mở rộng nữa (lỗi vẫn được ghi bằng warn ở trên)
     end
 
     task.spawn(function()
