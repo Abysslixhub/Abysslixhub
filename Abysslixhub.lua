@@ -1710,7 +1710,7 @@ function Library:CreateWindow(Setting)
 				check.Name = "check"
 				check.Parent = checkbox
 				check.AnchorPoint = Vector2.new(0.5, 0.5)
-				check.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+				check.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
 				check.Position = UDim2.new(0.5, 0, 0.5, 0)
 				
 				if Desc and Desc ~= "" then
@@ -4673,6 +4673,7 @@ local function wrapTab(rawTab, defaultTitle)
                 -- [FIX] Tắt chức năng nào cũng dừng chuyến bay đang chạy (trước đây bay tiếp dù đã tắt)
                 if val == false then
                     pcall(function() if StopMovement then StopMovement() end end)
+                    pcall(function() if _G.AbyAfterToggleOff then _G.AbyAfterToggleOff() end end)
                 end
             end
         })
@@ -4698,6 +4699,7 @@ local function wrapTab(rawTab, defaultTitle)
                 if origCallback then pcall(origCallback, boolVal) end
                 if holder.extraCallback then pcall(holder.extraCallback, boolVal) end
                 if not boolVal then pcall(function() if StopMovement then StopMovement() end end) end
+                if not boolVal then pcall(function() if _G.AbyAfterToggleOff then _G.AbyAfterToggleOff() end end) end
             end
         end
         function proxy:SetStage(val)
@@ -7851,7 +7853,7 @@ end
 function BoneNoQuestOn() return _G.AutoBoneNoQuest or _G.RaceBoneFarm end
 -- [NEW] Tư Lệnh Bánh: chạy khi bật 1 trong 2 chế độ (có / không nhiệm vụ)
 function CakeOn() return _G.Cake or _G.CakeNoQuest end
-local function IsMoveFlagActive()
+local function IsMoveFlagActive(skipClip)
     return _G.AutoEvoRace or
         _G.CastleRaid or
         _G.CollectAzure or
@@ -7892,7 +7894,7 @@ local function IsMoveFlagActive()
         Auto_Quest_Tushita_1 or
         Auto_Quest_Tushita_2 or
         Auto_Quest_Tushita_3 or
-        _G.Clip2 or
+        (not skipClip and _G.Clip2) or
         _G.Auto_Regoku or
         _G.AutoBone or
         BoneNoQuestOn() or
@@ -7958,6 +7960,42 @@ RunService.Stepped:Connect(function()
         bc:Destroy()
     end
 end)
+-- [FIX ĐỨNG IM SAU KHI TẮT CHỨC NĂNG] Nhả nhân vật: huỷ khoá vận tốc (BodyClip), bỏ neo, trả lại khả năng đi/nhảy.
+-- Chỉ chạy khi KHÔNG còn chức năng nào đang bật (tránh phá chức năng khác đang chạy).
+_G.AbyReleaseChar = function()
+    local char = __LP.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hrp then
+        pcall(function()
+            local bc = hrp:FindFirstChild("BodyClip")
+            if bc then bc:Destroy() end
+            hrp.Anchored = false
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+        end)
+    end
+    if hum then
+        pcall(function()
+            hum.PlatformStand = false
+            if hum.WalkSpeed <= 0 then hum.WalkSpeed = 16 end
+            if hum.UseJumpPower and hum.JumpPower <= 0 then hum.JumpPower = 50 end
+            hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end)
+    end
+end
+-- Gọi sau khi tắt bất kỳ toggle nào: đợi vòng lặp farm đang chạy dở thoát hẳn rồi huỷ chuyến bay còn sót + nhả nhân vật
+_G.AbyAfterToggleOff = function()
+    task.spawn(function()
+        for _, d in ipairs({0.25, 0.6}) do
+            task.wait(d)
+            if not IsMoveFlagActive(true) then
+                pcall(StopMovement)
+                pcall(_G.AbyReleaseChar)
+            end
+        end
+    end)
+end
 task.spawn(function()
     if __LP.Character:FindFirstChild("Stun") then
         __LP.Character.Stun.Changed:connect(function()
