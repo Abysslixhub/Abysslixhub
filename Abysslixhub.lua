@@ -2081,7 +2081,8 @@ end)
                 TextColor.TextSize = 14
                 TextColor.TextStrokeTransparency = 0.8500000238418579
                 TextColor.TextWrapped = true
-                TextColor.TextXAlignment = Enum.TextXAlignment.Left
+                TextColor.TextXAlignment = Enum.TextXAlignment.Left
+
 				-- FIX: tính chiều cao cố định theo chữ, tránh chuỗi AutomaticSize bị vòng lặp làm hàng phình to
 				LabelFrame.AutomaticSize = Enum.AutomaticSize.None
 				LabelBG.AutomaticSize = Enum.AutomaticSize.None
@@ -5560,7 +5561,7 @@ task.wait(0.5)
 
 Library:Notify({
     Title = "Abysslixhub",
-    Content = "Đã load xong Abysslixhub! (build 12/10-r8) Cảm ơn bạn đã sử dụng script."
+    Content = "Đã load xong Abysslixhub!Cảm ơn bạn đã sử dụng script."
 })
 
 -- Anti AFK (bật/tắt bằng _G.AntiAFK, mặc định BẬT; nút ở tab Server)
