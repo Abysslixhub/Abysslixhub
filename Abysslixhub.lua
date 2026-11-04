@@ -5350,6 +5350,34 @@ do
             B("Join Selected Team", "Đổi sang team đang chọn", function()
                 __RS.Remotes.CommF_:InvokeServer("SetTeam", _G.TeamChoice)
             end)
+
+            -- [THÊM] Nút đổi phe trực tiếp (không cần chọn dropdown trước)
+            local function switchTeam(team, label)
+                _G.TeamChoice = team   -- nhớ phe này để tự chọn lại khi vào server mới
+                local ok, err = pcall(function()
+                    __RS.Remotes.CommF_:InvokeServer("SetTeam", team)
+                end)
+                pcall(function()
+                    local cur = __LP.Team and __LP.Team.Name
+                    local msg
+                    if not ok then
+                        msg = "Đổi phe lỗi: " .. tostring(err)
+                    elseif cur == team then
+                        msg = "Đã đổi sang " .. label
+                    else
+                        msg = "Đã gửi yêu cầu đổi sang " .. label .. " (nếu chưa đổi: thoát combat / thử lại sau vài giây)"
+                    end
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "Abysslixhub", Text = msg, Duration = 5,
+                    })
+                end)
+            end
+            B("Đổi sang Hải Quân (Marines)", "Chuyển ngay sang phe Marines", function()
+                switchTeam("Marines", "Hải Quân (Marines)")
+            end)
+            B("Đổi sang Hải Tặc (Pirates)", "Chuyển ngay sang phe Pirates", function()
+                switchTeam("Pirates", "Hải Tặc (Pirates)")
+            end)
         end)
     end)
 
@@ -16586,18 +16614,40 @@ local _fok, _ferr = pcall(function()
     local mirageDD = nil -- tạo bên dưới nút mua shop thường
     local selectedPerm = nil
     local permDD = nil -- tạo ở mục "Trái Ác Quỷ" bên dưới
-    local NONE_TEXT = "(Bấm Làm Mới Stock)"
+    local NONE_TEXT = "(Đang tự tải stock...)"
 
     -- ---------- STOCK (section đầu tiên của tab, tên đặt ở createTab) ----------
+    -- [THÊM] TRẠNG THÁI TÓM TẮT Ở ĐẦU TAB: trái đang stock + trái đang rơi trong server (tự cập nhật)
+    local worldSummary = "đang quét..."
+    local statusLabel = Tab:AddParagraph({
+        ["Title"] = "📊 Trạng Thái Trái",
+        ["Description"] = "Đang tự động kiểm tra..."
+    })
+    local function namesOf(list)
+        local t = {}
+        for _, f in ipairs(list or {}) do table.insert(t, f.Name) end
+        return #t > 0 and table.concat(t, ", ") or "không có"
+    end
+    local function updateStatus()
+        pcall(function()
+            statusLabel:Set(
+                "🛒 Stock Shop Thường: " .. namesOf(normalOnSale) ..
+                "\n🌕 Stock Đảo Bí Ẩn: " .. namesOf(mirageOnSale) ..
+                "\n🍎 Trái đang rơi trong server: " .. worldSummary ..
+                "\n🕒 Cập nhật lúc " .. os.date("%H:%M:%S"))
+        end)
+    end
+
     local stockLabel = Tab:AddParagraph({
         ["Title"] = "Stock",
-        ["Description"] = "Đang lấy dữ liệu..."
+        ["Description"] = "Đang tự động lấy dữ liệu stock..."
     })
 
     local normalDD = nil -- tạo bên dưới nút Làm Mới
     local refreshing = false
-    local function refreshStock(silent)
-        if refreshing then return end
+    local lastStockSig = nil
+    local function refreshStockRaw(silent)
+        if refreshing then return nil end
         refreshing = true
         local normal, allNames = readStock(false)
         local mirage = readStock(true)
@@ -16610,20 +16660,25 @@ local _fok, _ferr = pcall(function()
         local names = {}
         for _, f in ipairs(normalOnSale) do table.insert(names, f.Name) end
         if #names == 0 then names = { "(Shop không có trái)" } end
-        selectedNormal = names[1]
+        -- [TỰ ĐỘNG] giữ nguyên trái người dùng đang chọn nếu nó vẫn còn trong stock
+        local keepN = names[1]
+        for _, n in ipairs(names) do if n == selectedNormal then keepN = n break end end
+        selectedNormal = keepN
         if normalDD then
             pcall(function() normalDD:Refresh(names) end)
-            pcall(function() normalDD:SetValue(names[1]) end)
+            pcall(function() normalDD:SetValue(keepN) end)
         end
 
         mirageOnSale = mirage or {}
         local mnames = {}
         for _, f in ipairs(mirageOnSale) do table.insert(mnames, f.Name) end
         if #mnames == 0 then mnames = { "(Đảo Bí Ẩn không có trái)" } end
-        selectedMirage = mnames[1]
+        local keepM = mnames[1]
+        for _, n in ipairs(mnames) do if n == selectedMirage then keepM = n break end end
+        selectedMirage = keepM
         if mirageDD then
             pcall(function() mirageDD:Refresh(mnames) end)
-            pcall(function() mirageDD:SetValue(mnames[1]) end)
+            pcall(function() mirageDD:SetValue(keepM) end)
         end
 
         if allNames and #allNames > 0 and permDD then
@@ -16635,6 +16690,19 @@ local _fok, _ferr = pcall(function()
         end
         refreshing = false
         if not silent then notify("Đã cập nhật stock trái.") end
+        -- [TỰ ĐỘNG] trả về: có lấy được dữ liệu không + "chữ ký" stock để phát hiện stock đổi
+        local sigN, sigM = {}, {}
+        for _, f in ipairs(normalOnSale) do table.insert(sigN, f.Name) end
+        for _, f in ipairs(mirageOnSale) do table.insert(sigM, f.Name) end
+        updateStatus()
+        return (normal ~= nil), table.concat(sigN, ",") .. "|" .. table.concat(sigM, ","), normalOnSale
+    end
+
+    -- Bọc pcall để lỗi bất ngờ không làm cờ `refreshing` kẹt vĩnh viễn (khiến stock không bao giờ cập nhật nữa)
+    local function refreshStock(silent)
+        local ok, got, sig, list = pcall(refreshStockRaw, silent)
+        if not ok then refreshing = false return false end
+        return got, sig, list
     end
 
     Tab:AddButton({
@@ -16728,10 +16796,24 @@ local _fok, _ferr = pcall(function()
         end
     })
 
+    -- [TỰ ĐỘNG CHECK STOCK] không cần bấm "Làm Mới Stock":
+    --  1) Vừa mở script: thử lại mỗi 2 giây tới khi lấy được dữ liệu (trước đây chỉ thử 1 lần, lỗi là phải chờ 60s hoặc tự bấm)
+    --  2) Sau đó tự cập nhật mỗi 30 giây
+    --  3) Stock đổi (shop làm mới) thì tự báo thông báo trái mới
     task.spawn(function()
-        pcall(function() refreshStock(true) end)
-        while task.wait(60) do
-            pcall(function() refreshStock(true) end)
+        for _ = 1, 40 do
+            local got, sig = refreshStock(true)
+            if got then lastStockSig = sig break end
+            task.wait(2)
+        end
+        while task.wait(30) do
+            local got, sig, list = refreshStock(true)
+            if got and sig and lastStockSig and sig ~= lastStockSig then
+                local names = {}
+                for _, f in ipairs(list or {}) do table.insert(names, f.Name) end
+                notify("Stock trái vừa đổi: " .. (#names > 0 and table.concat(names, ", ") or "không có trái"))
+            end
+            if got and sig then lastStockSig = sig end
         end
     end)
 
@@ -16799,10 +16881,29 @@ local _fok, _ferr = pcall(function()
     Tab:AddToggle("ToggleAutoScanFruit", {
         ["Title"] = "🔁 Tự Quét Trái Mỗi 10 Giây",
         ["Description"] = "Cập nhật danh sách trái tự động, kết hợp với ESP để thấy vị trí",
-        ["Default"] = false
+        ["Default"] = true
     }):OnChanged(function(v) _G.AutoScanFruit = v end)
+    _G.AutoScanFruit = true
     task.spawn(function()
-        while task.wait(10) do
+        local lastWorldSig = nil
+        while true do
+            -- [TỰ ĐỘNG] luôn quét trái trong server (cập nhật dòng trạng thái ở đầu tab), không phụ thuộc nút
+            pcall(function()
+                local l = scanWorldFruits()
+                local ns = {}
+                for i, f in ipairs(l) do
+                    if i > 6 then table.insert(ns, "+" .. (#l - 6) .. " nữa") break end
+                    table.insert(ns, f.name)
+                end
+                worldSummary = (#l > 0) and (#l .. " trái (" .. table.concat(ns, ", ") .. ")") or "không có"
+                updateStatus()
+                local sig = table.concat(ns, ",")
+                if lastWorldSig ~= nil and sig ~= lastWorldSig and #l > 0 then
+                    notify("Có trái rơi trong server: " .. table.concat(ns, ", "))
+                end
+                lastWorldSig = sig
+            end)
+            task.wait(10)
             if _G.AutoScanFruit then
                 pcall(function()
                     local list = scanWorldFruits()
