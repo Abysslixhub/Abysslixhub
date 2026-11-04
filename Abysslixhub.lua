@@ -373,6 +373,11 @@ UIS.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1
 	or input.UserInputType == Enum.UserInputType.Touch then
 
+		-- FIX: chi xu ly khi dang nhan/keo nut (dragStart co gia tri)
+		if not dragging or not dragStart then
+			return
+		end
+
 		local delta = input.Position - dragStart
 
 		-- CLICK (KHÔNG KÉO)
