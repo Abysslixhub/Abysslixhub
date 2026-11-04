@@ -9035,8 +9035,10 @@ end)
 local _qKey, _qTries, _qStart = nil, 0, 0
 local _lastAbandon = 0
 local _qSeen = false
+local _qGoneAt = nil
+local _qLastTitle = ""
 -- [FIX] thời gian tối đa coi quest "đang chạy" khi UI không báo Visible (trước đây 90s => phải chờ 2-3 phút)
-_G.QuestFallbackSec = _G.QuestFallbackSec or 30
+_G.QuestFallbackSec = _G.QuestFallbackSec or 90
 -- [FIX] đọc tiến độ (x/y) trên tiêu đề quest, đủ số quái => true
 function QuestIsDone(txt)
     local a, b = string.match(tostring(txt), "%((%d+)%s*/%s*(%d+)%)")
@@ -9065,16 +9067,28 @@ spawn(function()
                 local titleOK = QuestTitle == "" or string.find(QuestTitle:lower(), NameMon:lower():sub(1, -3), 1, true) ~= nil
 
                 -- [FIX] quest vừa xong (UI từng hiện rồi biến mất) => bỏ fallback, nhận quest mới NGAY
+                -- (debounce 2s: UI nháy mất giữa chừng thì KHÔNG coi là xong)
                 if questVisible then
                     _qSeen = true
+                    _qGoneAt = nil
+                    _qLastTitle = QuestTitle
                 elseif _qSeen then
-                    _qSeen = false
-                    _qTries = 0
-                    _qStart = 0
-                    bringmob = false
+                    _qGoneAt = _qGoneAt or os.clock()
+                    if os.clock() - _qGoneAt >= 2 then
+                        warn("[QuestDebug] bang quest mat >2s -> nhan lai. Title cuoi:", _qLastTitle)
+                        _qSeen = false
+                        _qGoneAt = nil
+                        _qTries = 0
+                        _qStart = 0
+                        bringmob = false
+                    else
+                        questVisible = true
+                        titleOK = true
+                    end
                 end
                 -- [FIX] đủ x/y mà UI vẫn còn => hủy để nhận quest mới ngay
                 if questVisible and QuestIsDone(QuestTitle) then
+                    warn("[QuestDebug] quest xong (x/y) -> nhan lai. Title:", QuestTitle)
                     bringmob = false
                     __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
                     _qSeen = false; _qTries = 0; _qStart = 0
@@ -9106,6 +9120,7 @@ spawn(function()
 
                 -- Nếu đang có quest KHÁC thì bỏ quest (có cooldown, không spam remote)
                 if questVisible and not titleOK then
+                    warn("[QuestDebug] title khong khop -> huy quest. Title:", QuestTitle, "| NameMon:", NameMon)
                     bringmob = false
                     if os.clock() - _lastAbandon > 3 then
                         _lastAbandon = os.clock()
@@ -10695,7 +10710,7 @@ function AbyQuest.Active(id)
     local vis = GetQuestGui()
     if vis then return true end
     local st = AbyQuest.Get(id)
-    return st.tries >= 2 and os.clock() - st.start < (_G.QuestFallbackSec or 30)
+    return st.tries >= 2 and os.clock() - st.start < (_G.QuestFallbackSec or 90)
 end
 
 -- true = đã có đúng quest, đi farm được; false = vừa xử lý quest (nhận/bỏ), caller nên return
@@ -10716,8 +10731,14 @@ function AbyQuest.Ensure(id, qName, qLv, qMob, qCF, flagFn)
             return false
         end
     elseif st.seen then
-        st.seen = false; st.tries = 0; st.start = 0
+        -- debounce 2s: UI nháy mất giữa chừng thì vẫn coi là đang làm quest
+        st.goneAt = st.goneAt or os.clock()
+        if os.clock() - st.goneAt < 2 then
+            return true
+        end
+        st.seen = false; st.goneAt = nil; st.tries = 0; st.start = 0
     end
+    if vis then st.goneAt = nil end
     if vis then
         if AbyQuest.TitleOK(title, qMob) then
             st.tries = 0
@@ -10737,7 +10758,7 @@ function AbyQuest.Ensure(id, qName, qLv, qMob, qCF, flagFn)
 
     -- UI không báo Visible nhưng đã StartQuest >= 2 lần => coi như đang chạy
     if st.tries >= 2 then
-        if os.clock() - st.start < (_G.QuestFallbackSec or 30) then return true end
+        if os.clock() - st.start < (_G.QuestFallbackSec or 90) then return true end
         st.tries = 0 -- hết thời gian fallback: thử nhận lại
     end
 
