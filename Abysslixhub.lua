@@ -7,6 +7,24 @@ local __WS  = game:GetService("Workspace")
 local __VIM = game:GetService("VirtualInputManager")
 local __LP  = __PL.LocalPlayer
 
+-- [FIX LỖI DÍNH/CẮT CHỨC NĂNG] Cửa sổ hub có UIScale ("FitScale", 0.55-1 trên điện thoại).
+-- AbsoluteContentSize trả về pixel đã nhân scale, còn Size/CanvasSize offset lại bị nhân scale thêm lần nữa
+-- => khung section/dropdown thấp hơn nội dung (scale^2) nên hàng cuối bị cắt và section sau đè lên.
+-- Hàm này đổi pixel tuyệt đối về đơn vị cục bộ (chia cho scale của FitScale).
+_G.__AbyLocal = function(inst, absValue)
+    local s = 1
+    pcall(function()
+        local p = inst
+        while p do
+            local fit = p:FindFirstChild("FitScale")
+            if fit and fit:IsA("UIScale") then s = fit.Scale break end
+            p = p.Parent
+        end
+    end)
+    if type(s) ~= "number" or s <= 0 then s = 1 end
+    return absValue / s
+end
+
 -- ==========================================
 -- SERVICES
 -- ==========================================
@@ -1608,7 +1626,7 @@ function Library:CreateWindow(Setting)
 				visibility_off.ImageTransparency = sectionIsVisible and 1 or 0
 				local function toggleSectionOpen()
 					sectionIsVisible = not sectionIsVisible
-					SizeSectionY = SectionList.AbsoluteContentSize.Y + 5
+					SizeSectionY = _G.__AbyLocal(Section, SectionList.AbsoluteContentSize.Y) + 5
 					TweenService:Create(visibility, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"] / 2), {
 						ImageTransparency = sectionIsVisible and 0 or 1
 					}):Play()
@@ -1647,9 +1665,9 @@ function Library:CreateWindow(Setting)
 
 			SectionList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 				if (not Toggleable) then
-					Section.Size = UDim2.new(1, -5, 0, SectionList.AbsoluteContentSize.Y + 5)
+					Section.Size = UDim2.new(1, -5, 0, _G.__AbyLocal(Section, SectionList.AbsoluteContentSize.Y) + 5)
 				end
-				SizeSectionY = SectionList.AbsoluteContentSize.Y + 5
+				SizeSectionY = _G.__AbyLocal(Section, SectionList.AbsoluteContentSize.Y) + 5
 				if sectionIsVisible then
 					TweenService:Create(Section, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
 						Size =  UDim2.new(1, -5, 0, SizeSectionY)
@@ -2270,11 +2288,11 @@ end)
                 end)
                 
                 ScrollContainerList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                    DropdownScroll.CanvasSize = UDim2.new(0, 0, 0, 10 + ScrollContainerList.AbsoluteContentSize.Y + 5)
+                    DropdownScroll.CanvasSize = UDim2.new(0, 0, 0, 10 + _G.__AbyLocal(DropdownScroll, ScrollContainerList.AbsoluteContentSize.Y) + 5)
                 end)
                 
                 InternalList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                    local contentHeight = math.min(InternalList.AbsoluteContentSize.Y + 10, 300)
+                    local contentHeight = math.min(_G.__AbyLocal(InternalList.Parent or InternalList, InternalList.AbsoluteContentSize.Y) + 10, 300)
                     local listsize = isOpen and UDim2.new(1, 0, 0, contentHeight) or UDim2.new(1, 0, 0, 0)
                     local mainsize = isOpen and UDim2.new(1, 0, 0, contentHeight + 25) or UDim2.new(1, 0, 0, 25)
                     
@@ -2702,7 +2720,7 @@ end)
 				ScrollContainerList.SortOrder = Enum.SortOrder.LayoutOrder
 				ScrollContainerList.Padding = UDim.new(0, 5)
 				ScrollContainerList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-					DropdownScroll.CanvasSize = UDim2.new(0, 0, 0, 10 + ScrollContainerList.AbsoluteContentSize.Y + 5)
+					DropdownScroll.CanvasSize = UDim2.new(0, 0, 0, 10 + _G.__AbyLocal(DropdownScroll, ScrollContainerList.AbsoluteContentSize.Y) + 5)
 				end)
 				local isbusy = false
 				local found = {}
@@ -4301,7 +4319,7 @@ task.spawn(function()
                         LayoutOrder = d.LayoutOrder,
                     }
                     -- chỉ nhớ Size cho các hàng nằm trong danh sách xếp tự động
-                    if d.Parent and d.Parent:FindFirstChildOfClass("UIListLayout") then
+                    if d.Parent and d.Parent:FindFirstChildOfClass("UIListLayout") and not string.find(d.Name, "_Dot$") then
                         rec.Size = d.Size
                     end
                     snapshot[d] = rec
