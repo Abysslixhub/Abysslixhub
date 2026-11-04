@@ -936,6 +936,10 @@ function Library:CreateWindow(Setting)
 	ControlList.Size = UDim2.new(1, -5, 1, -30)
 	ControlList.BottomImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
 	ControlList.CanvasSize = UDim2.new(0, 0, 0, 0)
+	ControlList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	ControlList.ScrollingDirection = Enum.ScrollingDirection.Y
+	ControlList.ElasticBehavior = Enum.ElasticBehavior.Never
+	ControlList.ScrollingEnabled = true
 	ControlList.ScrollBarThickness = 5
 	ControlList.TopImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
 
@@ -1022,7 +1026,7 @@ function Library:CreateWindow(Setting)
 	UIPage.TweenTime = getgenv().UIColor["Tween Animation 1 Speed"]
 
 	UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		ControlList.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 5)
+		-- AutomaticCanvasSize đã tự tính CanvasSize, không set tay nữa (set tay làm canvas bị thấp hơn nội dung)
 	end)
 
 	local Shadow = Instance.new("ImageLabel", Main)
@@ -1303,13 +1307,17 @@ function Library:CreateWindow(Setting)
 		PageList.TopImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
 		PageList.ScrollingEnabled = true
 		PageList.VerticalScrollBarInset = Enum.ScrollBarInset.Always
+		PageList.CanvasSize = UDim2.new(0, 0, 0, 0)
+		PageList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		PageList.ScrollingDirection = Enum.ScrollingDirection.Y
+		PageList.ElasticBehavior = Enum.ElasticBehavior.Never
 
 		Pagelistlayout.Name = "Pagelistlayout"
 		Pagelistlayout.Parent = PageList
 		Pagelistlayout.SortOrder = Enum.SortOrder.LayoutOrder
 		Pagelistlayout.Padding = UDim.new(0, 5)
 		Pagelistlayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-			PageList.CanvasSize = UDim2.new(0, 0, 0, Pagelistlayout.AbsoluteContentSize.Y)
+			-- AutomaticCanvasSize tự tính CanvasSize
 		end)
 
 		local PageSearch = Instance.new("Frame")
