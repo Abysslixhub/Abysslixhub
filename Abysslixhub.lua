@@ -36,6 +36,7 @@ do
         Keys       = { "ABYSS-IBAYK-H21EZ-47HY8" },   -- key vĩnh viễn (không hết hạn); thêm key khác bằng cách thêm vào danh sách, cách nhau dấu phẩy
         KeyListURL = "",                                -- (tuỳ chọn) link raw trả về danh sách key, mỗi dòng 1 key; để "" nếu không dùng
         SaveFile   = "Abysslix_Key.txt",                -- file lưu key để lần sau không phải nhập lại
+        UseCoreGui = false,                             -- true = gắn bảng key vào CoreGui/gethui (nổi trên mọi màn hình game, nhưng một số executor mobile không gõ được chữ)
     }
 
     if KeyCfg.Enabled then
@@ -79,20 +80,40 @@ do
         -- 2) chưa có key hợp lệ -> hiện bảng nhập key
         if not verified then
             local closed = false
-            local parentGui
-            pcall(function() if gethui then parentGui = gethui() end end)
-            if not parentGui then
-                pcall(function() parentGui = game:GetService("CoreGui") end)
-            end
-            if not parentGui then parentGui = __LP:WaitForChild("PlayerGui") end
+            if not game:IsLoaded() then game.Loaded:Wait() end
+            print("[Abysslixhub] Chưa có key hợp lệ -> hiện bảng nhập key")
 
+            -- [FIX] Ưu tiên PlayerGui: luôn hiện và gõ chữ được trên điện thoại.
+            -- (CoreGui/gethui trên nhiều executor mobile không hiện hoặc không cho nhập TextBox)
             local gui = Instance.new("ScreenGui")
             gui.Name = "AbysslixKeyGui"
             gui.ResetOnSpawn = false
             gui.IgnoreGuiInset = true
-            gui.DisplayOrder = 1000
-            pcall(function() if syn and syn.protect_gui then syn.protect_gui(gui) end end)
-            gui.Parent = parentGui
+            gui.DisplayOrder = 2147483647   -- cao nhất: nổi trên cả màn hình loading / chọn phe của game
+            gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            local parented = false
+            local function toCore()
+                return pcall(function() gui.Parent = (gethui and gethui()) or game:GetService("CoreGui") end) and gui.Parent ~= nil
+            end
+            local function toPlayerGui()
+                local pg = __LP:FindFirstChild("PlayerGui") or __LP:WaitForChild("PlayerGui", 15)
+                return pg ~= nil and pcall(function() gui.Parent = pg end) and gui.Parent == pg
+            end
+            if KeyCfg.UseCoreGui then
+                parented = toCore() or toPlayerGui()
+            else
+                parented = toPlayerGui() or toCore()
+            end
+            if not parented then
+                pcall(function()
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "Abysslixhub", Duration = 10,
+                        Text = "Không hiện được bảng key. Hãy đặt getgenv().Key = \"KEY\" trước khi chạy script.",
+                    })
+                end)
+                warn("[Abysslixhub] Không tạo được bảng key (không có chỗ gắn GUI)")
+                return
+            end
 
             local function corner(o, r) local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, r or 8) c.Parent = o end
 
@@ -101,6 +122,7 @@ do
             frame.AnchorPoint = Vector2.new(0.5, 0.5)
             frame.Position = UDim2.new(0.5, 0, 0.5, 0)
             frame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+            frame.Active = true
             frame.Parent = gui
             corner(frame, 10)
             local stroke = Instance.new("UIStroke")
@@ -212,6 +234,18 @@ do
 
             closeBtn.Activated:Connect(function() closed = true end)
 
+            -- hiện NGAY từ đầu, kể cả khi chưa chọn phe: giữ bảng key luôn bật + luôn nằm trên cùng
+            -- (màn hình chọn phe / loading của game có thể tắt hoặc che các GUI khác)
+            task.spawn(function()
+                while not verified and not closed do
+                    pcall(function()
+                        if gui.Parent == nil then toPlayerGui() end
+                        gui.Enabled = true
+                        gui.DisplayOrder = 2147483647
+                    end)
+                    task.wait(0.3)
+                end
+            end)
             while not verified and not closed do task.wait(0.2) end
             if verified then task.wait(0.6) end
             pcall(function() gui:Destroy() end)
@@ -564,8 +598,17 @@ icon.Position = UDim2.new(0.5, 0, 0.5, 0)
 icon.Size = UDim2.new(0, 36, 0, 36)
 icon.BackgroundTransparency = 1
 icon.Image = HUB_ICON -- ID ẢNH (tự chọn ở đầu file)
-icon.ScaleType = Enum.ScaleType.Fit
+icon.ScaleType = Enum.ScaleType.Crop   -- [FIX] Crop để ảnh lấp đầy khung vuông rồi bo tròn (Fit làm ảnh bị lệch/vuông)
 icon.ZIndex = 11
+do   -- [FIX] logo TRÒN: bo góc 100% + giữ khung luôn vuông
+    local ic = Instance.new("UICorner")
+    ic.CornerRadius = UDim.new(1, 0)
+    ic.Parent = icon
+    local ar = Instance.new("UIAspectRatioConstraint")
+    ar.AspectRatio = 1
+    ar.Parent = icon
+    mainButton.ClipsDescendants = true
+end
 
 -- STATE
 local isToggled = true
@@ -715,7 +758,7 @@ mainButton.MouseButton1Click:Connect(function()
         Size = UDim2.new(0, 60, 0, 60)
     })
     
-    local iconScaleTween = TweenService:Create(ImageLabel, clickTweenInfo, {
+    local iconScaleTween = TweenService:Create(icon, clickTweenInfo, {
         Size = isToggled and UDim2.new(0, 27, 0, 27) or UDim2.new(0, 40, 0, 40)
     })
     
@@ -760,7 +803,7 @@ Library.ToggleUI = function()
     
     isToggled = getgenv().UIToggled
     
-    local iconScaleTween = TweenService:Create(ImageLabel, defaultTweenInfo, {
+    local iconScaleTween = TweenService:Create(icon, defaultTweenInfo, {
         Size = isToggled and UDim2.new(0, 27, 0, 27) or UDim2.new(0, 40, 0, 40)
     })
     
@@ -870,7 +913,8 @@ local libCreateNoti = function(Setting)
 	Ruafimg.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
 	Ruafimg.BackgroundTransparency = 1.000
 	Ruafimg.Position = UDim2.new(0, 5, 0, getgenv().T1 and 5 or 0)
-	Ruafimg.Size = UDim2.new(0, getgenv().T1 and 30 or 25, 0, getgenv().T1 and 15 or 25)
+	Ruafimg.Size = UDim2.new(0, 25, 0, 25)   -- [FIX] luôn vuông (trước T1 làm 30x15 => ảnh bị méo, không tròn)
+	Ruafimg.ScaleType = Enum.ScaleType.Crop
 	Ruafimg.Image = getgenv().UIColor["Logo Image"]
 
 	RuafimgCorner.CornerRadius = UDim.new(1, 0)
@@ -1124,6 +1168,15 @@ function Library:CreateWindow(Setting)
 	Ruafimg.Position = UDim2.new(0, 5, 0, 0)
 	Ruafimg.Size = UDim2.new(0, 25, 0, 25)
 	Ruafimg.Image = getgenv().UIColor["Logo Image"]
+	Ruafimg.ScaleType = Enum.ScaleType.Crop   -- [FIX] logo tròn
+	do
+		local rc = Instance.new("UICorner")
+		rc.CornerRadius = UDim.new(1, 0)
+		rc.Parent = Ruafimg
+		local ra = Instance.new("UIAspectRatioConstraint")
+		ra.AspectRatio = 1
+		ra.Parent = Ruafimg
+	end
 
 	TextLabelMain.Name = "TextLabelMain"
 	TextLabelMain.Parent = TopMain
@@ -4418,6 +4471,13 @@ task.spawn(function()
                 local icon = btn:FindFirstChildOfClass("ImageLabel")
                 if icon then
                     icon.Image = HUB_ICON
+                    icon.ScaleType = Enum.ScaleType.Crop
+                    if not icon:FindFirstChildOfClass("UICorner") then
+                        local ic = Instance.new("UICorner")
+                        ic.CornerRadius = UDim.new(1, 0)
+                        ic.Parent = icon
+                    end
+                    btn.ClipsDescendants = true
                 end
                 if not btn:FindFirstChild("MiniGlowStroke") then
                     local bStroke = Instance.new("UIStroke")
@@ -16775,6 +16835,7 @@ local _fok, _ferr = pcall(function()
             return CommF:InvokeServer(unpack_(args, 1, args.n))
         end)
         if ok then return res end
+        _G.AbyLastInvokeErr = tostring(res)
         return nil
     end
 
@@ -16854,6 +16915,7 @@ local _fok, _ferr = pcall(function()
                 "🛒 Stock Shop Thường: " .. namesOf(normalOnSale) ..
                 "\n🌕 Stock Đảo Bí Ẩn: " .. namesOf(mirageOnSale) ..
                 "\n🍎 Trái đang rơi trong server: " .. worldSummary ..
+                (_G.AbyStockNote and ("\n⚠ " .. _G.AbyStockNote) or "") ..
                 "\n🕒 Cập nhật lúc " .. os.date("%H:%M:%S"))
         end)
     end
@@ -17021,10 +17083,28 @@ local _fok, _ferr = pcall(function()
     --  2) Sau đó tự cập nhật mỗi 30 giây
     --  3) Stock đổi (shop làm mới) thì tự báo thông báo trái mới
     task.spawn(function()
-        for _ = 1, 40 do
-            local got, sig = refreshStock(true)
-            if got then lastStockSig = sig break end
-            task.wait(2)
+        -- [FIX] Chưa chọn phe thì server chưa trả stock -> chờ chọn phe xong mới hỏi, và báo rõ lý do trên khung trạng thái
+        local tries = 0
+        while true do
+            local team = __LP.Team
+            if not (team and (team.Name == "Marines" or team.Name == "Pirates")) then
+                _G.AbyStockNote = "Chưa chọn phe - chọn phe xong sẽ tự lấy stock"
+                updateStatus()
+                task.wait(1)
+            else
+                tries = tries + 1
+                local got, sig = refreshStock(true)
+                if got then
+                    _G.AbyStockNote = nil
+                    lastStockSig = sig
+                    updateStatus()
+                    break
+                end
+                _G.AbyStockNote = "Chưa lấy được stock (lần " .. tries .. ")" ..
+                    (_G.AbyLastInvokeErr and (": " .. _G.AbyLastInvokeErr) or ", đang thử lại...")
+                updateStatus()
+                task.wait(3)
+            end
         end
         while task.wait(30) do
             local got, sig, list = refreshStock(true)
