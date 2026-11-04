@@ -333,26 +333,51 @@ local Root = HumanoidRootPart
 -- Phím tắt Ctrl (LeftControl / RightControl) & Nút nổi kéo thả
 -- ==========================================
 local HUB_ICON = "rbxassetid://121641096627801"
--- Tự chọn ID logo nào tải được (ID Image mới -> ID Decal mới -> logo cũ)
+-- [FIX LOGO] Chọn logo theo cách đáng tin hơn:
+--  * Cách cũ dùng GetAssetFetchStatus trên ImageLabel không gắn vào GUI -> nhiều executor/điện thoại trả kết quả sai
+--    (báo không tải được dù ID đúng) nên logo trống hoặc bị đổi sang ID khác.
+--  * Cách mới: gắn thử ImageLabel vào CoreGui rồi chờ ImageLabel.IsLoaded.
+--  * Nếu ID là Decal (ảnh không hiện khi dùng rbxassetid) thì dùng rbxthumb://, luôn hiện được cả Decal lẫn Image.
 do
     pcall(function()
-        local CP = game:GetService("ContentProvider")
-        for _, id in ipairs({
-            "rbxassetid://121641096627801",
+        local LOGO_MAIN_ID = "121641096627801"
+        local CoreG = game:GetService("CoreGui")
+        local holder = Instance.new("ScreenGui")
+        holder.Name = "AbyLogoProbe"
+        pcall(function() holder.Parent = (gethui and gethui()) or CoreG end)
+        if not holder.Parent then holder.Parent = CoreG end
+
+        local function tryLoad(url, timeout)
+            local probe = Instance.new("ImageLabel")
+            probe.Size = UDim2.new(0, 1, 0, 1)
+            probe.BackgroundTransparency = 1
+            probe.ImageTransparency = 0.99
+            probe.Image = url
+            probe.Parent = holder
+            local t = 0
+            while not probe.IsLoaded and t < timeout do
+                task.wait(0.1)
+                t = t + 0.1
+            end
+            local ok = probe.IsLoaded
+            probe:Destroy()
+            return ok
+        end
+
+        local candidates = {
+            "rbxassetid://" .. LOGO_MAIN_ID,
+            "rbxthumb://type=Asset&id=" .. LOGO_MAIN_ID .. "&w=150&h=150",
             "rbxassetid://132431272043343",
             "rbxassetid://118975851631674",
             "rbxassetid://107755537229053",
-        }) do
-            local probe = Instance.new("ImageLabel")
-            probe.Image = id
-            pcall(function() CP:PreloadAsync({ probe }) end)
-            local okS, st = pcall(function() return CP:GetAssetFetchStatus(probe.Image) end)
-            probe:Destroy()
-            if okS and st == Enum.AssetFetchStatus.Success then
-                HUB_ICON = id
-                break
-            end
+        }
+        local chosen
+        for i, url in ipairs(candidates) do
+            if tryLoad(url, i <= 2 and 3 or 1.5) then chosen = url break end
         end
+        -- không cái nào xác nhận được: vẫn dùng ID chính (ưu tiên dạng thumbnail vì hiện được cả Decal)
+        HUB_ICON = chosen or candidates[2]
+        holder:Destroy()
         print("[Abysslixhub] Logo dùng: " .. HUB_ICON)
     end)
 end
