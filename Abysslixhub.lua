@@ -4460,7 +4460,7 @@ _G.AbyCfg = _G.AbyCfg or (function()
         C.data[key] = val
         if pending then return end
         pending = true
-        task.delay(1, function()                     -- gom nhiều thay đổi, ghi file 1 lần
+        task.delay(0.3, function()                   -- gom nhiều thay đổi, ghi file 1 lần
             pending = false
             pcall(function()
                 if writefile then writefile(C.file, game:GetService("HttpService"):JSONEncode(C.data)) end
@@ -4656,6 +4656,7 @@ local function wrapTab(rawTab, defaultTitle)
         _G.AbyToggles = _G.AbyToggles or {}
         table.insert(_G.AbyToggles, { proxy = proxy, holder = holder, def = _origDefault, id = id })
         if _restored then
+            _G.AbyRestoredCount = (_G.AbyRestoredCount or 0) + 1
             _G.AbyRestore(function()
                 if holder.value ~= true then
                     proxy:SetValue(true)
@@ -5160,6 +5161,7 @@ do
             if not q then return end
             tpConn = __LP.OnTeleport:Connect(function(state)
                 if state ~= Enum.TeleportState.Started then return end
+                if _G.AbyAutoExecActive then return end   -- autoexec sẽ tự chạy lại script, tránh chạy 2 lần
                 local src = nil
                 local url = getgenv and getgenv().AbysslixSource
                 if type(url) == "string" and url ~= "" then
@@ -5174,6 +5176,56 @@ do
                     notify("Auto Load Script", "Chưa có nguồn script")
                 end
             end)
+        end)
+
+        -- Auto Execute: ghi file loader vào thư mục autoexec của executor để vào lại game là tự chạy script
+        T("ToggleAutoExecRejoin", "Auto Execute (Vào Lại Game)", "Tự chạy script khi vào lại game, giữ nguyên các chức năng đã bật", false, function(on)
+            local FILE = "Abysslixhub_loader.lua"
+            local folders = { "autoexec", "autoexecute", "Autoexec", "AutoExec", "Autoexecute" }
+            local function exists(f) return isfile and isfile(f .. "/" .. FILE) end
+
+            if not on then
+                _G.AbyAutoExecActive = false
+                for _, f in ipairs(folders) do
+                    pcall(function() if exists(f) and delfile then delfile(f .. "/" .. FILE) end end)
+                end
+                return
+            end
+
+            local src = nil
+            local url = getgenv and getgenv().AbysslixSource
+            if type(url) == "string" and url ~= "" then
+                src = "loadstring(game:HttpGet(" .. string.format("%q", url) .. "))()"
+            elseif isfile and isfile("Abysslixhub.lua") then
+                src = 'loadstring(readfile("Abysslixhub.lua"))()'
+            end
+            if not src then
+                notify("Auto Execute", "Chưa có nguồn script: lưu file thành Abysslixhub.lua trong workspace, hoặc đặt getgenv().AbysslixSource = \"link raw\" trước khi chạy.")
+                return
+            end
+
+            local loader = "repeat task.wait() until game:IsLoaded()\ntask.wait(3)\n" .. src
+            local wrote, existed = false, false
+            for _, f in ipairs(folders) do
+                pcall(function()
+                    if isfolder and isfolder(f) and writefile then
+                        if exists(f) then existed = true end
+                        writefile(f .. "/" .. FILE, loader)
+                        wrote = true
+                    end
+                end)
+            end
+            if wrote then
+                _G.AbyAutoExecActive = true
+                if not existed then notify("Auto Execute", "Đã tạo loader trong thư mục autoexec. Vào lại game script sẽ tự chạy.") end
+            else
+                local copied = false
+                pcall(function()
+                    if setclipboard then setclipboard(loader); copied = true
+                    elseif toclipboard then toclipboard(loader); copied = true end
+                end)
+                notify("Auto Execute", "Không tìm thấy thư mục autoexec của executor." .. (copied and " Đã copy loader, hãy dán vào autoexec của executor." or ""))
+            end
         end)
 
         B("Auto Redeem All Codes", "Tự động nhập toàn bộ Code", function()
@@ -30248,6 +30300,17 @@ v496:AddToggle({
 end
 
 task.delay(6, function() _G.AbyLoaded = true end)   -- từ đây mới bắt đầu ghi cấu hình
+task.spawn(function()   -- báo cho người dùng biết chức năng đã được khôi phục chưa / executor có lưu được không
+    while not _G.AbyLoaded do task.wait(0.5) end
+    task.wait(3)
+    pcall(function()
+        if not (writefile and isfile and readfile) then
+            Library:Notify({ Title = "Config", Content = "Executor không hỗ trợ ghi file nên chức năng sẽ KHÔNG được nhớ. Dùng nút Copy Config trong Settings." })
+        elseif (_G.AbyRestoredCount or 0) > 0 then
+            Library:Notify({ Title = "Config", Content = "Đã khôi phục " .. tostring(_G.AbyRestoredCount) .. " chức năng đã bật lần trước" })
+        end
+    end)
+end)
 print('✅ Abysslixhub - Tất cả tính năng đã được load!')
 
 end, function(e) return debug.traceback(tostring(e), 2) end)
