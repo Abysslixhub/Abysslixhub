@@ -9034,6 +9034,15 @@ end)
 -- [FIX ĐỨNG IM SAU KHI NHẬN QUEST] theo dõi số lần đã nhận quest, phòng khi UI Quest không báo Visible
 local _qKey, _qTries, _qStart = nil, 0, 0
 local _lastAbandon = 0
+local _qSeen = false
+-- [FIX] thời gian tối đa coi quest "đang chạy" khi UI không báo Visible (trước đây 90s => phải chờ 2-3 phút)
+_G.QuestFallbackSec = _G.QuestFallbackSec or 30
+-- [FIX] đọc tiến độ (x/y) trên tiêu đề quest, đủ số quái => true
+function QuestIsDone(txt)
+    local a, b = string.match(tostring(txt), "%((%d+)%s*/%s*(%d+)%)")
+    if a and b then return tonumber(a) >= tonumber(b) end
+    return false
+end
 spawn(function()
     while task.wait() do
         if _G.AutoLevel then
@@ -9055,13 +9064,30 @@ spawn(function()
                 -- [FIX] đọc title lỗi => coi như đúng quest; cắt 2 ký tự cuối để khớp số nhiều (Snowman/Snowmen)
                 local titleOK = QuestTitle == "" or string.find(QuestTitle:lower(), NameMon:lower():sub(1, -3), 1, true) ~= nil
 
+                -- [FIX] quest vừa xong (UI từng hiện rồi biến mất) => bỏ fallback, nhận quest mới NGAY
+                if questVisible then
+                    _qSeen = true
+                elseif _qSeen then
+                    _qSeen = false
+                    _qTries = 0
+                    _qStart = 0
+                    bringmob = false
+                end
+                -- [FIX] đủ x/y mà UI vẫn còn => hủy để nhận quest mới ngay
+                if questVisible and QuestIsDone(QuestTitle) then
+                    bringmob = false
+                    __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
+                    _qSeen = false; _qTries = 0; _qStart = 0
+                    return
+                end
+
                 -- [FIX] Quest đã nhận (StartQuest chạy >= 2 lần) mà UI vẫn không báo Visible
                 -- => coi như quest đang chạy và đi farm, không đứng lại NPC gọi StartQuest mãi
                 local _key = tostring(NameQuest) .. "|" .. tostring(QuestLv)
                 if _qKey ~= _key then _qKey = _key; _qTries = 0 end
                 if questVisible then _qTries = 0 end
                 if not questVisible and _qTries >= 2 then
-                    if os.clock() - _qStart < 90 then
+                    if os.clock() - _qStart < _G.QuestFallbackSec then
                         questVisible = true
                         titleOK = true
                     else
@@ -10669,7 +10695,7 @@ function AbyQuest.Active(id)
     local vis = GetQuestGui()
     if vis then return true end
     local st = AbyQuest.Get(id)
-    return st.tries >= 2 and os.clock() - st.start < 90
+    return st.tries >= 2 and os.clock() - st.start < (_G.QuestFallbackSec or 30)
 end
 
 -- true = đã có đúng quest, đi farm được; false = vừa xử lý quest (nhận/bỏ), caller nên return
@@ -10679,6 +10705,19 @@ function AbyQuest.Ensure(id, qName, qLv, qMob, qCF, flagFn)
     if st.key ~= key then st.key = key; st.tries = 0; st.start = 0 end
 
     local vis, title = GetQuestGui()
+    -- [FIX] quest vừa xong (UI từng hiện rồi biến mất) => nhận quest mới ngay, không chờ fallback
+    if vis then
+        st.seen = true
+        if QuestIsDone and QuestIsDone(title) and AbyQuest.TitleOK(title, qMob) then
+            bringmob = false
+            __RS.Remotes.CommF_:InvokeServer("AbandonQuest")
+            st.tries = 0; st.start = 0; st.seen = false
+            task.wait(0.3)
+            return false
+        end
+    elseif st.seen then
+        st.seen = false; st.tries = 0; st.start = 0
+    end
     if vis then
         if AbyQuest.TitleOK(title, qMob) then
             st.tries = 0
@@ -10698,8 +10737,8 @@ function AbyQuest.Ensure(id, qName, qLv, qMob, qCF, flagFn)
 
     -- UI không báo Visible nhưng đã StartQuest >= 2 lần => coi như đang chạy
     if st.tries >= 2 then
-        if os.clock() - st.start < 90 then return true end
-        st.tries = 0 -- quá 90s: thử nhận lại
+        if os.clock() - st.start < (_G.QuestFallbackSec or 30) then return true end
+        st.tries = 0 -- hết thời gian fallback: thử nhận lại
     end
 
     bringmob = false
@@ -23969,6 +24008,14 @@ local function CheckQuestNew()
         CFrameMonNew = CFrame.new(10965.1025, -2158.8842, 9177.2597)
     end
 end
+-- [FIX] kiểm tra nhiệm vụ đã đủ quái (x/y) để nhận nhiệm vụ mới ngay lập tức
+function QuestIsDone(txt)
+    local a, b = string.match(tostring(txt), "%((%d+)%s*/%s*(%d+)%)")
+    if a and b then
+        return tonumber(a) >= tonumber(b)
+    end
+    return false
+end
 v485:AddToggle({
     Name = "Auto Farm Level",
     Description = "Farm Level",
@@ -24001,6 +24048,11 @@ spawn(function()
                         end
                     else
                         local questText = questGui.Container.QuestTitle.Title.Text
+                        if QuestIsDone(questText) then
+                            StartBring = false
+                            ReplicatedStorage.Remotes.CommF_:InvokeServer("AbandonQuest")
+                            return
+                        end
                         if not string.find(questText, NameMonNew) then
                             StartBring = false
                             ReplicatedStorage.Remotes.CommF_:InvokeServer("AbandonQuest")
@@ -24020,7 +24072,7 @@ spawn(function()
                                         MonFarm = mob.Name
                                         game:GetService("VirtualUser"):CaptureController()
                                         game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
-                                    until not _G.AutoFarm or mob.Humanoid.Health <= 0 or not mob.Parent or not questGui.Visible
+                                    until not _G.AutoFarm or mob.Humanoid.Health <= 0 or not mob.Parent or not questGui.Visible or QuestIsDone(questGui.Container.QuestTitle.Title.Text)
                                 end
                             end
                             
@@ -24034,6 +24086,12 @@ spawn(function()
                     -- Farm Antigo (1-2599)
                     local l_Text_0 = game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text
                     CheckQuest()
+                    -- [FIX] xong nhiệm vụ -> hủy luôn để nhận cái mới ngay, không phải chờ
+                    if game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Visible == true and QuestIsDone(l_Text_0) then
+                        StartBring = false
+                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AbandonQuest")
+                        return
+                    end
                     if not string.find(l_Text_0, NameMon) then
                         StartBring = false
                         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AbandonQuest")
@@ -24062,7 +24120,7 @@ spawn(function()
                                                     MonFarm = v512.Name
                                                     game:GetService("VirtualUser"):CaptureController()
                                                     game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
-                                                until not _G.AutoFarm or v512.Humanoid.Health <= 0 or not v512.Parent or game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Visible == false
+                                                until not _G.AutoFarm or v512.Humanoid.Health <= 0 or not v512.Parent or game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Visible == false or QuestIsDone(game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text)
                                             end
                                         end
                                     end
@@ -24091,7 +24149,7 @@ spawn(function()
                                                     MonFarm = v514.Name
                                                     game:GetService("VirtualUser"):CaptureController()
                                                     game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
-                                                until not _G.AutoFarm or v514.Humanoid.Health <= 0 or not v514.Parent or game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Visible == false
+                                                until not _G.AutoFarm or v514.Humanoid.Health <= 0 or not v514.Parent or game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Visible == false or QuestIsDone(game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text)
                                             else
                                                 StartBring = false
                                                 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AbandonQuest")
