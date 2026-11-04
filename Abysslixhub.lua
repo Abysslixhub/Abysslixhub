@@ -26,6 +26,201 @@ _G.__AbyLocal = function(inst, absValue)
 end
 
 -- ==========================================
+-- [KEY SYSTEM] Kiểm tra key + nút Lấy Key khi chạy script
+-- Sửa phần CẤU HÌNH bên dưới trước khi dùng.
+-- ==========================================
+do
+    local KeyCfg = {
+        Enabled    = true,                              -- false = tắt hẳn key system
+        GetKeyLink = "https://YOUR-KEY-LINK-HERE",      -- <<< ĐỔI: link lấy key (Linkvertise / Discord / web của bạn)
+        Keys       = { "ABYSS-IBAYK-H21EZ-47HY8" },   -- key vĩnh viễn (không hết hạn); thêm key khác bằng cách thêm vào danh sách, cách nhau dấu phẩy
+        KeyListURL = "",                                -- (tuỳ chọn) link raw trả về danh sách key, mỗi dòng 1 key; để "" nếu không dùng
+        SaveFile   = "Abysslix_Key.txt",                -- file lưu key để lần sau không phải nhập lại
+    }
+
+    if KeyCfg.Enabled then
+        local function trim(s)
+            return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+        end
+
+        local function checkKey(k)
+            k = trim(k)
+            if k == "" then return false, "Chưa nhập key" end
+            for _, v in ipairs(KeyCfg.Keys) do
+                if k == v then return true end
+            end
+            if KeyCfg.KeyListURL ~= "" then
+                local ok, body = pcall(function() return game:HttpGet(KeyCfg.KeyListURL) end)
+                if not ok or type(body) ~= "string" then
+                    return false, "Không kết nối được máy chủ key"
+                end
+                for line in body:gmatch("[^\r\n]+") do
+                    if trim(line) == k then return true end
+                end
+            end
+            return false, "Key sai hoặc đã hết hạn"
+        end
+
+        local function saveKey(k)
+            pcall(function() if writefile then writefile(KeyCfg.SaveFile, trim(k)) end end)
+        end
+
+        -- 1) key đặt sẵn qua getgenv().Key (script_key) hoặc key đã lưu từ lần trước
+        local verified = false
+        local preset
+        pcall(function() if getgenv and getgenv().Key then preset = tostring(getgenv().Key) end end)
+        if not preset then
+            pcall(function()
+                if isfile and readfile and isfile(KeyCfg.SaveFile) then preset = readfile(KeyCfg.SaveFile) end
+            end)
+        end
+        if preset and (checkKey(preset)) then verified = true end
+
+        -- 2) chưa có key hợp lệ -> hiện bảng nhập key
+        if not verified then
+            local closed = false
+            local parentGui
+            pcall(function() if gethui then parentGui = gethui() end end)
+            if not parentGui then
+                pcall(function() parentGui = game:GetService("CoreGui") end)
+            end
+            if not parentGui then parentGui = __LP:WaitForChild("PlayerGui") end
+
+            local gui = Instance.new("ScreenGui")
+            gui.Name = "AbysslixKeyGui"
+            gui.ResetOnSpawn = false
+            gui.IgnoreGuiInset = true
+            gui.DisplayOrder = 1000
+            pcall(function() if syn and syn.protect_gui then syn.protect_gui(gui) end end)
+            gui.Parent = parentGui
+
+            local function corner(o, r) local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, r or 8) c.Parent = o end
+
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(0, 320, 0, 200)
+            frame.AnchorPoint = Vector2.new(0.5, 0.5)
+            frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+            frame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+            frame.Parent = gui
+            corner(frame, 10)
+            local stroke = Instance.new("UIStroke")
+            stroke.Color = Color3.fromRGB(0, 240, 255)
+            stroke.Thickness = 1.2
+            stroke.Parent = frame
+
+            local title = Instance.new("TextLabel")
+            title.BackgroundTransparency = 1
+            title.Size = UDim2.new(1, -40, 0, 30)
+            title.Position = UDim2.new(0, 12, 0, 6)
+            title.Font = Enum.Font.GothamBold
+            title.TextSize = 16
+            title.TextXAlignment = Enum.TextXAlignment.Left
+            title.TextColor3 = Color3.fromRGB(0, 240, 255)
+            title.Text = "Abysslixhub • Nhập Key"
+            title.Parent = frame
+
+            local closeBtn = Instance.new("TextButton")
+            closeBtn.Size = UDim2.new(0, 26, 0, 26)
+            closeBtn.Position = UDim2.new(1, -32, 0, 8)
+            closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+            closeBtn.Font = Enum.Font.GothamBold
+            closeBtn.TextSize = 14
+            closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            closeBtn.Text = "X"
+            closeBtn.Parent = frame
+            corner(closeBtn, 6)
+
+            local box = Instance.new("TextBox")
+            box.Size = UDim2.new(1, -24, 0, 36)
+            box.Position = UDim2.new(0, 12, 0, 46)
+            box.BackgroundColor3 = Color3.fromRGB(32, 32, 40)
+            box.Font = Enum.Font.Gotham
+            box.TextSize = 14
+            box.TextColor3 = Color3.fromRGB(255, 255, 255)
+            box.PlaceholderText = "Dán key vào đây..."
+            box.PlaceholderColor3 = Color3.fromRGB(140, 140, 150)
+            box.ClearTextOnFocus = false
+            box.Text = ""
+            box.Parent = frame
+            corner(box, 8)
+
+            local status = Instance.new("TextLabel")
+            status.BackgroundTransparency = 1
+            status.Size = UDim2.new(1, -24, 0, 34)
+            status.Position = UDim2.new(0, 12, 0, 88)
+            status.Font = Enum.Font.Gotham
+            status.TextSize = 12
+            status.TextWrapped = true
+            status.TextXAlignment = Enum.TextXAlignment.Left
+            status.TextColor3 = Color3.fromRGB(180, 180, 190)
+            status.Text = "Bấm \"Lấy Key\" để lấy link, rồi dán key và bấm \"Kiểm Tra Key\"."
+            status.Parent = frame
+
+            local function mkBtn(text, x, w, color)
+                local b = Instance.new("TextButton")
+                b.Size = UDim2.new(0, w, 0, 36)
+                b.Position = UDim2.new(0, x, 0, 146)
+                b.BackgroundColor3 = color
+                b.Font = Enum.Font.GothamBold
+                b.TextSize = 14
+                b.TextColor3 = Color3.fromRGB(255, 255, 255)
+                b.Text = text
+                b.AutoButtonColor = true
+                b.Parent = frame
+                corner(b, 8)
+                return b
+            end
+            local getBtn   = mkBtn("Lấy Key", 12, 140, Color3.fromRGB(40, 110, 220))
+            local checkBtn = mkBtn("Kiểm Tra Key", 168, 140, Color3.fromRGB(0, 160, 110))
+
+            local function setStatus(t, good)
+                status.Text = t
+                status.TextColor3 = good == true and Color3.fromRGB(80, 255, 140)
+                    or (good == false and Color3.fromRGB(255, 90, 90) or Color3.fromRGB(180, 180, 190))
+            end
+
+            getBtn.Activated:Connect(function()
+                local link = KeyCfg.GetKeyLink
+                local copied = false
+                pcall(function()
+                    local f = setclipboard or toclipboard or (syn and syn.write_clipboard)
+                    if f then f(link) copied = true end
+                end)
+                if copied then
+                    setStatus("Đã copy link lấy key. Dán vào trình duyệt để lấy key:\n" .. link, nil)
+                else
+                    box.Text = link   -- executor không hỗ trợ clipboard: hiện link vào ô để tự copy
+                    setStatus("Executor không hỗ trợ copy. Link đã hiện trong ô nhập, hãy tự copy.", nil)
+                end
+            end)
+
+            local busy = false
+            checkBtn.Activated:Connect(function()
+                if busy then return end
+                busy = true
+                setStatus("Đang kiểm tra...", nil)
+                local ok, msg = checkKey(box.Text)
+                if ok then
+                    saveKey(box.Text)
+                    verified = true
+                    setStatus("Key hợp lệ! Đang tải script...", true)
+                else
+                    setStatus(msg or "Key không hợp lệ", false)
+                end
+                busy = false
+            end)
+
+            closeBtn.Activated:Connect(function() closed = true end)
+
+            while not verified and not closed do task.wait(0.2) end
+            if verified then task.wait(0.6) end
+            pcall(function() gui:Destroy() end)
+            if not verified then return end   -- đóng bảng key mà chưa có key hợp lệ -> không chạy script
+        end
+    end
+end
+
+-- ==========================================
 -- SERVICES
 -- ==========================================
 local Players = game:GetService("Players")
