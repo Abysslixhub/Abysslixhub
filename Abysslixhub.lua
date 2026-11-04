@@ -1315,7 +1315,7 @@ function Library:CreateWindow(Setting)
 		Pagelistlayout.Name = "Pagelistlayout"
 		Pagelistlayout.Parent = PageList
 		Pagelistlayout.SortOrder = Enum.SortOrder.LayoutOrder
-		Pagelistlayout.Padding = UDim.new(0, 5)
+		Pagelistlayout.Padding = UDim.new(0, 8)   -- khoảng cách giữa các section = khoảng cách giữa các chức năng (đều nhau)
 		Pagelistlayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 			-- AutomaticCanvasSize tự tính CanvasSize
 		end)
@@ -1547,7 +1547,7 @@ function Library:CreateWindow(Setting)
 			SectionList.Name = "SectionList"
 			SectionList.Parent = Section
 			SectionList.SortOrder = Enum.SortOrder.LayoutOrder
-			SectionList.Padding = UDim.new(0, 5)
+			SectionList.Padding = UDim.new(0, 8)   -- khoảng cách giữa các chức năng trong section (trước là 5)
 
 			local SizeSectionY
 			local sectionIsVisible = (DefaultOpen == true)
