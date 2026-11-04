@@ -1419,6 +1419,7 @@ function Library:CreateWindow(Setting)
 
 			PageContainer.Visible = true 
 			UIPage:JumpTo(PageContainer)
+			PageList.CanvasPosition = Vector2.new(0, 0)
 
 			for i, v in next, ControlList:GetChildren() do
 				if not (v:IsA('UIListLayout')) then
@@ -1437,7 +1438,7 @@ function Library:CreateWindow(Setting)
 
 		local pageFunction = {}
 
-		function pageFunction:AddSection(Section_Name, Toggleable, SectionGap, SectionColor)
+		function pageFunction:AddSection(Section_Name, Toggleable, SectionGap, SectionColor, DefaultOpen)
 			local Toggleable = Toggleable or false
 			local Section = Instance.new("Frame")
 			local UICorner = Instance.new("UICorner")
@@ -1523,7 +1524,7 @@ function Library:CreateWindow(Setting)
 			SectionList.Padding = UDim.new(0, 5)
 
 			local SizeSectionY
-			local sectionIsVisible = false
+			local sectionIsVisible = (DefaultOpen == true)
 			if Toggleable then
 				local VisibilitySectionFrame = Instance.new("Frame")
 				local VisibilitySectionFrameCorner = Instance.new("UICorner")
@@ -1566,7 +1567,7 @@ function Library:CreateWindow(Setting)
 				visibility.Image = "rbxassetid://3926307971"
 				visibility.ImageRectOffset = Vector2.new(84, 44)
 				visibility.ImageRectSize = Vector2.new(36, 36)
-				visibility.ImageTransparency = 1
+				visibility.ImageTransparency = sectionIsVisible and 0 or 1
 				visibility_off.Name = "visibility_off"
 				visibility_off.Parent = VisibilitySectionFrame
 				visibility_off.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1578,8 +1579,8 @@ function Library:CreateWindow(Setting)
 				visibility_off.Image = "rbxassetid://3926307971"
 				visibility_off.ImageRectOffset = Vector2.new(564, 44)
 				visibility_off.ImageRectSize = Vector2.new(36, 36)
-				visibility_off.ImageTransparency = 0
-				VisibilityButton.MouseButton1Down:Connect(function()
+				visibility_off.ImageTransparency = sectionIsVisible and 1 or 0
+				local function toggleSectionOpen()
 					sectionIsVisible = not sectionIsVisible
 					TweenService:Create(visibility, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"] / 2), {
 						ImageTransparency = sectionIsVisible and 0 or 1
@@ -1591,7 +1592,18 @@ function Library:CreateWindow(Setting)
 					TweenService:Create(Section, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"]), {
 						Size =  UDim2.new(1, -5, 0, (sectionIsVisible and SizeSectionY or 30))
 					}):Play()
-				end)
+				end
+				VisibilityButton.MouseButton1Down:Connect(toggleSectionOpen)
+
+				-- bấm vào cả thanh tiêu đề để mở/thu gọn section
+				local HeaderButton = Instance.new("TextButton")
+				HeaderButton.Name = "HeaderButton"
+				HeaderButton.Parent = Topsec
+				HeaderButton.BackgroundTransparency = 1
+				HeaderButton.Text = ""
+				HeaderButton.Size = UDim2.new(1, 0, 1, 0)
+				HeaderButton.ZIndex = 1
+				HeaderButton.MouseButton1Click:Connect(toggleSectionOpen)
 			end
 			if SectionGap then
 				local SectionGap = Instance.new("Frame")
@@ -4495,13 +4507,21 @@ end
 local function wrapTab(rawTab, defaultTitle)
     local wrapped = { _raw = rawTab }
     local currentSection = nil
+    -- Thu gọn section để đỡ phải kéo dài (tắt bằng: getgenv().AbyCollapseSections = false trước khi chạy script)
+    local collapseSections = (getgenv().AbyCollapseSections ~= false)
+    local sectionCount = 0
+    local function newSection(name)
+        sectionCount = sectionCount + 1
+        local openNow = (not collapseSections) or sectionCount == 1
+        return rawTab:AddSection(name, collapseSections, nil, nil, openNow)
+    end
 
     local function getSection()
         if not currentSection then
             if rawTab.AddLeftGroupbox then
                 currentSection = rawTab:AddLeftGroupbox(defaultTitle or "Chung")
             elseif rawTab.AddSection then
-                currentSection = rawTab:AddSection(defaultTitle or "Chung")
+                currentSection = newSection(defaultTitle or "Chung")
             end
         end
         return currentSection
@@ -4515,7 +4535,7 @@ local function wrapTab(rawTab, defaultTitle)
         if rawTab.AddLeftGroupbox then
             currentSection = rawTab:AddLeftGroupbox(secName)
         elseif rawTab.AddSection then
-            currentSection = rawTab:AddSection(secName)
+            currentSection = newSection(secName)
         end
         return wrapSection(currentSection, wrapped)
     end
