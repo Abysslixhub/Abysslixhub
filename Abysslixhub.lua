@@ -5789,27 +5789,66 @@ do
             end
         end)
 
-        T("TogglePanicMode", "Panic Mode", "Chế độ an toàn - bay lên khi máu thấp", true, function(on) _G.AbyPanic = on end)
+        T("TogglePanicMode", "Panic Mode", "Chế độ an toàn - bay lên cao khi máu thấp, hết thấp mới bay xuống", true, function(on) _G.AbyPanic = on end)
+        _G.AbyPanicPct = _G.AbyPanicPct or 30
+        Real:AddSlider({
+            Title = "% Máu Thấp (Panic Mode)", Min = 5, Max = 95, Default = 30,
+            Callback = function(v) _G.AbyPanicPct = math.clamp(math.floor((tonumber(v) or 30) + 0.5), 5, 95) end,
+        })
         task.spawn(function()
             local active = false
-            while task.wait(0.25) do
-                if _G.AbyPanic then
-                    pcall(function()
-                        local ch = __LP.Character
-                        local hum = ch and ch:FindFirstChildOfClass("Humanoid")
-                        local root = ch and ch:FindFirstChild("HumanoidRootPart")
-                        if not (hum and root) or hum.Health <= 0 then active = false; return end
-                        local ratio = hum.Health / math.max(hum.MaxHealth, 1)
-                        if not active and ratio < 0.3 then
-                            active = true
-                            if StopMovement then StopMovement() end
-                            root.CFrame = root.CFrame + Vector3.new(0, 300, 0)
-                            notify("Panic Mode", "Máu thấp, đã bay lên cao để hồi máu")
-                        elseif active and ratio > 0.75 then
-                            active = false
-                        end
-                    end)
+            local origin = nil
+            local PANIC_HEIGHT = 300
+            local function flyDown(root)
+                local target = origin
+                origin = nil
+                if not (root and target) then return end
+                local startPos = root.Position
+                local goal = target.Position
+                local steps = 20
+                for i = 1, steps do
+                    if not root.Parent then return end
+                    local pos = startPos:Lerp(goal, i / steps)
+                    root.CFrame = CFrame.new(pos) * (target - target.Position)
+                    root.AssemblyLinearVelocity = Vector3.zero
+                    task.wait(0.03)
                 end
+            end
+            while task.wait(0.1) do
+                pcall(function()
+                    local ch = __LP.Character
+                    local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+                    local root = ch and ch:FindFirstChild("HumanoidRootPart")
+                    if not (hum and root) or hum.Health <= 0 then active = false; origin = nil; return end
+                    if not _G.AbyPanic then
+                        if active then active = false; flyDown(root) end
+                        return
+                    end
+                    local pct = (_G.AbyPanicPct or 30) / 100
+                    local ratio = hum.Health / math.max(hum.MaxHealth, 1)
+                    if not active then
+                        if ratio < pct then
+                            active = true
+                            origin = root.CFrame
+                            if StopMovement then StopMovement() end
+                            root.CFrame = origin + Vector3.new(0, PANIC_HEIGHT, 0)
+                            root.AssemblyLinearVelocity = Vector3.zero
+                            notify("Panic Mode", "Máu thấp, đã bay lên cao để hồi máu")
+                        end
+                    elseif ratio > pct then
+                        active = false
+                        notify("Panic Mode", "Máu đã hồi, đang bay xuống")
+                        flyDown(root)
+                    else
+                        -- giữ nhân vật ở trên cao, chống các vòng lặp farm kéo xuống
+                        if StopMovement then StopMovement() end
+                        local holdY = origin.Y + PANIC_HEIGHT
+                        if math.abs(root.Position.Y - holdY) > 5 then
+                            root.CFrame = CFrame.new(origin.X, holdY, origin.Z) * (root.CFrame - root.CFrame.Position)
+                        end
+                        root.AssemblyLinearVelocity = Vector3.zero
+                    end
+                end)
             end
         end)
 
