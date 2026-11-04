@@ -4548,6 +4548,7 @@ function _G.AbyRestore(fn)    -- chờ script nạp xong rồi mới áp lại g
     end)
 end
 
+_G.AbyToggleList = {}   -- làm mới danh sách toggle mỗi lần chạy script (tránh dính toggle của lần chạy trước)
 local function wrapSection(rawSec, tabWrapped)
     local secProxy = {}
     function secProxy:AddToggle(...) return tabWrapped:AddToggle(...) end
@@ -4566,7 +4567,7 @@ local function wrapSection(rawSec, tabWrapped)
     return secProxy
 end
 
-local function wrapTab(rawTab, defaultTitle)
+local function wrapTab(rawTab, defaultTitle, tabNameForInfo)
     local wrapped = { _raw = rawTab }
     local currentSection = nil
     -- Thu gọn section để đỡ phải kéo dài (tắt bằng: getgenv().AbyCollapseSections = false trước khi chạy script)
@@ -4653,11 +4654,17 @@ local function wrapTab(rawTab, defaultTitle)
         local _ck = _G.AbyCfgKey(defaultTitle, id, title)
         local _persist = _G.AbyCfgOk(title)
         local _restored = false
-        if _persist then
+        -- [FIX ĐỨNG IM KHI VỪA CHẠY SCRIPT] Trước đây các toggle đã bật lần trước được tự bật lại khi nạp script
+        -- (vd Tự Động Cày Cấp) -> nhân vật bị khoá/đứng im dù người dùng chưa bật gì. Nay mặc định KHÔNG tự bật lại.
+        -- Muốn bật lại như cũ: thêm dòng getgenv().AbyRestoreToggles = true trước khi chạy script.
+        if _persist and getgenv().AbyRestoreToggles == true then
             local sv = _G.AbyCfg.get(_ck)
             if type(sv) == "boolean" then default = sv; _restored = (sv == true) end
         end
         local holder = { extraCallback = nil, value = default }
+        -- [KIỂM TRA CHỨC NĂNG ĐANG BẬT] đăng ký toggle để tab Thông Tin liệt kê được
+        _G.AbyToggleList = _G.AbyToggleList or {}
+        table.insert(_G.AbyToggleList, { Title = tostring(title), Tab = tostring(tabNameForInfo or defaultTitle or "?"), Holder = holder })
 
         local rawToggle = sec:AddToggle(id, {
             Title = title,
@@ -5079,7 +5086,7 @@ local function createTab(tabTitle, lucideIcon, firstSectionTitle)
     if not okTab or not raw then
         raw = Window:AddTab(tabTitle, HUB_ICON)
     end
-    return wrapTab(raw, firstSectionTitle or tabTitle)
+    return wrapTab(raw, firstSectionTitle or tabTitle, tabTitle)
 end
 
 Tabs = {
@@ -8504,6 +8511,54 @@ Tabs.Info:AddParagraph({
     ["Title"] = "Các Client Pc Hợ Trỡ",
     ["Description"] = "Tất Cả Client Pc"
 })
+
+-- ==========================================
+-- KIỂM TRA CHỨC NĂNG ĐANG BẬT (tab Thông Tin)
+-- Liệt kê mọi toggle đang bật, gom theo tab. Tự cập nhật mỗi 2 giây + có nút kiểm tra thủ công.
+-- ==========================================
+Tabs.Info:AddSection("Chức Năng Đang Bật")
+local _activeLabel = Tabs.Info:AddLabel("Bấm \"Kiểm Tra\" để xem chức năng nào đang bật")
+local _lastActiveText = nil
+local function _buildActiveText()
+    local list = _G.AbyToggleList or {}
+    local byTab, order, count = {}, {}, 0
+    for _, t in ipairs(list) do
+        if t.Holder and t.Holder.value == true then
+            count = count + 1
+            if not byTab[t.Tab] then byTab[t.Tab] = {}; table.insert(order, t.Tab) end
+            table.insert(byTab[t.Tab], t.Title)
+        end
+    end
+    if count == 0 then
+        return "Không có chức năng nào đang bật"
+    end
+    local lines = { "Đang bật " .. count .. " chức năng:" }
+    for _, tabName in ipairs(order) do
+        table.insert(lines, "[" .. tabName .. "]")
+        for _, name in ipairs(byTab[tabName]) do
+            table.insert(lines, "  • " .. name)
+        end
+    end
+    return table.concat(lines, "\n")
+end
+local function _refreshActive(force)
+    local txt = _buildActiveText()
+    if force or txt ~= _lastActiveText then
+        _lastActiveText = txt
+        pcall(function() _activeLabel:SetText(txt) end)
+    end
+end
+Tabs.Info:AddButton({
+    ["Title"] = "Kiểm Tra Chức Năng Đang Bật",
+    ["Description"] = "Cập nhật danh sách ngay",
+    ["Callback"] = function() _refreshActive(true) end
+})
+task.spawn(function()
+    task.wait(3)
+    while task.wait(2) do
+        pcall(_refreshActive, false)
+    end
+end)
 _G.FastAttackStrix_Mode = "Fast Attack"
 _G.Fast_Delay = 0.05
 spawn(function()
