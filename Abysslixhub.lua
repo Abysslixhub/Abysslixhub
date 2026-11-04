@@ -8616,7 +8616,7 @@ v253:OnChanged(function(p254)
 end)
 local _FARM_H_MIN, _FARM_H_MAX = 0, 100
 local _farmH = 30
-local _farmD = 10   -- khoảng cách đứng ngang với quái (studs)
+local _farmD = 0    -- [FIX] 0 = đứng ngay TRÊN ĐẦU quái (trước là 10 => lệch ra sau lưng quái)
 local _farmHSync = false
 local vFarmHeightSlider, vFarmHeightInput
 
@@ -8625,6 +8625,7 @@ local function _setFarmHeight(raw, src)
     if not n then return end
     n = math.clamp(math.floor(n + 0.5), _FARM_H_MIN, _FARM_H_MAX)
     _farmH = n
+    PosY = n   -- [FIX] đồng bộ độ cao cho vòng lặp cập nhật Pos phía dưới (trước đây 2 nơi ghi đè Pos qua lại)
     Pos = CFrame.new(0, n, _farmD)
     if _farmHSync then return end
     _farmHSync = true
@@ -8641,6 +8642,7 @@ vFarmHeightSlider = Tabs.Main:AddSlider("SliderFarmHeight", {
     ["Rounding"] = 0,
     ["Callback"] = function(v) _setFarmHeight(v, "slider") end
 })
+PosY = _farmH
 Pos = CFrame.new(0, _farmH, _farmD)
 _G.AttackRange = 60   -- 60 studs chạy ổn; tăng dần nếu muốn đánh từ xa hơn
 -- Tốc độ đánh cố định (phù hợp, ổn định, ít lag): Fast Attack = 0.05s
@@ -29920,7 +29922,7 @@ spawn(function()
         end
     end
 end)
-PosY = 30
+PosY = PosY or 30   -- [FIX] không ghi đè độ cao người dùng đã chọn
 v496:AddToggle({Title = "Dodge No CD", Value = false, Callback = function(v1178)
     DodgewithoutCool = v1178
 end})
