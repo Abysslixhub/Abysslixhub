@@ -366,7 +366,7 @@ local Root = HumanoidRootPart
 -- Giữ nguyên 100% Logo Abysslix & Màu Xanh Đen (Abyss Black & Neon Cyan Glow)
 -- Phím tắt Ctrl (LeftControl / RightControl) & Nút nổi kéo thả
 -- ==========================================
-local HUB_ICON = "rbxassetid://121641096627801"
+local HUB_ICON = "rbxassetid://82504002371584"
 -- [FIX LOGO] Chọn logo theo cách đáng tin hơn:
 --  * Cách cũ dùng GetAssetFetchStatus trên ImageLabel không gắn vào GUI -> nhiều executor/điện thoại trả kết quả sai
 --    (báo không tải được dù ID đúng) nên logo trống hoặc bị đổi sang ID khác.
@@ -374,7 +374,7 @@ local HUB_ICON = "rbxassetid://121641096627801"
 --  * Nếu ID là Decal (ảnh không hiện khi dùng rbxassetid) thì dùng rbxthumb://, luôn hiện được cả Decal lẫn Image.
 do
     pcall(function()
-        local LOGO_MAIN_ID = "121641096627801"
+        local LOGO_MAIN_ID = "82504002371584"
         local CoreG = game:GetService("CoreGui")
         local holder = Instance.new("ScreenGui")
         holder.Name = "AbyLogoProbe"
