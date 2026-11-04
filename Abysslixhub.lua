@@ -787,6 +787,23 @@ function Library:CreateWindow(Setting)
 	Main.AnchorPoint = Vector2.new(0.5, 0.5)
 	Main.Size = UDim2.new(0, 629, 0, 359)
 
+	-- Tự co cửa sổ cho vừa màn hình (điện thoại màn hình thấp bị cắt mất phần dưới)
+	pcall(function()
+		local fit = Instance.new("UIScale")
+		fit.Name = "FitScale"
+		fit.Parent = Main
+		local function updateFit()
+			local g = Main.Parent
+			local sz = (g and g:IsA("GuiBase2d") and g.AbsoluteSize) or (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize)
+			if not sz or sz.Y <= 0 or sz.X <= 0 then return end
+			fit.Scale = math.clamp(math.min(1, (sz.Y - 8) / 359, (sz.X - 8) / 629), 0.55, 1)
+		end
+		updateFit()
+		if Main.Parent and Main.Parent:IsA("GuiBase2d") then
+			Main.Parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateFit)
+		end
+	end)
+
 	makeDraggable(Main, Main)
 
 	maingui.Name = "maingui"
@@ -924,7 +941,7 @@ function Library:CreateWindow(Setting)
 
 	UIListLayout.Parent = ControlList
 	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	UIListLayout.Padding = UDim.new(0, 5)
+	UIListLayout.Padding = UDim.new(0, 2)
 
 	ControlTitle.Name = "GUITextColor"
 	ControlTitle.Parent = PageControl
@@ -1096,6 +1113,7 @@ function Library:CreateWindow(Setting)
                     
                     if elementInfo.elementFound then
                         control.Element.Visible = true
+                        pcall(function() control.Section:SetAttribute("ForceOpen", (control.Section:GetAttribute("ForceOpen") or 0) + 1) end)
                         
                         if elementInfo.sectionFound or hasElementMatch then
                             control.Section.Visible = true
@@ -1172,7 +1190,7 @@ function Library:CreateWindow(Setting)
 		PageNameControl.Parent = ControlList
 		PageNameControl.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
 		PageNameControl.BackgroundTransparency = 1.000
-		PageNameControl.Size = UDim2.new(1, -10, 0, 25)
+		PageNameControl.Size = UDim2.new(1, -10, 0, 22)
 		PageNameControl.LayoutOrder = LayoutOrderBut
 
 		Frame.Parent = PageNameControl
@@ -1582,6 +1600,7 @@ function Library:CreateWindow(Setting)
 				visibility_off.ImageTransparency = sectionIsVisible and 1 or 0
 				local function toggleSectionOpen()
 					sectionIsVisible = not sectionIsVisible
+					SizeSectionY = SectionList.AbsoluteContentSize.Y + 5
 					TweenService:Create(visibility, TweenInfo.new(getgenv().UIColor["Tween Animation 1 Speed"] / 2), {
 						ImageTransparency = sectionIsVisible and 0 or 1
 					}):Play()
@@ -1604,6 +1623,10 @@ function Library:CreateWindow(Setting)
 				HeaderButton.Size = UDim2.new(1, 0, 1, 0)
 				HeaderButton.ZIndex = 1
 				HeaderButton.MouseButton1Click:Connect(toggleSectionOpen)
+				-- khi tìm kiếm trúng mục trong section đang thu gọn thì tự mở section đó
+				Section:GetAttributeChangedSignal("ForceOpen"):Connect(function()
+					if not sectionIsVisible then toggleSectionOpen() end
+				end)
 			end
 			if SectionGap then
 				local SectionGap = Instance.new("Frame")
@@ -1701,6 +1724,14 @@ function Library:CreateWindow(Setting)
 					local pad = Instance.new("UIPadding", TogFrame1)
 					pad.PaddingTop = UDim.new(0, 5)
 					pad.PaddingBottom = UDim.new(0, 5)
+					-- FIX: AutomaticSize + con dùng scale bị vòng lặp làm hàng phình rất cao (khoảng trống, ô tick nằm ngoài màn hình)
+					-- -> chiều cao hàng tính cố định theo chữ mô tả
+					ToggleFrame.AutomaticSize = Enum.AutomaticSize.None
+					local function fitToggleRow()
+						ToggleFrame.Size = UDim2.new(1, 0, 0, math.max(30, math.ceil(ToggleDesc.TextBounds.Y) + 35))
+					end
+					fitToggleRow()
+					ToggleDesc:GetPropertyChangedSignal("TextBounds"):Connect(fitToggleRow)
 				end
 				
 				ToggleTitle.Name = "TextColor"
@@ -1892,6 +1923,12 @@ end)
 					local pad = Instance.new("UIPadding", RowBG_1)
 					pad.PaddingTop = UDim.new(0, 5)
 					pad.PaddingBottom = UDim.new(0, 5)
+					Button.AutomaticSize = Enum.AutomaticSize.None
+					local function fitButtonRow()
+						Button.Size = UDim2.new(1, 0, 0, math.max(40, math.ceil(TextDesc.TextBounds.Y) + 32))
+					end
+					fitButtonRow()
+					TextDesc:GetPropertyChangedSignal("TextBounds"):Connect(fitButtonRow)
 				end
 				
 				ClickArea_1.Name = "ClickArea"
@@ -2036,7 +2073,18 @@ end)
                 TextColor.TextSize = 14
                 TextColor.TextStrokeTransparency = 0.8500000238418579
                 TextColor.TextWrapped = true
-                TextColor.TextXAlignment = Enum.TextXAlignment.Left
+                TextColor.TextXAlignment = Enum.TextXAlignment.Left
+				-- FIX: tính chiều cao cố định theo chữ, tránh chuỗi AutomaticSize bị vòng lặp làm hàng phình to
+				LabelFrame.AutomaticSize = Enum.AutomaticSize.None
+				LabelBG.AutomaticSize = Enum.AutomaticSize.None
+				TextColor.AutomaticSize = Enum.AutomaticSize.None
+				local function fitLabelRow()
+					local h = math.max(18, math.ceil(TextColor.TextBounds.Y))
+					LabelFrame.Size = UDim2.new(1, 0, 0, h + 12)
+					LabelBG.Size = UDim2.new(1, -10, 0, h + 12)
+				end
+				fitLabelRow()
+				TextColor:GetPropertyChangedSignal("TextBounds"):Connect(fitLabelRow)
 				local labelFunction = {}
 				function labelFunction:SetText(text)
 					TextColor.Text = text
@@ -3634,6 +3682,12 @@ end
 					local pad = Instance.new("UIPadding", BoxBG)
 					pad.PaddingTop = UDim.new(0, 5)
 					pad.PaddingBottom = UDim.new(0, 5)
+					BoxFrame.AutomaticSize = Enum.AutomaticSize.None
+					local function fitBoxRow()
+						BoxFrame.Size = UDim2.new(1, 0, 0, math.max(40, math.ceil(TextDesc.TextBounds.Y) + 35))
+					end
+					fitBoxRow()
+					TextDesc:GetPropertyChangedSignal("TextBounds"):Connect(fitBoxRow)
 				end
 				
 				BoxCor.Name = "Background2"
