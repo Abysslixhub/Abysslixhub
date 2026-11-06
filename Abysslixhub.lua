@@ -15680,22 +15680,6 @@ spawn(function()
         pcall(vu884)
     end
 end)
-Tabs.Sea:AddSection("Trạng Thái Đảo Leviathan")
-local vu885 = Tabs.Sea:AddParagraph({
-    ["Title"] = "Đảo Leviathan",
-    ["Description"] = "Đang kiểm tra...",
-})
-spawn(function()
-    pcall(function()
-        while task.wait(1) do
-            if __WS.Map:FindFirstChild("FrozenDimension") then
-                vu885:SetDesc("Đã Xuất Hiện (Frozen Dimension)")
-            else
-                vu885:SetDesc("Chưa Xuất Hiện")
-            end
-        end
-    end)
-end)
 Tabs.Status:AddInput("Input", {
     ["Title"] = "Job ID",
     ["Default"] = "",
@@ -18873,7 +18857,33 @@ spawn(function()
         end
     end
 end)
-Tabs.Sea:AddSection("Leviathan")
+Tabs.Sea:AddSection("🐉 LEVIATHAN")
+xpcall(function()
+    local st = Tabs.Sea:AddParagraph({ ["Title"] = "Trạng Thái Leviathan", ["Description"] = "Đang quét..." })
+    local last = { island = false, boss = false }
+    task.spawn(function()
+        while task.wait(1.5) do
+            pcall(function()
+                local map = __WS:FindFirstChild("Map")
+                local island = (map and map:FindFirstChild("FrozenDimension")) ~= nil
+                local en = __WS:FindFirstChild("Enemies")
+                local n = 0
+                if en then
+                    for _, e in ipairs(en:GetChildren()) do
+                        if string.find(string.lower(e.Name), "leviathan") then n = n + 1 end
+                    end
+                end
+                st:SetDesc((island and "✅ Đảo Leviathan (Frozen Dimension): Đã xuất hiện" or "❌ Đảo Leviathan: Chưa xuất hiện")
+                    .. "\n🐉 Leviathan đang có: " .. n)
+                if _G.LevNotify then
+                    if island and not last.island then Library:Notify({ Title = "Leviathan", Content = "Đảo Leviathan vừa xuất hiện!" }) end
+                    if n > 0 and not last.boss then Library:Notify({ Title = "Leviathan", Content = "Leviathan vừa xuất hiện!" }) end
+                end
+                last.island, last.boss = island, n > 0
+            end)
+        end
+    end)
+end, function(e) warn("[Abysslixhub] Leviathan status lỗi: " .. tostring(e)) end)
 Tabs.Sea:AddButton({
     ["Title"] = "Mua Chip Leviathan",
     ["Callback"] = function()
@@ -18964,7 +18974,7 @@ end
                     if lev and hrp and hum and hum.Health > 0 then
                         local myChar = __LP.Character
                         if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                            local safePos = hrp.CFrame * CFrame.new(0, 50, 0)
+                            local safePos = hrp.CFrame * CFrame.new(0, _G.LevHeight or 50, 0)
                             if (hrp.Position - myChar.HumanoidRootPart.Position).Magnitude > 5 then
                                 BKP(safePos)
                             end
@@ -19032,6 +19042,232 @@ end
             end)
         end
     })
+
+-- ============================================================
+-- 🐉 LEVIATHAN: các chức năng bổ sung (cùng mục Leviathan ở trên)
+-- ============================================================
+xpcall(function()
+    local SE = Tabs.Sea
+    _G.LevHeight = 50
+    _G.LevNotify, _G.LevSkill, _G.LevHop = false, false, false
+
+    SE:AddToggle("ToggleLevNotify", {
+        ["Title"] = "Thông Báo Khi Leviathan / Đảo Xuất Hiện",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.LevNotify = v end)
+
+    SE:AddSlider("SliderLevHeight", {
+        ["Title"] = "Độ Cao Khi Đánh Leviathan",
+        ["Description"] = "Càng cao càng an toàn nhưng đòn đánh có thể không tới",
+        ["Default"] = 50, ["Min"] = 20, ["Max"] = 120, ["Rounding"] = 0,
+        ["Callback"] = function(v) _G.LevHeight = tonumber(v) or 50 end
+    })
+
+    SE:AddToggle("ToggleLevSkill", {
+        ["Title"] = "Tự Xài Skill Khi Đánh Leviathan",
+        ["Description"] = "Bấm Z X C V khi có Leviathan (dùng cùng Tự Đánh Leviathan)",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.LevSkill = v end)
+    task.spawn(function()
+        while task.wait(0.4) do
+            if _G.LevSkill then
+                pcall(function()
+                    local lev = FindLeviathanTarget and FindLeviathanTarget()
+                    if lev then
+                        for _, k in ipairs({ "Z", "X", "C", "V" }) do
+                            __VIM:SendKeyEvent(true, k, false, game)
+                            task.wait(0.05)
+                            __VIM:SendKeyEvent(false, k, false, game)
+                            task.wait(0.15)
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+
+    SE:AddButton({
+        ["Title"] = "Bay Đến Leviathan Gần Nhất",
+        ["Description"] = "Bay lên trên Leviathan đang có (theo độ cao đã chọn)",
+        ["Callback"] = function()
+            pcall(function()
+                local lev, hrp = FindLeviathanTarget()
+                if lev and hrp then
+                    Tween2(hrp.CFrame * CFrame.new(0, _G.LevHeight or 50, 0))
+                else
+                    Library:Notify({ Title = "Leviathan", Content = "Chưa có Leviathan nào" })
+                end
+            end)
+        end
+    })
+
+    SE:AddToggle("ToggleLevHop", {
+        ["Title"] = "Tự Đổi Server Tìm Đảo Leviathan",
+        ["Description"] = "Nếu ~30 giây không có đảo / Leviathan thì tự đổi server",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.LevHop = v end)
+    task.spawn(function()
+        local idle, lastHop = 0, -100
+        while task.wait(5) do
+            if _G.LevHop then
+                pcall(function()
+                    local map = __WS:FindFirstChild("Map")
+                    local island = map and map:FindFirstChild("FrozenDimension")
+                    local lev = FindLeviathanTarget and FindLeviathanTarget()
+                    if island or lev then
+                        idle = 0
+                    else
+                        idle = idle + 5
+                        if idle >= 30 and os.clock() - lastHop > 60 then
+                            lastHop, idle = os.clock(), 0
+                            Hop()
+                        end
+                    end
+                end)
+            else
+                idle = 0
+            end
+        end
+    end)
+
+    local function craft(name)
+        return function()
+            pcall(function() __RS.Remotes.CommF_:InvokeServer("CraftItem", "Craft", name) end)
+        end
+    end
+    SE:AddButton({ ["Title"] = "Chế Tạo Leviathan Crown",  ["Callback"] = craft("LeviathanCrown") })
+    SE:AddButton({ ["Title"] = "Chế Tạo Leviathan Shield", ["Callback"] = craft("LeviathanShield") })
+    SE:AddButton({ ["Title"] = "Chế Tạo Leviathan Boat",   ["Callback"] = craft("LeviathanBoat") })
+end, function(e) warn("[Abysslixhub] Leviathan bổ sung lỗi: " .. tostring(e)) end)
+
+-- ============================================================
+-- 🔫 M1 TỰ DO (KHÔNG KHỰNG): M1 Súng / M1 Trái, KHÔNG bắt buộc phải cầm trên tay
+-- Tự tìm súng / trái trong người hoặc trong túi đồ và bắn thẳng bằng remote của vũ khí đó.
+-- Không bay/tween, không khóa nhân vật, không đổi ChooseWeapon, không gọi Tool:Activate (hay gây khựng)
+-- => bạn vẫn chạy / lái thuyền / dùng skill bình thường.
+-- ============================================================
+xpcall(function()
+    local SE = Tabs.SettingTab   -- đặt trong tab Settings để bật / tắt
+    _G.FreeM1Gun, _G.FreeM1Fruit, _G.FreeM1Equip = false, false, false
+    _G.FreeM1Range = 150
+    local counter, lastEquip = 0, 0
+
+    -- ưu tiên vũ khí đang cầm, không có thì lấy trong túi đồ
+    local function findTool(tip)
+        for _, container in ipairs({ __LP.Character, __LP:FindFirstChild("Backpack") }) do
+            if container then
+                for _, t in ipairs(container:GetChildren()) do
+                    if t:IsA("Tool") and t.ToolTip == tip then return t end
+                end
+            end
+        end
+        return nil
+    end
+
+    local function nearest(root, maxDist)
+        local best, bestD = nil, maxDist
+        local function consider(part)
+            if part and part:IsA("BasePart") then
+                local d = (part.Position - root.Position).Magnitude
+                if d < bestD then best, bestD = part, d end
+            end
+        end
+        local en = __WS:FindFirstChild("Enemies")
+        if en then
+            for _, m in ipairs(en:GetChildren()) do
+                local h = m:FindFirstChild("Humanoid")
+                if h and h.Health > 0 then consider(m:FindFirstChild("HumanoidRootPart")) end
+            end
+        end
+        local sb = __WS:FindFirstChild("SeaBeasts")
+        if sb then
+            for _, m in ipairs(sb:GetChildren()) do
+                local h = m:FindFirstChild("Humanoid")
+                if not h or h.Health > 0 then
+                    consider(m:FindFirstChild("HumanoidRootPart") or m:FindFirstChild("Head") or (m:IsA("Model") and m.PrimaryPart))
+                end
+            end
+        end
+        return best
+    end
+
+    local function shoot(tool, part, root, isGun)
+        local dir = (part.Position - root.Position).Unit
+        counter = counter % 1000000000 + 1
+        local lc = tool:FindFirstChild("LeftClickRemote")
+        if lc then pcall(function() lc:FireServer(dir, counter) end) end
+        if isGun then
+            pcall(function()
+                local mods = __RS:FindFirstChild("Modules")
+                local net = mods and mods:FindFirstChild("Net")
+                local ev = net and net:FindFirstChild("RE/ShootGunEvent")
+                if ev then ev:FireServer(part.Position, { part }) end
+            end)
+        end
+    end
+
+    SE:AddSection("🔫 Magic Fast Fruit / Auto Shoot Gun")
+    SE:AddToggle("ToggleFreeM1Fruit", {
+        ["Title"] = "Magic Fast Fruit",
+        ["Description"] = "Đánh trái ác quỷ không cần cầm",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.FreeM1Fruit = v
+        if v and not findTool("Blox Fruit") then
+            pcall(function() Library:Notify({ Title = "M1 Trái", Content = "Không tìm thấy trái ác quỷ trong túi đồ!" }) end)
+        end
+    end)
+    SE:AddToggle("ToggleFreeM1Gun", {
+        ["Title"] = "Auto Shoot Gun (Risk)",
+        ["Description"] = "Tự Động Bắn Súng",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.FreeM1Gun = v
+        if v and not findTool("Gun") then
+            pcall(function() Library:Notify({ Title = "M1 Súng", Content = "Không tìm thấy súng trong túi đồ!" }) end)
+        end
+    end)
+
+    SE:AddSection("M1 Nâng Cao")
+    SE:AddSlider("SliderFreeM1Range", {
+        ["Title"] = "Tầm Bắn M1",
+        ["Description"] = "Chỉ nhắm mục tiêu trong khoảng cách này (studs)",
+        ["Default"] = 150, ["Min"] = 50, ["Max"] = 300, ["Rounding"] = 0,
+        ["Callback"] = function(v) _G.FreeM1Range = tonumber(v) or 150 end
+    })
+    SE:AddToggle("ToggleFreeM1Equip", {
+        ["Title"] = "Tự Cầm Vũ Khí Khi Không Bắn Được (Tùy Chọn)",
+        ["Description"] = "Chỉ bật nếu quái không mất máu khi vũ khí còn trong túi. Chỉ cầm 1 lần nên ít khựng",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.FreeM1Equip = v end)
+
+    task.spawn(function()
+        while task.wait(0.08) do
+            if _G.FreeM1Gun or _G.FreeM1Fruit then
+                pcall(function()
+                    local char = __LP.Character
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    if not (hum and root) or hum.Health <= 0 then return end
+                    local gun = _G.FreeM1Gun and findTool("Gun") or nil
+                    local fruit = _G.FreeM1Fruit and findTool("Blox Fruit") or nil
+                    if not (gun or fruit) then return end
+                    -- tùy chọn: cầm 1 lần nếu chưa có vũ khí nào trên tay (không đổi liên tục)
+                    if _G.FreeM1Equip and not ((gun and gun.Parent == char) or (fruit and fruit.Parent == char)) then
+                        if os.clock() - lastEquip > 2 then
+                            lastEquip = os.clock()
+                            pcall(function() hum:EquipTool(fruit or gun) end)
+                        end
+                    end
+                    local tgt = nearest(root, _G.FreeM1Range or 150)
+                    if not tgt then return end
+                    if gun then shoot(gun, tgt, root, true) end
+                    if fruit then shoot(fruit, tgt, root, false) end
+                end)
+            end
+        end
+    end)
+end, function(e) warn("[Abysslixhub] M1 tự do lỗi: " .. tostring(e)) end)
 
 -- ==========================================
 -- [TAB DRACO] Bảng thông tin tộc + nhiệm vụ Dragon Hunter, nút nhận nhiệm vụ, bay nhanh tới đảo Hydra
@@ -19717,8 +19953,14 @@ xpcall(function()
 
     _G.SX_Mobs, _G.SX_Loot, _G.SX_Active = false, false, false
     _G.SX_Height = 35
-    _G.SX_MobKeys  = "ghost ship,assault,sea soldier,treasure,haunted,cursed crew,rough sea"
-    _G.SX_LootKeys = "treasure chest,sea chest,golden chest,treasure"
+    _G.SX_MobKeys, _G.SX_LootKeys = "", ""   -- từ khóa tự nhập thêm (cộng với sự kiện đã chọn bên dưới)
+    _G.SX_Pick = { treasure = true, assault = true, rough = true, rumbling = false }
+    local EVENT_KEYS = {
+        treasure = { mobs = "treasure",                                  loot = "treasure chest,sea chest,golden chest,treasure" },
+        assault  = { mobs = "ghost ship,assault,haunted,cursed crew",    loot = "" },
+        rough    = { mobs = "rough sea,sea soldier",                     loot = "" },
+        rumbling = { mobs = "rumbling",                                  loot = "" },
+    }
     local EXCLUDE = { "shop", "dealer", "gacha", "zioles", "seed", "craft", "potion" }
     local blacklist = setmetatable({}, { __mode = "k" })
 
@@ -19754,6 +19996,15 @@ xpcall(function()
         end
         return false
     end
+    local function effKeys(field, custom)
+        local t = splitKeys(custom)
+        for k, on in pairs(_G.SX_Pick) do
+            if on and EVENT_KEYS[k] then
+                for _, w in ipairs(splitKeys(EVENT_KEYS[k][field])) do t[#t + 1] = w end
+            end
+        end
+        return t
+    end
     local function isBlocked(i)
         local e = blacklist[i]
         if e and e > os.clock() then return true end
@@ -19764,7 +20015,7 @@ xpcall(function()
     local function findMob()
         local en = __WS:FindFirstChild("Enemies")
         local hrp = getHRP()
-        local keys = splitKeys(_G.SX_MobKeys)
+        local keys = effKeys("mobs", _G.SX_MobKeys)
         if not en or not hrp or #keys == 0 then return nil end
         local best, bestD
         for _, m in ipairs(en:GetChildren()) do
@@ -19797,7 +20048,7 @@ xpcall(function()
     -- quét rương / vật phẩm biển (nút nhặt hoặc chạm-để-nhặt)
     local function scanLoot()
         local out = {}
-        local keys = splitKeys(_G.SX_LootKeys)
+        local keys = effKeys("loot", _G.SX_LootKeys)
         if #keys == 0 then return out end
         local enemies = __WS:FindFirstChild("Enemies")
         local chars = __WS:FindFirstChild("Characters")
@@ -19901,7 +20152,7 @@ xpcall(function()
         while task.wait(1.5) do
             pcall(function()
                 local en = __WS:FindFirstChild("Enemies")
-                local keys = splitKeys(_G.SX_MobKeys)
+                local keys = effKeys("mobs", _G.SX_MobKeys)
                 local nm = 0
                 if en and #keys > 0 and _G.SX_Mobs then
                     for _, m in ipairs(en:GetChildren()) do
@@ -19912,6 +20163,20 @@ xpcall(function()
             end)
         end
     end)
+
+    local PICKS = {
+        { "treasure", "Đảo Kho Báu (Treasure Island)" },
+        { "assault",  "Tàu Ma Tấn Công (Ghost Ship Assault)" },
+        { "rough",    "Biển Động (Rough Sea)" },
+        { "rumbling", "Vùng Nước Ầm Ầm (Rumbling Waters)" },
+    }
+    for _, ev in ipairs(PICKS) do
+        SE:AddToggle("SX_Pick_" .. ev[1], {
+            Title = "Sự Kiện: " .. ev[2],
+            Description = "Dùng từ khóa mặc định của sự kiện này cho 2 chức năng bên dưới",
+            Default = _G.SX_Pick[ev[1]],
+        }):OnChanged(function(v) _G.SX_Pick[ev[1]] = v end)
+    end
 
     SE:AddToggle("SX_MobsToggle", {
         Title = "Tự Đánh Quái Sự Kiện Biển Mới",
@@ -19939,16 +20204,35 @@ xpcall(function()
     SE:AddInput("SX_MobKeysInput", {
         Title = "Từ Khóa Quái Biển",
         Description = "Cách nhau dấu phẩy, không phân biệt hoa thường",
-        Default = _G.SX_MobKeys,
-        Placeholder = "ghost ship,assault,...",
-        Callback = function(v) if type(v) == "string" and v ~= "" then _G.SX_MobKeys = v end end,
+        Default = "",
+        Placeholder = "để trống = chỉ dùng sự kiện đã chọn ở trên",
+        Callback = function(v) _G.SX_MobKeys = tostring(v or "") end,
     })
     SE:AddInput("SX_LootKeysInput", {
         Title = "Từ Khóa Rương / Kho Báu",
         Description = "Tên rương hoặc chữ trên nút nhặt",
-        Default = _G.SX_LootKeys,
-        Placeholder = "treasure chest,...",
-        Callback = function(v) if type(v) == "string" and v ~= "" then _G.SX_LootKeys = v end end,
+        Default = "",
+        Placeholder = "để trống = chỉ dùng sự kiện đã chọn ở trên",
+        Callback = function(v) _G.SX_LootKeys = tostring(v or "") end,
+    })
+    SE:AddButton({
+        Title = "Bay Đến Rương / Đảo Kho Báu Gần Nhất",
+        Description = "Quét theo từ khóa rương đã chọn rồi bay tới mục tiêu gần nhất",
+        Callback = function()
+            task.spawn(function()
+                local hrp = getHRP()
+                if not hrp then return end
+                local best, bestD
+                for _, it in ipairs(scanLoot()) do
+                    local p = posOf(it.owner)
+                    if p then
+                        local d = (p - hrp.Position).Magnitude
+                        if not bestD or d < bestD then best, bestD = p, d end
+                    end
+                end
+                if best then Tween2(CFrame.new(best + Vector3.new(0, 25, 0))) else notify("Chưa thấy rương / đảo kho báu") end
+            end)
+        end,
     })
     SE:AddButton({
         Title = "In Quái / Rương Biển Đang Có (F9)",
@@ -19956,7 +20240,7 @@ xpcall(function()
         Callback = function()
             task.spawn(function()
                 local en = __WS:FindFirstChild("Enemies")
-                local keys = splitKeys(_G.SX_MobKeys)
+                local keys = effKeys("mobs", _G.SX_MobKeys)
                 local nm = 0
                 if en then
                     for _, m in ipairs(en:GetChildren()) do
@@ -31177,24 +31461,6 @@ v495:AddButton({
     Title = "Craft SharkAnchor",
     Callback = function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "SharkAnchor")
-    end
-})
-v495:AddButton({
-    Title = "Craft LeviathanCrown",
-    Callback = function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "LeviathanCrown")
-    end
-})
-v495:AddButton({
-    Title = "Craft LeviathanShield",
-    Callback = function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "LeviathanShield")
-    end
-})
-v495:AddButton({
-    Title = "Craft LeviathanBoat",
-    Callback = function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Craft", "LeviathanBoat")
     end
 })
 v495:AddButton({
