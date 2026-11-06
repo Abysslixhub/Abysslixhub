@@ -5406,10 +5406,11 @@ Tabs = {
     ["Race"]     = createTab("Upgrade Race", "zap"),
     ["Draco"]    = createTab("Draco/Prehistoric", "flame"),
     ["Boss"]     = createTab("Raid Boss", "swords"),
-    ["Halloween"] = createTab("Halloween", "ghost"),
+    ["Event"]    = createTab("Farm Sự Kiện", "calendar"),
     ["Setting"]  = createTab("Settings", "settings", "Config"),
 }
 Tabs.Misc = Tabs.Status   -- Tabs.Misc CHỈ còn dùng cho mục liên quan server (vào lại/đổi server)
+Tabs.Halloween = Tabs.Event   -- Halloween gộp chung vào tab "Farm Sự Kiện" (mọi thứ về sự kiện nằm 1 tab)
 Tabs.SettingTab = Tabs.Setting   -- tab Settings thật (mọi mục không liên quan Server đưa về đây)
 -- ============================================================
 -- [SETTINGS THEO ẢNH 100%] (chạy SỚM, ngay sau khi tạo tab) Tab Cài Đặt mới: 2 mục Config + 28 mục "Teleports & Misc" đúng thứ tự trong ảnh
@@ -16354,7 +16355,6 @@ do
     -- ---------- CHẠY NHANH / NHẢY CAO (50 - 500) ----------
     Tabs.Player:AddSection("Tốc Độ & Nhảy")
     _G.SpeedValue = 50
-    _G.SwimSpeedValue = 50
     _G.JumpValue = 50
     local origWalk, origJump
 
@@ -16381,17 +16381,6 @@ do
         ["Max"] = 500,
         ["Callback"] = function(v)
             _G.SpeedValue = math.clamp(math.floor((tonumber(v) or 50) + 0.5), 50, 500)
-        end
-    })
-
-    Tabs.Player:AddSlider("SliderSwimSpeed", {
-        ["Title"] = "Tốc Độ Bơi",
-        ["Description"] = "10 - 500 (chỉnh riêng khi đang ở dưới nước)",
-        ["Default"] = 50,
-        ["Min"] = 10,
-        ["Max"] = 500,
-        ["Callback"] = function(v)
-            _G.SwimSpeedValue = math.clamp(math.floor((tonumber(v) or 50) + 0.5), 10, 500)
         end
     })
 
@@ -16427,11 +16416,7 @@ do
     -- chỉ ép ở Heartbeat (sau vật lý) thì tốc độ trên đất bị về bình thường, còn dưới nước game
     -- không ghi đè nên chạy đúng giá trị -> trông như bơi nhanh hơn đi bộ.
     -- Cách sửa: ép ở nhiều thời điểm (RenderStepped cuối cùng, Stepped, Heartbeat, và ngay khi game vừa ghi đè)
-    -- và dùng tốc độ riêng cho trạng thái bơi.
     local function _targetWalk(hum)
-        if hum:GetState() == Enum.HumanoidStateType.Swimming then
-            return _G.SwimSpeedValue
-        end
         return _G.SpeedValue
     end
 
@@ -19720,6 +19705,416 @@ local function GetHellfireBoss()
     end)
     return target
 end
+
+-- ============================================================
+-- 🎯 TAB "FARM SỰ KIỆN" — farm chung cho Halloween và các sự kiện khác
+-- Hoạt động theo TỪ KHÓA: đánh quái / nhặt vật phẩm / tương tác NPC-cửa khớp từ khóa.
+-- Thêm sự kiện mới: sửa bảng PRESETS bên dưới (hoặc nhập từ khóa tay trong tab, không cần sửa code).
+-- Bọc xpcall để không tốn local của chunk chính và lỗi ở đây không làm dừng script.
+-- ============================================================
+xpcall(function()
+    local EV = Tabs.Event
+    if not EV then return end
+
+    local PRESETS = {
+        ["Halloween"] = {
+            mobs     = "hell rider,hellfire,werewolf,great pumpkin,jack o,pumpkin",
+            items    = "pumpkin,candy corn",
+            interact = "trick,treat,knock",
+        },
+        -- Thêm sự kiện khác ở đây, ví dụ:
+        -- ["Tên Sự Kiện"] = { mobs = "...", items = "...", interact = "..." },
+        ["Tùy Chỉnh"] = { mobs = "", items = "", interact = "" },
+    }
+    local PRESET_ORDER = { "Halloween", "Tùy Chỉnh" }
+
+    _G.EV_Mobs, _G.EV_Items, _G.EV_Interact, _G.EV_Active = false, false, false, false
+    _G.EV_Height = 30
+    _G.EV_Preset = "Halloween"
+    _G.EV_CustomMobs, _G.EV_CustomItems, _G.EV_CustomInteract = "", "", ""
+
+    local EXCLUDE_KEYS = { "witch", "zioles", "gacha", "craft", "potion", "seed", "shop", "dealer" }
+    local blacklist = setmetatable({}, { __mode = "k" })
+
+    local function notify(txt)
+        pcall(function() Library:Notify({ Title = "Farm Sự Kiện", Content = tostring(txt) }) end)
+    end
+    local function refresh()
+        _G.EV_Active = (_G.EV_Mobs or _G.EV_Items or _G.EV_Interact) and true or false
+    end
+    local function getHRP()
+        local c = __LP.Character
+        return c and c:FindFirstChild("HumanoidRootPart")
+    end
+    local function isAlive()
+        local c = __LP.Character
+        local h = c and c:FindFirstChildOfClass("Humanoid")
+        return h ~= nil and h.Health > 0
+    end
+    local function posOf(inst)
+        if not inst then return nil end
+        if inst:IsA("BasePart") then return inst.Position end
+        if inst:IsA("Model") then
+            local ok, cf = pcall(function() return inst:GetPivot() end)
+            if ok and cf then return cf.Position end
+        end
+        local p = inst:FindFirstChildWhichIsA("BasePart", true)
+        return p and p.Position or nil
+    end
+    local function splitKeys(str)
+        local t = {}
+        for w in string.gmatch(string.lower(tostring(str or "")), "[^,]+") do
+            w = w:match("^%s*(.-)%s*$")
+            if w ~= "" then t[#t + 1] = w end
+        end
+        return t
+    end
+    local function hasAny(text, keys)
+        for _, k in ipairs(keys) do
+            if string.find(text, k, 1, true) then return true end
+        end
+        return false
+    end
+    local function isBlocked(inst)
+        local e = blacklist[inst]
+        if e and e > os.clock() then return true end
+        blacklist[inst] = nil
+        return false
+    end
+    local function block(inst, sec) blacklist[inst] = os.clock() + sec end
+
+    -- Từ khóa đang dùng: ô nhập tay (nếu có) ưu tiên hơn preset
+    local function keysFor(field, custom)
+        local c = tostring(custom or "")
+        if c:match("%S") then return splitKeys(c) end
+        local p = PRESETS[_G.EV_Preset]
+        return splitKeys(p and p[field] or "")
+    end
+    local function mobKeys()      return keysFor("mobs", _G.EV_CustomMobs) end
+    local function itemKeys()     return keysFor("items", _G.EV_CustomItems) end
+    local function interactKeys() return keysFor("interact", _G.EV_CustomInteract) end
+
+    -- ---------- quét vật phẩm / nút tương tác ----------
+    local function scan()
+        local out = {}
+        local enemies = __WS:FindFirstChild("Enemies")
+        local chars = __WS:FindFirstChild("Characters")
+        local ik, ak = itemKeys(), interactKeys()
+        local wantItems, wantInter = _G.EV_Items and #ik > 0, _G.EV_Interact and #ak > 0
+        if not (wantItems or wantInter) then return out end
+        local n = 0
+        for _, d in ipairs(__WS:GetDescendants()) do
+            n = n + 1
+            if n % 4000 == 0 then task.wait() end
+            local isPrompt = d:IsA("ProximityPrompt")
+            local isClick = d:IsA("ClickDetector")
+            local isPart = d:IsA("BasePart")
+            if (isPrompt or isClick or isPart)
+               and not (enemies and d:IsDescendantOf(enemies))
+               and not (chars and d:IsDescendantOf(chars)) then
+                if isPrompt and d.Enabled == false then
+                    -- bỏ qua nút đang tắt
+                elseif isPart and not d:FindFirstChildOfClass("TouchTransmitter") then
+                    -- part thường chỉ tính khi là vật nhặt chạm-để-nhặt
+                else
+                    local parts = {}
+                    if isPrompt then
+                        parts[#parts + 1] = d.ActionText
+                        parts[#parts + 1] = d.ObjectText
+                    end
+                    local a, depth = isPart and d or d.Parent, 0
+                    while a and a ~= __WS and depth < 2 do
+                        parts[#parts + 1] = a.Name
+                        a = a.Parent
+                        depth = depth + 1
+                    end
+                    local label = string.lower(table.concat(parts, " "))
+                    if not hasAny(label, EXCLUDE_KEYS) then
+                        local owner = isPart and d or d.Parent
+                        local kind
+                        if wantInter and not isPart and hasAny(label, ak) then
+                            kind = "interact"
+                        elseif wantItems and hasAny(label, ik) then
+                            kind = "item"
+                        end
+                        if kind and owner then
+                            out[#out + 1] = { inst = d, owner = owner, kind = kind, label = label }
+                        end
+                    end
+                end
+            end
+        end
+        return out
+    end
+
+    local function activate(inst)
+        pcall(function()
+            if inst:IsA("ProximityPrompt") then
+                local oldHold = inst.HoldDuration
+                pcall(function() inst.RequiresLineOfSight = false end)
+                pcall(function() inst.HoldDuration = 0 end)
+                if fireproximityprompt then
+                    fireproximityprompt(inst)
+                else
+                    inst:InputHoldBegin()
+                    task.wait(0.05)
+                    inst:InputHoldEnd()
+                end
+                pcall(function() inst.HoldDuration = oldHold end)
+            elseif inst:IsA("ClickDetector") then
+                if fireclickdetector then fireclickdetector(inst) end
+            elseif inst:IsA("BasePart") then
+                local hrp = getHRP()
+                if hrp and firetouchinterest then
+                    firetouchinterest(hrp, inst, 0)
+                    task.wait()
+                    firetouchinterest(hrp, inst, 1)
+                end
+            end
+        end)
+    end
+
+    -- Bay tới mục tiêu gần nhất cùng loại rồi kích hoạt. Trả về true nếu đã xử lý 1 mục tiêu.
+    local function visit(list, wantKind, cooldown)
+        local hrp = getHRP()
+        if not hrp then return false end
+        local best, bestD
+        for _, it in ipairs(list) do
+            if it.kind == wantKind and it.inst.Parent and not isBlocked(it.inst) then
+                local p = posOf(it.owner)
+                if p then
+                    local d = (p - hrp.Position).Magnitude
+                    if not bestD or d < bestD then best, bestD = it, d end
+                end
+            end
+        end
+        if not best then return false end
+        block(best.inst, cooldown)
+        local p = posOf(best.owner)
+        if not p then return true end
+        if _G.AbyAtkDebug or _G.EV_Debug then print("[FarmSuKien] " .. wantKind .. " -> " .. best.label) end
+        Tween2(CFrame.new(p + Vector3.new(0, 3, 3)))
+        for _ = 1, 3 do
+            if not (_G.EV_Items or _G.EV_Interact) then break end
+            activate(best.inst)
+            task.wait(0.4)
+        end
+        task.wait(1) -- chờ quái / phòng xuất hiện (vòng chính ưu tiên đánh quái ở lượt sau)
+        return true
+    end
+
+    -- ---------- quái sự kiện ----------
+    local function findMob(keys)
+        local en = __WS:FindFirstChild("Enemies")
+        local hrp = getHRP()
+        if not en or not hrp or #keys == 0 then return nil end
+        local best, bestD
+        for _, m in ipairs(en:GetChildren()) do
+            local mh = m:FindFirstChild("HumanoidRootPart")
+            local hum = m:FindFirstChildOfClass("Humanoid")
+            if mh and hum and hum.Health > 0 and hasAny(string.lower(m.Name), keys) then
+                local d = (mh.Position - hrp.Position).Magnitude
+                if not bestD or d < bestD then best, bestD = m, d end
+            end
+        end
+        return best
+    end
+
+    local function fight(mob)
+        local mh = mob:FindFirstChild("HumanoidRootPart")
+        local hum = mob:FindFirstChildOfClass("Humanoid")
+        if not mh or not hum then return end
+        local t0 = os.clock()
+        repeat
+            task.wait(_G.Fast_Delay or 0.05)
+            pcall(AttackNoCoolDown)
+            pcall(AutoHaki)
+            pcall(EquipTool, SelectWeapon)
+            pcall(function() mh.CanCollide = false end)
+            Tween(mh.CFrame * CFrame.new(0, _G.EV_Height or 30, 0))
+        until not _G.EV_Mobs or not mob.Parent or hum.Health <= 0 or not isAlive() or os.clock() - t0 > 240
+        pcall(StopMovement)
+    end
+
+    -- ---------- VÒNG LẶP CHÍNH (1 vòng duy nhất để các chức năng không tranh nhau di chuyển) ----------
+    local lastCount = { mob = 0, item = 0, inter = 0 }
+    task.spawn(function()
+        local cache, lastScan, lastKey = {}, -100, ""
+        while task.wait(0.15) do
+            if _G.EV_Active and isAlive() then
+                local ok, err = pcall(function()
+                    -- 1) quái / boss sự kiện (ưu tiên cao nhất)
+                    if _G.EV_Mobs then
+                        local mob = findMob(mobKeys())
+                        if mob then fight(mob) return end
+                    end
+                    if not (_G.EV_Items or _G.EV_Interact) then return end
+                    -- đổi preset / từ khóa => quét lại ngay
+                    local key = _G.EV_Preset .. "|" .. tostring(_G.EV_CustomItems) .. "|" .. tostring(_G.EV_CustomInteract)
+                    if key ~= lastKey or os.clock() - lastScan > 4 then
+                        cache = scan()
+                        lastScan, lastKey = os.clock(), key
+                        local ci, cn = 0, 0
+                        for _, it in ipairs(cache) do
+                            if it.kind == "item" then ci = ci + 1 else cn = cn + 1 end
+                        end
+                        lastCount.item, lastCount.inter = ci, cn
+                    end
+                    -- 2) NPC / cửa / nút tương tác
+                    if _G.EV_Interact and visit(cache, "interact", 25) then return end
+                    -- 3) vật phẩm sự kiện
+                    if _G.EV_Items and visit(cache, "item", 15) then return end
+                end)
+                if not ok then warn("[FarmSuKien] " .. tostring(err)) end
+            end
+        end
+    end)
+
+    -- ============================================================
+    -- GIAO DIỆN
+    -- ============================================================
+    EV:AddSection("🎯 Farm Sự Kiện")
+    local statusLabel = EV:AddParagraph({
+        Title = "Trạng thái",
+        Content = "Đang tải...",
+    })
+    EV:AddParagraph({
+        Title = "Cách dùng",
+        Content = "Chọn sự kiện → bật chức năng muốn farm. Sự kiện mới: chọn \"Tùy Chỉnh\" rồi nhập từ khóa (tên quái / vật phẩm / nút tương tác) bên dưới.",
+    })
+
+    task.spawn(function()
+        while task.wait(1) do
+            pcall(function()
+                local en = __WS:FindFirstChild("Enemies")
+                local mk = mobKeys()
+                local nm = 0
+                if en and #mk > 0 and _G.EV_Mobs then
+                    for _, m in ipairs(en:GetChildren()) do
+                        if hasAny(string.lower(m.Name), mk) then nm = nm + 1 end
+                    end
+                end
+                lastCount.mob = nm
+                local on = {}
+                if _G.EV_Mobs then on[#on + 1] = "Quái" end
+                if _G.EV_Items then on[#on + 1] = "Vật phẩm" end
+                if _G.EV_Interact then on[#on + 1] = "Tương tác" end
+                statusLabel:SetText(
+                    "Sự kiện: " .. tostring(_G.EV_Preset)
+                    .. "\nĐang bật: " .. (#on > 0 and table.concat(on, ", ") or "không")
+                    .. "\n👹 Quái: " .. lastCount.mob .. " | 📦 Vật phẩm: " .. lastCount.item .. " | 🚪 Tương tác: " .. lastCount.inter)
+            end)
+        end
+    end)
+
+    EV:AddSection("Chọn Sự Kiện")
+    EV:AddDropdown("EV_PresetDropdown", {
+        Title = "Sự Kiện",
+        Description = "Preset từ khóa theo sự kiện. \"Tùy Chỉnh\" = chỉ dùng từ khóa bạn nhập bên dưới",
+        Values = PRESET_ORDER,
+        Default = 1,
+    }):OnChanged(function(v)
+        if PRESETS[v] then
+            _G.EV_Preset = v
+            notify("Đã chọn sự kiện: " .. v)
+        end
+    end)
+
+    EV:AddSection("Farm")
+    local function onOff(flag)
+        return function(v)
+            _G[flag] = v
+            refresh()
+            if not v then
+                pcall(StopMovement)
+                if _G.AbyAfterToggleOff then pcall(_G.AbyAfterToggleOff) end
+            end
+        end
+    end
+    EV:AddToggle("EV_MobsToggle", {
+        Title = "Tự Đánh Quái / Boss Sự Kiện",
+        Description = "Đánh quái trong Enemies khớp từ khóa quái (ưu tiên cao nhất)",
+        Default = false,
+    }):OnChanged(onOff("EV_Mobs"))
+    EV:AddToggle("EV_ItemsToggle", {
+        Title = "Tự Nhặt Vật Phẩm Sự Kiện",
+        Description = "Bay tới vật phẩm khớp từ khóa (có nút nhặt hoặc chạm-để-nhặt) và thu thập",
+        Default = false,
+    }):OnChanged(onOff("EV_Items"))
+    EV:AddToggle("EV_InteractToggle", {
+        Title = "Tự Tương Tác NPC / Cửa Sự Kiện",
+        Description = "Bay tới nút tương tác khớp từ khóa (gõ cửa, nhận quest sự kiện...) và kích hoạt",
+        Default = false,
+    }):OnChanged(onOff("EV_Interact"))
+    EV:AddSlider("EV_HeightSlider", {
+        Title = "Độ Cao Khi Đánh Quái",
+        Default = 30,
+        Min = 5,
+        Max = 60,
+        Rounding = 0,
+        Callback = function(v) _G.EV_Height = tonumber(v) or 30 end,
+    })
+
+    EV:AddSection("Từ Khóa Tùy Chỉnh")
+    EV:AddInput("EV_MobKeysInput", {
+        Title = "Từ Khóa Quái",
+        Description = "Cách nhau bằng dấu phẩy, không phân biệt hoa thường. Để trống = dùng preset",
+        Default = "",
+        Placeholder = "vd: hell rider,werewolf",
+        Callback = function(v) _G.EV_CustomMobs = tostring(v or "") end,
+    })
+    EV:AddInput("EV_ItemKeysInput", {
+        Title = "Từ Khóa Vật Phẩm",
+        Description = "Tên vật phẩm / nút nhặt. Để trống = dùng preset",
+        Default = "",
+        Placeholder = "vd: pumpkin,candy corn",
+        Callback = function(v) _G.EV_CustomItems = tostring(v or "") end,
+    })
+    EV:AddInput("EV_InteractKeysInput", {
+        Title = "Từ Khóa Tương Tác",
+        Description = "Chữ trên nút tương tác / tên cửa, NPC. Để trống = dùng preset",
+        Default = "",
+        Placeholder = "vd: trick,treat,knock",
+        Callback = function(v) _G.EV_CustomInteract = tostring(v or "") end,
+    })
+
+    EV:AddSection("Kiểm Tra")
+    EV:AddButton({
+        Title = "In Mục Tiêu Tìm Thấy (F9)",
+        Description = "Liệt kê vật phẩm / nút tương tác khớp từ khóa (bật chức năng tương ứng trước khi quét)",
+        Callback = function()
+            task.spawn(function()
+                local list = scan()
+                local cnt = { item = 0, interact = 0 }
+                for _, it in ipairs(list) do
+                    cnt[it.kind] = (cnt[it.kind] or 0) + 1
+                    print(("[FarmSuKien] %s | %s | %s"):format(it.kind, it.inst:GetFullName(), it.label))
+                end
+                notify(("Vật phẩm: %d | Tương tác: %d (chi tiết ở console F9)"):format(cnt.item, cnt.interact))
+            end)
+        end,
+    })
+    EV:AddButton({
+        Title = "In Quái Sự Kiện Đang Có (F9)",
+        Description = "Liệt kê quái trong Enemies khớp từ khóa quái",
+        Callback = function()
+            local en = __WS:FindFirstChild("Enemies")
+            local keys = mobKeys()
+            local n = 0
+            if en then
+                for _, m in ipairs(en:GetChildren()) do
+                    if hasAny(string.lower(m.Name), keys) then
+                        n = n + 1
+                        print("[FarmSuKien] quái: " .. m.Name)
+                    end
+                end
+            end
+            notify("Quái khớp từ khóa: " .. n)
+        end,
+    })
+end, function(e)
+    warn("[Abysslixhub] Tab Farm Sự Kiện lỗi: " .. tostring(e))
+end)
 
 -- ============================================================
 -- 🎃 HALLOWEEN 2026 "HELLFIRE HALLOWEEN" (31/10 -> 15/11/2026 01:00 UTC)
