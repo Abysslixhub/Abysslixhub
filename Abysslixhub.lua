@@ -8582,12 +8582,29 @@ function AttackNoCoolDown()
         -- Cách 1: LeftClickRemote (kiểu cũ)
         local lc = tool:FindFirstChild("LeftClickRemote")
         if lc and (not only or only == "LeftClickRemote") then
-            for i, dir in ipairs(dirs) do
+            for _, dir in ipairs(dirs) do
+                -- [FIX M1 TRÁI] counter phải TĂNG dần mỗi lần bắn (trước đây luôn 1..5 nên server bỏ qua các đòn lặp lại)
+                _G.AbyM1Counter = (_G.AbyM1Counter or 0) % 1000000000 + 1
+                local cnt = _G.AbyM1Counter
                 _inOurCall = true
-                pcall(function() lc:FireServer(dir, i) end)
+                pcall(function() lc:FireServer(dir, cnt) end)
                 _inOurCall = false
             end
             fired[#fired + 1] = "LeftClickRemote"
+        end
+
+        -- [FIX SÚNG] Súng không dùng RegisterHit mà bắn qua RE/ShootGunEvent (trước đây AttackNoCoolDown bỏ qua súng hoàn toàn)
+        local isGunTool = (tool.ToolTip == "Gun")
+        if isGunTool and (not only or only == "Gun") then
+            local gm = __RS:FindFirstChild("Modules")
+            local gn = gm and gm:FindFirstChild("Net")
+            local sev = gn and gn:FindFirstChild("RE/ShootGunEvent")
+            if sev then
+                _inOurCall = true
+                pcall(function() sev:FireServer(firstPart.Position, { firstPart }) end)
+                _inOurCall = false
+                fired[#fired + 1] = "ShootGunEvent"
+            end
         end
 
         -- Cách có xác thực: dùng cho vũ khí Melee/Sword
@@ -8612,7 +8629,7 @@ function AttackNoCoolDown()
         local net  = mods and mods:FindFirstChild("Net")
         local reAtk = net and net:FindFirstChild("RE/RegisterAttack")
         local reHit = net and net:FindFirstChild("RE/RegisterHit")
-        if reAtk and reHit and not netDone then
+        if reAtk and reHit and not netDone and not isGunTool then
             local useTmpl = _tmpl["RE/RegisterHit"] ~= nil
             if (not only) or (only == "RegisterMau" and useTmpl) or (only == "RegisterMacDinh") then
                 local tA = (only ~= "RegisterMacDinh") and _tmpl["RE/RegisterAttack"] or nil
@@ -13094,7 +13111,8 @@ if Sea3 then
             end
         end
         local function findTool(mode)
-            return scan(__LP.Character, mode) or scan(__LP.Backpack, mode)
+            -- [FIX] chỉ dùng vũ khí người chơi đang cầm trên tay, không tự lấy từ túi
+            return scan(__LP.Character, mode)
         end
 
         local function getTarget(root)
@@ -13130,7 +13148,7 @@ if Sea3 then
         end
 
         local function fire(tool, targetPart, root)
-            local dir = (targetPart.Position - root.Position).Unit
+            local dir = (targetPart.Position - root.Position); dir = dir.Magnitude > 0.001 and dir.Unit or Vector3.new(0, 0, 1)
             counter = counter % 1000000000 + 1
             local lc = tool:FindFirstChild("LeftClickRemote")
             if lc then pcall(function() lc:FireServer(dir, counter) end) end
@@ -13142,7 +13160,6 @@ if Sea3 then
                     if ev then ev:FireServer(targetPart.Position, { targetPart }) end
                 end)
             end
-            pcall(function() tool:Activate() end)
         end
 
         while true do
@@ -13155,21 +13172,8 @@ if Sea3 then
                     local root = char and char:FindFirstChild("HumanoidRootPart")
                     if not (hum and root) then return end
                     local tool = findTool(mode)
-                    if not tool then
-                        if os.clock() - lastWarn > 15 then
-                            lastWarn = os.clock()
-                            Library:Notify({
-                                Title = "Sự Kiện Biển",
-                                Content = (mode == "dragon") and "Không tìm thấy Dragon Storm trong túi đồ!" or "Không tìm thấy trái ác quỷ trong túi đồ!"
-                            })
-                        end
-                        return
-                    end
-                    -- khóa vũ khí để vòng chọn vũ khí chung không đổi lại
-                    if savedChoose == nil then if ChooseWeapon ~= "SeaMode" then _G.PrevChoose = ChooseWeapon end savedChoose = _G.PrevChoose end
-                    ChooseWeapon = "SeaMode"
-                    SelectWeapon = tool.Name
-                    if tool.Parent ~= char then hum:EquipTool(tool) end
+                    if not tool then return end
+                    -- [FIX] không tự cầm / không khóa vũ khí: người chơi tự cầm và tự di chuyển
                     AutoHaki()
                     local tgt = getTarget(root)
                     if tgt then fire(tool, tgt, root) end
@@ -15052,7 +15056,7 @@ task.spawn(function()
         return best
     end
     local function fire(tool, targetPart, root)
-        local dir = (targetPart.Position - root.Position).Unit
+        local dir = (targetPart.Position - root.Position); dir = dir.Magnitude > 0.001 and dir.Unit or Vector3.new(0, 0, 1)
         counter = counter % 1000000000 + 1
         local lc = tool:FindFirstChild("LeftClickRemote")
         if lc then pcall(function() lc:FireServer(dir, counter) end) end
@@ -15064,7 +15068,6 @@ task.spawn(function()
                 if ev then ev:FireServer(targetPart.Position, { targetPart }) end
             end)
         end
-        pcall(function() tool:Activate() end)
     end
     while true do
         task.wait(0.1)
@@ -15077,28 +15080,10 @@ task.spawn(function()
                 local root = char and char:FindFirstChild("HumanoidRootPart")
                 if not (hum and root) then return end
                 local tip = wantFruit and "Blox Fruit" or "Gun"
-                local tool = scan(char, tip) or scan(__LP.Backpack, tip)
-                if tip == "Gun" then
-                    local function isDS(t) return t and string.find(string.lower(t.Name):gsub("%s", ""), "dragonstorm", 1, true) end
-                    if not isDS(tool) then
-                        local alt = scan(__LP.Backpack, tip)
-                        if isDS(alt) then tool = alt end
-                    end
-                end
-                if not tool then
-                    if os.clock() - lastWarn > 15 then
-                        lastWarn = os.clock()
-                        Library:Notify({
-                            Title = "Vũ Khí",
-                            Content = wantFruit and "Không tìm thấy trái ác quỷ trong túi đồ!" or "Không tìm thấy súng trong túi đồ!"
-                        })
-                    end
-                    return
-                end
-                if savedChoose == nil then if ChooseWeapon ~= "SeaMode" then _G.PrevChoose = ChooseWeapon end savedChoose = _G.PrevChoose end
-                ChooseWeapon = "SeaMode"   -- khóa vòng chọn vũ khí chung, không đổi lại vũ khí khác
-                SelectWeapon = tool.Name
-                if tool.Parent ~= char then hum:EquipTool(tool) end
+                -- [FIX] chỉ dùng vũ khí đang cầm trên tay, không lấy từ túi
+                local tool = scan(char, tip)
+                if not tool then return end
+                -- [FIX] không tự cầm, không khóa ChooseWeapon
                 local tgt = nearest(root, wantFruit and 100 or 200)
                 if tgt then fire(tool, tgt, root) end
             end)
@@ -19192,7 +19177,7 @@ xpcall(function()
     end
 
     local function shoot(tool, part, root, isGun)
-        local dir = (part.Position - root.Position).Unit
+        local dir = (part.Position - root.Position); dir = dir.Magnitude > 0.001 and dir.Unit or Vector3.new(0, 0, 1)
         counter = counter % 1000000000 + 1
         local lc = tool:FindFirstChild("LeftClickRemote")
         if lc then pcall(function() lc:FireServer(dir, counter) end) end
@@ -19206,26 +19191,15 @@ xpcall(function()
         end
     end
 
-    SE:AddSection("🔫 Magic Fast Fruit / Auto Shoot Gun")
-    SE:AddToggle("ToggleFreeM1Fruit", {
-        ["Title"] = "Magic Fast Fruit",
-        ["Description"] = "Đánh trái ác quỷ không cần cầm",
+    SE:AddSection("🔫 Auto M1 (Trái / Súng)")
+    SE:AddToggle("ToggleFreeM1", {
+        ["Title"] = "Auto M1 (Trái / Súng)",
+        ["Description"] = "Tự bắn M1 vào quái gần nhất bằng trái hoặc súng bạn đang cầm trên tay. Không tự cầm vũ khí, không khựng khi di chuyển",
         ["Default"] = false
     }):OnChanged(function(v)
+        -- 1 nút duy nhất: bật cả hai, vòng bắn tự chọn theo vũ khí đang cầm (trái hoặc súng)
         _G.FreeM1Fruit = v
-        if v and not findTool("Blox Fruit") then
-            pcall(function() Library:Notify({ Title = "M1 Trái", Content = "Không tìm thấy trái ác quỷ trong túi đồ!" }) end)
-        end
-    end)
-    SE:AddToggle("ToggleFreeM1Gun", {
-        ["Title"] = "Auto Shoot Gun (Risk)",
-        ["Description"] = "Tự Động Bắn Súng",
-        ["Default"] = false
-    }):OnChanged(function(v)
         _G.FreeM1Gun = v
-        if v and not findTool("Gun") then
-            pcall(function() Library:Notify({ Title = "M1 Súng", Content = "Không tìm thấy súng trong túi đồ!" }) end)
-        end
     end)
 
     SE:AddSection("M1 Nâng Cao")
@@ -19235,12 +19209,6 @@ xpcall(function()
         ["Default"] = 150, ["Min"] = 50, ["Max"] = 300, ["Rounding"] = 0,
         ["Callback"] = function(v) _G.FreeM1Range = tonumber(v) or 150 end
     })
-    SE:AddToggle("ToggleFreeM1Equip", {
-        ["Title"] = "Tự Cầm Vũ Khí Khi Không Bắn Được (Tùy Chọn)",
-        ["Description"] = "Chỉ bật nếu quái không mất máu khi vũ khí còn trong túi. Chỉ cầm 1 lần nên ít khựng",
-        ["Default"] = false
-    }):OnChanged(function(v) _G.FreeM1Equip = v end)
-
     task.spawn(function()
         while task.wait(0.08) do
             if _G.FreeM1Gun or _G.FreeM1Fruit then
@@ -19251,14 +19219,10 @@ xpcall(function()
                     if not (hum and root) or hum.Health <= 0 then return end
                     local gun = _G.FreeM1Gun and findTool("Gun") or nil
                     local fruit = _G.FreeM1Fruit and findTool("Blox Fruit") or nil
+                    -- [FIX] chỉ bắn bằng vũ khí người chơi đang cầm trên tay, không tự cầm
+                    if gun and gun.Parent ~= char then gun = nil end
+                    if fruit and fruit.Parent ~= char then fruit = nil end
                     if not (gun or fruit) then return end
-                    -- tùy chọn: cầm 1 lần nếu chưa có vũ khí nào trên tay (không đổi liên tục)
-                    if _G.FreeM1Equip and not ((gun and gun.Parent == char) or (fruit and fruit.Parent == char)) then
-                        if os.clock() - lastEquip > 2 then
-                            lastEquip = os.clock()
-                            pcall(function() hum:EquipTool(fruit or gun) end)
-                        end
-                    end
                     local tgt = nearest(root, _G.FreeM1Range or 150)
                     if not tgt then return end
                     if gun then shoot(gun, tgt, root, true) end
