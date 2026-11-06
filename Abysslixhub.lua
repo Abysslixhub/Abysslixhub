@@ -19370,8 +19370,8 @@ end})
 Tabs.Draco:AddButton({["Title"] = "Bay Đến Khu Cây Hydra", ["Description"] = "Nơi phá cây của nhiệm vụ Dragon Hunter", ["Callback"] = function()
     Tween2(CFrame.new(5288.61962890625, 1005.4000244140625, 392.43011474609375))
 end})
-Tabs.Sea:AddSection("Đảo Dung Nham")
-local vu1150 = Tabs.Sea:AddParagraph({
+Tabs.Draco:AddSection("Đảo Dung Nham")
+local vu1150 = Tabs.Draco:AddParagraph({
     ["Title"] = "Trạng Thái Đảo Dung Nham",
 })
 spawn(function()
@@ -19385,7 +19385,7 @@ spawn(function()
         end
     end)
 end)
-Tabs.Sea:AddToggle("ToggleTPVolcano", {
+Tabs.Draco:AddToggle("ToggleTPVolcano", {
     ["Title"] = "Bay Đến Đảo Dung Nham",
     ["Default"] = false
 }):OnChanged(function(p1151)
@@ -19415,25 +19415,25 @@ spawn(function()
         end
     end
 end)
-Tabs.Sea:AddToggle("ToggleDefendVolcano", {
+Tabs.Draco:AddToggle("ToggleDefendVolcano", {
     ["Title"] = "Ph\195\178ng Th\225\187\167",
     ["Default"] = false
 }):OnChanged(function(p1155)
     _G.AutoDefendVolcano = p1155
 end)
-Tabs.Sea:AddToggle("ToggleMelee", {
+Tabs.Draco:AddToggle("ToggleMelee", {
     ["Title"] = "Dùng Melee",
     ["Default"] = false
 }):OnChanged(function(p1156)
     _G.UseMelee = p1156
 end)
-Tabs.Sea:AddToggle("ToggleSword", {
+Tabs.Draco:AddToggle("ToggleSword", {
     ["Title"] = "Dùng Sword",
     ["Default"] = false
 }):OnChanged(function(p1157)
     _G.UseSword = p1157
 end)
-Tabs.Sea:AddToggle("ToggleGun", {
+Tabs.Draco:AddToggle("ToggleGun", {
     ["Title"] = "Dùng Gun",
     ["Default"] = false
 }):OnChanged(function(p1158)
@@ -19551,7 +19551,7 @@ spawn(function()
         end
     end
 end)
-Tabs.Sea:AddToggle("ToggleKillAura", {
+Tabs.Draco:AddToggle("ToggleKillAura", {
     ["Title"] = "Đánh Golems Aura",
     ["Default"] = false
 }):OnChanged(function(p1200)
@@ -19576,7 +19576,7 @@ spawn(function()
         end
     end
 end)
-Tabs.Sea:AddToggle("ToggleCollectBone", {
+Tabs.Draco:AddToggle("ToggleCollectBone", {
     ["Title"] = "Làm Xương",
     ["Default"] = false
 }):OnChanged(function(p1205)
@@ -19593,7 +19593,7 @@ spawn(function()
         end
     end
 end)
-Tabs.Sea:AddToggle("ToggleCollectEgg", {
+Tabs.Draco:AddToggle("ToggleCollectEgg", {
     ["Title"] = "Làm Trứng",
     ["Default"] = false
 }):OnChanged(function(p1210)
@@ -19705,6 +19705,278 @@ local function GetHellfireBoss()
     end)
     return target
 end
+
+-- ============================================================
+-- 🌊 SEA EVENT MỞ RỘNG (theo từ khóa): Treasure Island / Ghost Ship Assault / Rough Sea / quái - rương biển mới
+-- Tên quái/rương của sự kiện mới có thể khác game -> sửa từ khóa ngay trong tab (không cần sửa code).
+-- Bọc xpcall để không tốn local của chunk chính và lỗi ở đây không làm dừng script.
+-- ============================================================
+xpcall(function()
+    local SE = Tabs.Sea
+    if not SE then return end
+
+    _G.SX_Mobs, _G.SX_Loot, _G.SX_Active = false, false, false
+    _G.SX_Height = 35
+    _G.SX_MobKeys  = "ghost ship,assault,sea soldier,treasure,haunted,cursed crew,rough sea"
+    _G.SX_LootKeys = "treasure chest,sea chest,golden chest,treasure"
+    local EXCLUDE = { "shop", "dealer", "gacha", "zioles", "seed", "craft", "potion" }
+    local blacklist = setmetatable({}, { __mode = "k" })
+
+    local function notify(t) pcall(function() Library:Notify({ Title = "Sea Event", Content = tostring(t) }) end) end
+    local function refresh() _G.SX_Active = (_G.SX_Mobs or _G.SX_Loot) and true or false end
+    local function getHRP() local c = __LP.Character return c and c:FindFirstChild("HumanoidRootPart") end
+    local function isAlive()
+        local c = __LP.Character
+        local h = c and c:FindFirstChildOfClass("Humanoid")
+        return h ~= nil and h.Health > 0
+    end
+    local function posOf(i)
+        if not i then return nil end
+        if i:IsA("BasePart") then return i.Position end
+        if i:IsA("Model") then
+            local ok, cf = pcall(function() return i:GetPivot() end)
+            if ok and cf then return cf.Position end
+        end
+        local p = i:FindFirstChildWhichIsA("BasePart", true)
+        return p and p.Position or nil
+    end
+    local function splitKeys(str)
+        local t = {}
+        for w in string.gmatch(string.lower(tostring(str or "")), "[^,]+") do
+            w = w:match("^%s*(.-)%s*$")
+            if w ~= "" then t[#t + 1] = w end
+        end
+        return t
+    end
+    local function hasAny(text, keys)
+        for _, k in ipairs(keys) do
+            if string.find(text, k, 1, true) then return true end
+        end
+        return false
+    end
+    local function isBlocked(i)
+        local e = blacklist[i]
+        if e and e > os.clock() then return true end
+        blacklist[i] = nil
+        return false
+    end
+
+    local function findMob()
+        local en = __WS:FindFirstChild("Enemies")
+        local hrp = getHRP()
+        local keys = splitKeys(_G.SX_MobKeys)
+        if not en or not hrp or #keys == 0 then return nil end
+        local best, bestD
+        for _, m in ipairs(en:GetChildren()) do
+            local mh = m:FindFirstChild("HumanoidRootPart")
+            local hum = m:FindFirstChildOfClass("Humanoid")
+            if mh and hum and hum.Health > 0 and hasAny(string.lower(m.Name), keys) then
+                local d = (mh.Position - hrp.Position).Magnitude
+                if not bestD or d < bestD then best, bestD = m, d end
+            end
+        end
+        return best
+    end
+
+    local function fight(mob)
+        local mh = mob:FindFirstChild("HumanoidRootPart")
+        local hum = mob:FindFirstChildOfClass("Humanoid")
+        if not mh or not hum then return end
+        local t0 = os.clock()
+        repeat
+            task.wait(_G.Fast_Delay or 0.05)
+            pcall(AttackNoCoolDown)
+            pcall(AutoHaki)
+            pcall(EquipTool, SelectWeapon)
+            pcall(function() mh.CanCollide = false end)
+            Tween(mh.CFrame * CFrame.new(0, _G.SX_Height or 35, 0))
+        until not _G.SX_Mobs or not mob.Parent or hum.Health <= 0 or not isAlive() or os.clock() - t0 > 240
+        pcall(StopMovement)
+    end
+
+    -- quét rương / vật phẩm biển (nút nhặt hoặc chạm-để-nhặt)
+    local function scanLoot()
+        local out = {}
+        local keys = splitKeys(_G.SX_LootKeys)
+        if #keys == 0 then return out end
+        local enemies = __WS:FindFirstChild("Enemies")
+        local chars = __WS:FindFirstChild("Characters")
+        local n = 0
+        for _, d in ipairs(__WS:GetDescendants()) do
+            n = n + 1
+            if n % 4000 == 0 then task.wait() end
+            local isP, isC, isB = d:IsA("ProximityPrompt"), d:IsA("ClickDetector"), d:IsA("BasePart")
+            if (isP or isC or isB) and not (enemies and d:IsDescendantOf(enemies)) and not (chars and d:IsDescendantOf(chars)) then
+                if isP and d.Enabled == false then
+                elseif isB and not d:FindFirstChildOfClass("TouchTransmitter") then
+                else
+                    local parts = {}
+                    if isP then parts[#parts + 1] = d.ActionText parts[#parts + 1] = d.ObjectText end
+                    local a, depth = isB and d or d.Parent, 0
+                    while a and a ~= __WS and depth < 2 do
+                        parts[#parts + 1] = a.Name
+                        a = a.Parent
+                        depth = depth + 1
+                    end
+                    local label = string.lower(table.concat(parts, " "))
+                    if hasAny(label, keys) and not hasAny(label, EXCLUDE) then
+                        out[#out + 1] = { inst = d, owner = isB and d or d.Parent, label = label }
+                    end
+                end
+            end
+        end
+        return out
+    end
+
+    local function activate(inst)
+        pcall(function()
+            if inst:IsA("ProximityPrompt") then
+                local old = inst.HoldDuration
+                pcall(function() inst.RequiresLineOfSight = false inst.HoldDuration = 0 end)
+                if fireproximityprompt then fireproximityprompt(inst) end
+                pcall(function() inst.HoldDuration = old end)
+            elseif inst:IsA("ClickDetector") then
+                if fireclickdetector then fireclickdetector(inst) end
+            elseif inst:IsA("BasePart") then
+                local hrp = getHRP()
+                if hrp and firetouchinterest then
+                    firetouchinterest(hrp, inst, 0) task.wait() firetouchinterest(hrp, inst, 1)
+                end
+            end
+        end)
+    end
+
+    local found = 0
+    task.spawn(function()
+        local cache, lastScan = {}, -100
+        while task.wait(0.2) do
+            if _G.SX_Active and isAlive() then
+                local ok, err = pcall(function()
+                    if _G.SX_Mobs then
+                        local mob = findMob()
+                        if mob then fight(mob) return end
+                    end
+                    if not _G.SX_Loot then return end
+                    if os.clock() - lastScan > 5 then
+                        cache = scanLoot()
+                        lastScan = os.clock()
+                        found = #cache
+                    end
+                    local hrp = getHRP()
+                    if not hrp then return end
+                    local best, bestD
+                    for _, it in ipairs(cache) do
+                        if it.inst.Parent and not isBlocked(it.inst) then
+                            local p = posOf(it.owner)
+                            if p then
+                                local d = (p - hrp.Position).Magnitude
+                                if not bestD or d < bestD then best, bestD = it, d end
+                            end
+                        end
+                    end
+                    if best then
+                        blacklist[best.inst] = os.clock() + 20
+                        local p = posOf(best.owner)
+                        if p then
+                            Tween2(CFrame.new(p + Vector3.new(0, 3, 0)))
+                            for _ = 1, 3 do
+                                if not _G.SX_Loot then break end
+                                activate(best.inst)
+                                task.wait(0.3)
+                            end
+                        end
+                    end
+                end)
+                if not ok then warn("[SeaEventX] " .. tostring(err)) end
+            end
+        end
+    end)
+
+    -- ============================================================
+    -- GIAO DIỆN
+    -- ============================================================
+    SE:AddSection("🌊 Sự Kiện Biển Mở Rộng (Treasure / Ghost Ship Assault / Rough Sea)")
+    local st = SE:AddParagraph({ Title = "Trạng thái", Content = "Đang tải..." })
+    task.spawn(function()
+        while task.wait(1.5) do
+            pcall(function()
+                local en = __WS:FindFirstChild("Enemies")
+                local keys = splitKeys(_G.SX_MobKeys)
+                local nm = 0
+                if en and #keys > 0 and _G.SX_Mobs then
+                    for _, m in ipairs(en:GetChildren()) do
+                        if hasAny(string.lower(m.Name), keys) then nm = nm + 1 end
+                    end
+                end
+                st:SetText(("👹 Quái khớp: %d | 📦 Rương/vật phẩm: %d"):format(nm, found))
+            end)
+        end
+    end)
+
+    SE:AddToggle("SX_MobsToggle", {
+        Title = "Tự Đánh Quái Sự Kiện Biển Mới",
+        Description = "Đánh quái trong Enemies khớp từ khóa (tàu ma tấn công, đảo kho báu, biển động...)",
+        Default = false,
+    }):OnChanged(function(v)
+        _G.SX_Mobs = v
+        refresh()
+        if not v then pcall(StopMovement) end
+    end)
+    SE:AddToggle("SX_LootToggle", {
+        Title = "Tự Nhặt Rương / Kho Báu Biển",
+        Description = "Bay tới rương, kho báu khớp từ khóa và nhặt (ưu tiên sau khi hết quái)",
+        Default = false,
+    }):OnChanged(function(v)
+        _G.SX_Loot = v
+        refresh()
+        if not v then pcall(StopMovement) end
+    end)
+    SE:AddSlider("SX_HeightSlider", {
+        Title = "Độ Cao Khi Đánh Quái Biển",
+        Default = 35, Min = 10, Max = 80, Rounding = 0,
+        Callback = function(v) _G.SX_Height = tonumber(v) or 35 end,
+    })
+    SE:AddInput("SX_MobKeysInput", {
+        Title = "Từ Khóa Quái Biển",
+        Description = "Cách nhau dấu phẩy, không phân biệt hoa thường",
+        Default = _G.SX_MobKeys,
+        Placeholder = "ghost ship,assault,...",
+        Callback = function(v) if type(v) == "string" and v ~= "" then _G.SX_MobKeys = v end end,
+    })
+    SE:AddInput("SX_LootKeysInput", {
+        Title = "Từ Khóa Rương / Kho Báu",
+        Description = "Tên rương hoặc chữ trên nút nhặt",
+        Default = _G.SX_LootKeys,
+        Placeholder = "treasure chest,...",
+        Callback = function(v) if type(v) == "string" and v ~= "" then _G.SX_LootKeys = v end end,
+    })
+    SE:AddButton({
+        Title = "In Quái / Rương Biển Đang Có (F9)",
+        Description = "Dùng khi không bắt được mục tiêu: gửi log F9 để chỉnh từ khóa",
+        Callback = function()
+            task.spawn(function()
+                local en = __WS:FindFirstChild("Enemies")
+                local keys = splitKeys(_G.SX_MobKeys)
+                local nm = 0
+                if en then
+                    for _, m in ipairs(en:GetChildren()) do
+                        if hasAny(string.lower(m.Name), keys) then
+                            nm = nm + 1
+                            print("[SeaEventX] quái: " .. m.Name)
+                        end
+                    end
+                end
+                local loot = scanLoot()
+                for _, it in ipairs(loot) do
+                    print("[SeaEventX] loot: " .. it.inst:GetFullName() .. " | " .. it.label)
+                end
+                notify(("Quái: %d | Rương/vật phẩm: %d (chi tiết ở F9)"):format(nm, #loot))
+            end)
+        end,
+    })
+end, function(e)
+    warn("[Abysslixhub] Sea Event mở rộng lỗi: " .. tostring(e))
+end)
 
 -- ============================================================
 -- 🎯 TAB "FARM SỰ KIỆN" — farm chung cho Halloween và các sự kiện khác
