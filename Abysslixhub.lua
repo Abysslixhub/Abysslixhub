@@ -4872,9 +4872,9 @@ local function wrapTab(rawTab, defaultTitle, tabNameForInfo)
     -- Thu gọn section để đỡ phải kéo dài (tắt bằng: getgenv().AbyCollapseSections = false trước khi chạy script)
     local collapseSections = (getgenv().AbyCollapseSections ~= false)
     local sectionCount = 0
-    local function newSection(name)
+    local function newSection(name, forceOpen)
         sectionCount = sectionCount + 1
-        local openNow = (not collapseSections) or sectionCount == 1
+        local openNow = (not collapseSections) or sectionCount == 1 or forceOpen == true
         return rawTab:AddSection(name, collapseSections, nil, nil, openNow)
     end
 
@@ -4894,10 +4894,11 @@ local function wrapTab(rawTab, defaultTitle, tabNameForInfo)
     -- 1. SECTION
     function wrapped:AddSection(arg1)
         local secName = (type(arg1) == "table" and (arg1.Name or arg1.Title or arg1.Section)) or tostring(arg1 or "")
+        local forceOpen = (type(arg1) == "table" and arg1.Open == true)
         if rawTab.AddLeftGroupbox then
             currentSection = rawTab:AddLeftGroupbox(secName)
         elseif rawTab.AddSection then
-            currentSection = newSection(secName)
+            currentSection = newSection(secName, forceOpen)
         end
         return wrapSection(currentSection, wrapped)
     end
@@ -5400,11 +5401,12 @@ Tabs = {
     ["Player"]   = createTab("PVP", "user"),
     ["Teleport"] = createTab("Teleport Island", "map-pin"),
     ["ESP"]      = createTab("Esp", "eye"),
-    ["Fruit"]    = createTab("Fruits / Raid", "cherry", "Kiểm Tra Stock Trái"),
+    ["Fruit"]    = createTab("Fruits / Raid", "cherry", "Fruits / Raiding"),
     ["Raid"]     = createTab("Raid", "zap", "Đột Kích"),
     ["Race"]     = createTab("Upgrade Race", "zap"),
     ["Draco"]    = createTab("Draco/Prehistoric", "flame"),
     ["Boss"]     = createTab("Raid Boss", "swords"),
+    ["Halloween"] = createTab("Halloween", "ghost"),
     ["Setting"]  = createTab("Settings", "settings", "Config"),
 }
 Tabs.Misc = Tabs.Status   -- Tabs.Misc CHỈ còn dùng cho mục liên quan server (vào lại/đổi server)
@@ -8250,7 +8252,8 @@ local function IsMoveFlagActive(skipClip)
         _G.AutoFrozenDimension or
         _G.AutoKillTrial or
         _G.AutoUpgrade or
-        _G.TweenToFrozenDimension
+        _G.TweenToFrozenDimension or
+        _G.HW_Active
 end
 
 -- [OPT] BodyClip + No-clip gộp vào 1 kết nối Stepped duy nhất.
@@ -11403,7 +11406,7 @@ elseif Sea3 then
         "Cake Queen"
     }
 end
-local v469 = Tabs.Main:AddDropdown("DropdownBoss", {
+local v469 = Tabs.Boss:AddDropdown("DropdownBoss", {
     ["Title"] = "Chọn Trùm",
     ["Values"] = tableBoss,
     ["Multi"] = false,
@@ -11413,7 +11416,7 @@ v469:SetValue(_G.SelectBoss)
 v469:OnChanged(function(p470)
     _G.SelectBoss = p470
 end)
-Tabs.Main:AddToggle("ToggleAutoFarmBoss", {
+Tabs.Boss:AddToggle("ToggleAutoFarmBoss", {
     ["Title"] = "Đánh Trùm",
     ["Default"] = false
 }):OnChanged(function(p471)
@@ -15777,8 +15780,8 @@ Tabs.Status:AddButton({["Title"] = "Copy Place ID", ["Description"] = "Copy Plac
 end})
 
 Tabs.Status:AddSection("Tự Động")
-_G.AutoRejoin = false
-Tabs.Status:AddToggle("AutoRejoinToggle", {["Title"] = "Tự Động Vào Lại Khi Mất Kết Nối", ["Description"] = "Tự rejoin khi bị kick/disconnect", ["Default"] = false, ["Callback"] = function() end}):OnChanged(function(v) _G.AutoRejoin = v end)
+_G.AutoRejoin = true
+Tabs.Status:AddToggle("AutoRejoinToggle", {["Title"] = "Tự Động Vào Lại Khi Mất Kết Nối", ["Description"] = "Tự rejoin khi bị kick/disconnect", ["Default"] = true, ["Callback"] = function() end}):OnChanged(function(v) _G.AutoRejoin = v end)
 pcall(function()
     game:GetService("CoreGui").RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(c)
         if _G.AutoRejoin and c.Name == "ErrorPrompt" then
@@ -16948,6 +16951,16 @@ local _fok, _ferr = pcall(function()
         return t
     end
 
+    local function stockCard(title, list)
+        if list == nil then return title .. "\nKhông lấy được dữ liệu" end
+        if #list == 0 then return title .. "\nKhông Có Trái" end
+        local lines = { title }
+        for _, f in ipairs(list) do
+            lines[#lines + 1] = f.Name .. " | Giá: " .. fmt(f.Price) .. "$"
+        end
+        return table.concat(lines, "\n")
+    end
+
     local normalOnSale = {}
     local selectedNormal = nil
     local mirageOnSale = {}
@@ -16960,9 +16973,10 @@ local _fok, _ferr = pcall(function()
     -- ---------- STOCK (section đầu tiên của tab, tên đặt ở createTab) ----------
     -- [THÊM] TRẠNG THÁI TÓM TẮT Ở ĐẦU TAB: trái đang stock + trái đang rơi trong server (tự cập nhật)
     local worldSummary = "đang quét..."
+    local worldText = "Đang quét..."
     local statusLabel = Tab:AddParagraph({
-        ["Title"] = "📊 Trạng Thái Trái",
-        ["Description"] = "Đang tự động kiểm tra..."
+        ["Title"] = "",
+        ["Content"] = "Check Fruit\nĐang quét..."
     })
     local function namesOf(list)
         local t = {}
@@ -16971,19 +16985,72 @@ local _fok, _ferr = pcall(function()
     end
     local function updateStatus()
         pcall(function()
-            statusLabel:Set(
-                "🛒 Stock Shop Thường: " .. namesOf(normalOnSale) ..
-                "\n🌕 Stock Đảo Bí Ẩn: " .. namesOf(mirageOnSale) ..
-                "\n🍎 Trái đang rơi trong server: " .. worldSummary ..
-                (_G.AbyStockNote and ("\n⚠ " .. _G.AbyStockNote) or "") ..
-                "\n🕒 Cập nhật lúc " .. os.date("%H:%M:%S"))
+            statusLabel:Set("Check Fruit\n" .. worldText ..
+                (_G.AbyStockNote and ("\n⚠ " .. _G.AbyStockNote) or ""))
         end)
     end
 
-    local stockLabel = Tab:AddParagraph({
-        ["Title"] = "Stock",
-        ["Description"] = "Đang tự động lấy dữ liệu stock..."
+    local function scanWorldFruits()
+        local found = {}
+        pcall(function()
+            local hrp = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
+            for _, v in ipairs(__WS:GetChildren()) do
+                if v:IsA("Tool") and string.find(v.Name, "Fruit", 1, true) then
+                    local h = v:FindFirstChild("Handle")
+                    local dist = hrp and h and math.floor((h.Position - hrp.Position).Magnitude) or -1
+                    table.insert(found, { name = v.Name, dist = dist })
+                end
+            end
+        end)
+        pcall(function()
+            local wo = __WS:FindFirstChild("_WorldOrigin")
+            if not wo then return end
+            local hrp = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
+            for _, v in ipairs(wo:GetDescendants()) do
+                if v:IsA("Tool") and string.find(v.Name, "Fruit", 1, true) then
+                    local h = v:FindFirstChild("Handle")
+                    local dist = hrp and h and math.floor((h.Position - hrp.Position).Magnitude) or -1
+                    table.insert(found, { name = v.Name, dist = dist })
+                end
+            end
+        end)
+        table.sort(found, function(a, b)
+            return (a.dist >= 0 and a.dist or math.huge) < (b.dist >= 0 and b.dist or math.huge)
+        end)
+        return found
+    end
+    local function refreshWorld()
+        local l = scanWorldFruits()
+        local ns = {}
+        for i, f in ipairs(l) do
+            if i > 6 then table.insert(ns, "+" .. (#l - 6) .. " nữa") break end
+            table.insert(ns, f.name)
+        end
+        worldSummary = (#l > 0) and (#l .. " trái (" .. table.concat(ns, ", ") .. ")") or "không có"
+        if #l > 0 then
+            local lines = {}
+            for i, f in ipairs(l) do
+                if i > 8 then lines[#lines + 1] = "+" .. (#l - 8) .. " trái nữa" break end
+                lines[#lines + 1] = f.name .. (f.dist >= 0 and (" | " .. f.dist .. "m") or "")
+            end
+            worldText = table.concat(lines, "\n")
+        else
+            worldText = "Không Có Trái"
+        end
+        updateStatus()
+        return l
+    end
+    Tab:AddButton({
+        ["Title"] = "🔍 Quét Trái Ngay",
+        ["Description"] = "Cập nhật thẻ Check Fruit ngay (script vẫn tự quét mỗi 10 giây)",
+        ["Callback"] = function()
+            task.spawn(refreshWorld)
+        end
     })
+
+    Tab:AddSection({ Name = "Stock Fruits", Open = true })
+    local normalLabel = Tab:AddParagraph({ ["Title"] = "", ["Content"] = "Normal Stock\nĐang tải..." })
+    local mirageLabel = Tab:AddParagraph({ ["Title"] = "", ["Content"] = "Mirage Stock\nĐang tải..." })
 
     local normalDD = nil -- tạo bên dưới nút Làm Mới
     local refreshing = false
@@ -16994,9 +17061,8 @@ local _fok, _ferr = pcall(function()
         local normal, allNames = readStock(false)
         local mirage = readStock(true)
 
-        local text = stockText("🛒 Shop Thường (đổi mỗi 4 giờ)", normal)
-            .. "\n" .. stockText("🌕 Đảo Bí Ẩn - Advanced Fruit Dealer (đổi mỗi 2 giờ)", mirage)
-        pcall(function() stockLabel:Set(text) end)
+        pcall(function() normalLabel:Set(stockCard("Normal Stock", normal)) end)
+        pcall(function() mirageLabel:Set(stockCard("Mirage Stock", mirage)) end)
 
         normalOnSale = normal or {}
         local names = {}
@@ -17177,113 +17243,11 @@ local _fok, _ferr = pcall(function()
         end
     end)
 
-    -- ---------- TRÁI ĐANG RƠI TRÊN BẢN ĐỒ ----------
-    Tab:AddSection("🍎 Trái Đang Có Trong Server")
-    local worldFruitLabel = Tab:AddParagraph({
-        ["Title"] = "Trái Trên Bản Đồ",
-        ["Description"] = "Bấm 'Quét Trái' để xem trái đang rơi..."
-    })
-    local function scanWorldFruits()
-        local found = {}
-        pcall(function()
-            local hrp = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
-            for _, v in ipairs(__WS:GetChildren()) do
-                if v:IsA("Tool") and string.find(v.Name, "Fruit", 1, true) then
-                    local h = v:FindFirstChild("Handle")
-                    local dist = hrp and h and math.floor((h.Position - hrp.Position).Magnitude) or -1
-                    table.insert(found, { name = v.Name, dist = dist })
-                end
-            end
-        end)
-        pcall(function()
-            local wo = __WS:FindFirstChild("_WorldOrigin")
-            if not wo then return end
-            local hrp = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
-            for _, v in ipairs(wo:GetDescendants()) do
-                if v:IsA("Tool") and string.find(v.Name, "Fruit", 1, true) then
-                    local h = v:FindFirstChild("Handle")
-                    local dist = hrp and h and math.floor((h.Position - hrp.Position).Magnitude) or -1
-                    table.insert(found, { name = v.Name, dist = dist })
-                end
-            end
-        end)
-        table.sort(found, function(a, b)
-            return (a.dist >= 0 and a.dist or math.huge) < (b.dist >= 0 and b.dist or math.huge)
-        end)
-        return found
-    end
-    Tab:AddButton({
-        ["Title"] = "🔍 Quét Trái Trên Bản Đồ",
-        ["Description"] = "Hiển thị tất cả trái đang rơi trong server (sắp xếp theo khoảng cách)",
-        ["Callback"] = function()
-            task.spawn(function()
-                pcall(function() worldFruitLabel:Set("Đang quét...") end)
-                local list = scanWorldFruits()
-                if #list == 0 then
-                    pcall(function() worldFruitLabel:Set("Không có trái nào đang rơi trong server.") end)
-                    notify("Không có trái nào trên bản đồ.")
-                    return
-                end
-                local txt = "🍎 Tìm thấy " .. #list .. " trái:\n"
-                for i, f in ipairs(list) do
-                    local d = f.dist >= 0 and (" — " .. f.dist .. " studs") or ""
-                    txt = txt .. "  " .. i .. ". " .. f.name .. d .. "\n"
-                    if i >= 15 then
-                        txt = txt .. "  ... (còn " .. (#list - 15) .. " trái nữa)\n"
-                        break
-                    end
-                end
-                pcall(function() worldFruitLabel:Set(txt) end)
-                notify("Tìm thấy " .. #list .. " trái trên bản đồ.")
-            end)
-        end
-    })
-    Tab:AddToggle("ToggleAutoScanFruit", {
-        ["Title"] = "🔁 Tự Quét Trái Mỗi 10 Giây",
-        ["Description"] = "Cập nhật danh sách trái tự động, kết hợp với ESP để thấy vị trí",
-        ["Default"] = true
-    }):OnChanged(function(v) _G.AutoScanFruit = v end)
-    _G.AutoScanFruit = true
+    -- ---------- TỰ QUÉT TRÁI TRÊN BẢN ĐỒ (chỉ cập nhật thẻ Check Fruit, không thông báo) ----------
     task.spawn(function()
-        local lastWorldSig = nil
         while true do
-            -- [TỰ ĐỘNG] luôn quét trái trong server (cập nhật dòng trạng thái ở đầu tab), không phụ thuộc nút
-            pcall(function()
-                local l = scanWorldFruits()
-                local ns = {}
-                for i, f in ipairs(l) do
-                    if i > 6 then table.insert(ns, "+" .. (#l - 6) .. " nữa") break end
-                    table.insert(ns, f.name)
-                end
-                worldSummary = (#l > 0) and (#l .. " trái (" .. table.concat(ns, ", ") .. ")") or "không có"
-                updateStatus()
-                local sig = table.concat(ns, ",")
-                if lastWorldSig ~= nil and sig ~= lastWorldSig and #l > 0 then
-                    notify("Có trái rơi trong server: " .. table.concat(ns, ", "))
-                end
-                lastWorldSig = sig
-            end)
+            pcall(refreshWorld)
             task.wait(10)
-            if _G.AutoScanFruit then
-                pcall(function()
-                    local list = scanWorldFruits()
-                    local txt
-                    if #list == 0 then
-                        txt = "Không có trái nào đang rơi."
-                    else
-                        txt = "🍎 " .. #list .. " trái (" .. os.date("%H:%M:%S") .. "):\n"
-                        for i, f in ipairs(list) do
-                            local d = f.dist >= 0 and (" — " .. f.dist .. " studs") or ""
-                            txt = txt .. "  " .. i .. ". " .. f.name .. d .. "\n"
-                            if i >= 10 then
-                                txt = txt .. "  ... (+" .. (#list - 10) .. " nữa)\n"
-                                break
-                            end
-                        end
-                    end
-                    worldFruitLabel:Set(txt)
-                end)
-            end
         end
     end)
 
@@ -18422,35 +18386,7 @@ function RedeemAllCodes()
     })
 end
 
-Tabs.Shop:AddSection("Tiện Ích & Chuyển Sea")
-Tabs.Shop:AddButton({
-    ["Title"] = "Nhập Toàn Bộ Code (Redeem All Codes)",
-    ["Description"] = "Tự động nhận tất cả Giftcode còn hạn",
-    ["Callback"] = function()
-        RedeemAllCodes()
-    end
-})
-Tabs.Shop:AddButton({
-    ["Title"] = "Dịch Chuyển Đến Biển Cũ (Sea 1)",
-    ["Description"] = "Teleport Old World (Sea 1)",
-    ["Callback"] = function()
-        pcall(function() __RS.Remotes.CommF_:InvokeServer("TravelMain") end)
-    end
-})
-Tabs.Shop:AddButton({
-    ["Title"] = "Dịch Chuyển Đến Tân Thế Giới (Sea 2)",
-    ["Description"] = "Teleport New World (Sea 2)",
-    ["Callback"] = function()
-        pcall(function() __RS.Remotes.CommF_:InvokeServer("TravelDressrosa") end)
-    end
-})
-Tabs.Shop:AddButton({
-    ["Title"] = "Dịch Chuyển Đến Biển 3 (Sea 3)",
-    ["Description"] = "Teleport Third Sea (Sea 3)",
-    ["Callback"] = function()
-        pcall(function() __RS.Remotes.CommF_:InvokeServer("TravelZou") end)
-    end
-})
+Tabs.Shop:AddSection("Tiện Ích")
 Tabs.Shop:AddButton({
     ["Title"] = "Mua Dual Flintlock",
     ["Description"] = "Buy Dual Flintlock",
@@ -18754,19 +18690,6 @@ Tabs.Shop:AddButton({
         __RS.Modules.Net:FindFirstChild("RF/InteractDragonQuest"):InvokeServer(unpack(v1066))
     end
 })
-Tabs.Misc:AddSection("Đổi / Vào Lại Server")
-Tabs.Misc:AddButton({
-    ["Title"] = "Tham Gia Máy Ch\225\187\167 Lại",
-    ["Callback"] = function()
-        game:GetService("TeleportService"):Teleport(game.PlaceId, __LP)
-    end
-})
-Tabs.Misc:AddButton({
-    ["Title"] = "Đ\225\187\149i Máy Ch\225\187\167",
-    ["Callback"] = function()
-        Hop()
-    end
-})
 function Hop()
     local vu1067 = game.PlaceId
     local vu1068 = {}
@@ -18916,25 +18839,6 @@ Tabs.Raid:AddButton({
         end)
     end
 })
-Tabs.Misc:AddSection("Tự Rejoin")
-Tabs.Misc:AddToggle("ToggleRejoin", {
-    ["Title"] = "Tham Gia Máy Ch\225\187\167 Lại",
-    ["Default"] = true
-}):OnChanged(function(p1089)
-    _G.AutoRejoin = p1089
-end)
--- [SetValue skipped - Library không cần]
-spawn(function()
-    while task.wait(0.1) do
-        if _G.AutoRejoin then
-            getgenv().rejoin = game:GetService("CoreGui").RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(p1090)
-                if p1090.Name == "ErrorPrompt" and p1090:FindFirstChild("MessageArea") and p1090.MessageArea:FindFirstChild("ErrorFrame") then
-                    game:GetService("TeleportService"):Teleport(game.PlaceId)
-                end
-            end)
-        end
-    end
-end)
 Tabs.SettingTab:AddSection("🌫️ Xóa Sương Mù")
 local function vu1092()
     local v1091 = game:GetService("Lighting")
@@ -19735,24 +19639,18 @@ end)
 -- ===============================================================
 -- ========== 🎃 SỰ KIỆN HALLOWEEN 2026: ĐÁNH BÍ NGÔ & RAID BOSS HELLFIRE ==========
 -- ===============================================================
-Tabs.Main:AddSection("🎃 Sự Kiện Halloween: Bí Ngô & Boss Hellfire")
 
 local _hwCandies = 0
 local _hwPumpkinCount = 0
 local _hwSelectedShopItem = 1
 local _hwSelectedSea1Mob = "Tự Động Theo Cấp Hiện Tại"
 
-local halloweenInfo = Tabs.Main:AddParagraph({
-    ["Title"] = "Trạng Thái Halloween 2026",
-    ["Description"] = "Đang kiểm tra dữ liệu sự kiện...",
-})
-
 -- Hàm lấy số Kẹo (Candies)
 local function GetPlayerCandies()
     local c = 0
     pcall(function()
         if __LP and __LP:FindFirstChild("Data") then
-            local cand = __LP.Data:FindFirstChild("Candies") or __LP.Data:FindFirstChild("Candy")
+            local cand = __LP.Data:FindFirstChild("CandyCorn") or __LP.Data:FindFirstChild("Candy Corn") or __LP.Data:FindFirstChild("Candies") or __LP.Data:FindFirstChild("Candy")
             if cand then c = tonumber(cand.Value) or 0 end
         end
     end)
@@ -19810,7 +19708,7 @@ local function GetHellfireBoss()
     pcall(function()
         for _, mob in ipairs(__WS.Enemies:GetChildren()) do
             local name = string.lower(mob.Name)
-            if string.find(name, "hellfire") or string.find(name, "heldfire") or string.find(name, "hell's messenger") or string.find(name, "hell dimension") or string.find(name, "cursed skeleton") then
+            if string.find(name, "hell rider") or string.find(name, "hellrider") or string.find(name, "hellfire") or string.find(name, "heldfire") or string.find(name, "hell's messenger") or string.find(name, "hell dimension") or string.find(name, "cursed skeleton") then
                 local hum = mob:FindFirstChild("Humanoid")
                 local hrp = mob:FindFirstChild("HumanoidRootPart")
                 if hum and hrp and hum.Health > 0 then
@@ -19823,53 +19721,494 @@ local function GetHellfireBoss()
     return target
 end
 
--- Cập nhật bảng thông tin sự kiện thời gian thực (mỗi 2s)
-task.spawn(function()
-    while task.wait(2) do
-        pcall(function()
-            _hwCandies = GetPlayerCandies()
-            local pumpkins = GetAllPumpkins()
-            _hwPumpkinCount = #pumpkins
+-- ============================================================
+-- 🎃 HALLOWEEN 2026 "HELLFIRE HALLOWEEN" (31/10 -> 15/11/2026 01:00 UTC)
+-- Pumpkin Hunt (Candy Corn) / Harvest Moon Trick-or-Treat / Hell Rider + quái sự kiện / Spooky Gacha
+-- Bọc trong xpcall(function() ... end) để không tốn thêm biến local của chunk chính, và lỗi ở đây không làm dừng script.
+-- ============================================================
+xpcall(function()
+    local HW = Tabs.Halloween
+    if not HW then return end
 
-            local hellfire = GetHellfireBoss()
-            local hfStatus = "Chưa xuất hiện"
-            if hellfire then
-                local hhum = hellfire:FindFirstChild("Humanoid")
-                local hp = hhum and math.floor(hhum.Health) or 0
-                local maxhp = hhum and math.floor(hhum.MaxHealth) or 1
-                hfStatus = string.format("🔥 ĐANG XUẤT HIỆN! (HP: %d/%d)", hp, maxhp)
+    -- ---------- trạng thái / cấu hình ----------
+    _G.HW_Pumpkin, _G.HW_Doors, _G.HW_Mobs, _G.HW_Gacha = false, false, false, false
+    _G.HW_HellDoor = false
+    _G.HW_Active = false
+    _G.HW_Height = 30
+    -- Từ khóa (không phân biệt hoa/thường, cách nhau bằng dấu phẩy). Sửa trong tab nếu tên trong game khác.
+    _G.HW_MobKeys  = "hell rider,hellfire,werewolf,great pumpkin,jack o,pumpkin"
+    _G.HW_DoorKeys = "trick,treat,knock"
+    _G.HW_GachaType = "HalloweenGacha26"
+
+    local EVENT_END_UTC = 1794704400 -- 15/11/2026 01:00 UTC
+    local blacklist = setmetatable({}, { __mode = "k" })
+
+    local function refresh()
+        _G.HW_Active = (_G.HW_Pumpkin or _G.HW_Doors or _G.HW_Mobs) and true or false
+    end
+    local function notify(txt)
+        pcall(function() Library:Notify({ Title = "Halloween", Content = tostring(txt) }) end)
+    end
+    local function getHRP()
+        local c = __LP.Character
+        return c and c:FindFirstChild("HumanoidRootPart")
+    end
+    local function isAlive()
+        local c = __LP.Character
+        local h = c and c:FindFirstChildOfClass("Humanoid")
+        return h ~= nil and h.Health > 0
+    end
+    local function posOf(inst)
+        if not inst then return nil end
+        if inst:IsA("BasePart") then return inst.Position end
+        if inst:IsA("Model") then
+            local ok, cf = pcall(function() return inst:GetPivot() end)
+            if ok and cf then return cf.Position end
+        end
+        local p = inst:FindFirstChildWhichIsA("BasePart", true)
+        return p and p.Position or nil
+    end
+    local function splitKeys(str)
+        local t = {}
+        for w in string.gmatch(string.lower(tostring(str or "")), "[^,]+") do
+            w = w:match("^%s*(.-)%s*$")
+            if w ~= "" then t[#t + 1] = w end
+        end
+        return t
+    end
+    local function hasAny(text, keys)
+        for _, k in ipairs(keys) do
+            if string.find(text, k, 1, true) then return true end
+        end
+        return false
+    end
+    local function isBlocked(inst)
+        local e = blacklist[inst]
+        if e and e > os.clock() then return true end
+        blacklist[inst] = nil
+        return false
+    end
+    local function block(inst, sec)
+        blacklist[inst] = os.clock() + sec
+    end
+
+    -- Harvest Moon: phút 00-09 mỗi giờ (theo giờ UTC)
+    local function harvestMoonMinute()
+        local m = tonumber(os.date("!%M")) or 99
+        return m
+    end
+
+    -- ---------- quét cửa / bí ngô (ProximityPrompt + ClickDetector) ----------
+    local PUMPKIN_KEYS  = { "pumpkin", "jack" }
+    local EXCLUDE_KEYS  = { "witch", "zioles", "gacha", "craft", "potion", "seed", "shop", "dealer" }
+    local FIRE_KEYS     = { "hellfire", "flame", "burn", "inferno" }
+
+    local function scan()
+        local out = {}
+        local enemies = __WS:FindFirstChild("Enemies")
+        local chars = __WS:FindFirstChild("Characters")
+        local doorKeys = splitKeys(_G.HW_DoorKeys)
+        local inHarvest = harvestMoonMinute() < 10
+        local n = 0
+        for _, d in ipairs(__WS:GetDescendants()) do
+            n = n + 1
+            if n % 4000 == 0 then task.wait() end
+            local isPrompt = d:IsA("ProximityPrompt")
+            if isPrompt or d:IsA("ClickDetector") then
+                local skip = false
+                if (enemies and d:IsDescendantOf(enemies)) or (chars and d:IsDescendantOf(chars)) then skip = true end
+                if not skip and isPrompt and d.Enabled == false then skip = true end
+                if not skip then
+                    local parts = {}
+                    if isPrompt then
+                        parts[#parts + 1] = d.ActionText
+                        parts[#parts + 1] = d.ObjectText
+                    end
+                    local a, depth = d.Parent, 0
+                    while a and a ~= __WS and depth < 2 do
+                        parts[#parts + 1] = a.Name
+                        a = a.Parent
+                        depth = depth + 1
+                    end
+                    local label = string.lower(table.concat(parts, " "))
+                    if not hasAny(label, EXCLUDE_KEYS) then
+                        local owner = d.Parent
+                        local kind
+                        if hasAny(label, doorKeys) or (inHarvest and string.find(label, "door", 1, true)) then
+                            kind = "door"
+                        elseif hasAny(label, PUMPKIN_KEYS) then
+                            kind = "pumpkin"
+                        end
+                        if kind and owner then
+                            out[#out + 1] = {
+                                inst = d, owner = owner, kind = kind,
+                                fire = hasAny(label, FIRE_KEYS), label = label,
+                            }
+                        end
+                    end
+                end
             end
+        end
+        return out
+    end
 
-            local desc = string.format(
-                "🍬 Kẹo Halloween: %d Kẹo\n🎃 Số Bí Ngô Trên Bản Đồ: %d quả\n🔥 Raid Boss Hellfire: %s\n📍 Khu Vực: %s",
-                _hwCandies,
-                _hwPumpkinCount,
-                hfStatus,
-                (Sea3 and "Sea 3") or (Sea2 and "Sea 2") or "Sea 1"
-            )
-            halloweenInfo:SetDesc(desc)
+    local function activate(inst)
+        pcall(function()
+            if inst:IsA("ProximityPrompt") then
+                local oldHold = inst.HoldDuration
+                pcall(function() inst.RequiresLineOfSight = false end)
+                pcall(function() inst.HoldDuration = 0 end)
+                if fireproximityprompt then
+                    fireproximityprompt(inst)
+                else
+                    inst:InputHoldBegin()
+                    task.wait(0.05)
+                    inst:InputHoldEnd()
+                end
+                pcall(function() inst.HoldDuration = oldHold end)
+            elseif inst:IsA("ClickDetector") then
+                if fireclickdetector then fireclickdetector(inst) end
+            end
         end)
     end
+
+    -- Bay tới gần mục tiêu rồi kích hoạt. Trả về true nếu đã xử lý 1 mục tiêu.
+    local function visit(list, wantKind, allowFire, cooldown, tag)
+        local hrp = getHRP()
+        if not hrp then return false end
+        local best, bestD
+        for _, it in ipairs(list) do
+            if it.kind == wantKind and it.inst.Parent and not isBlocked(it.inst)
+               and (allowFire or not it.fire) then
+                local p = posOf(it.owner)
+                if p then
+                    local d = (p - hrp.Position).Magnitude
+                    if not bestD or d < bestD then best, bestD = it, d end
+                end
+            end
+        end
+        if not best then return false end
+        block(best.inst, cooldown)
+        local p = posOf(best.owner)
+        if not p then return true end
+        if _G.AbyAtkDebug or _G.HW_Debug then print("[Halloween] " .. tag .. " -> " .. best.label) end
+        Tween2(CFrame.new(p + Vector3.new(0, 3, 3)))
+        for _ = 1, 3 do
+            if not (_G.HW_Doors or _G.HW_Pumpkin) then break end
+            activate(best.inst)
+            task.wait(0.4)
+        end
+        task.wait(1.2) -- chờ phòng/quái xuất hiện (vòng chính sẽ ưu tiên đánh quái ở lượt sau)
+        return true
+    end
+
+    -- ---------- quái / boss sự kiện ----------
+    local function findMob(keys)
+        local en = __WS:FindFirstChild("Enemies")
+        local hrp = getHRP()
+        if not en or not hrp then return nil end
+        local best, bestD
+        for _, m in ipairs(en:GetChildren()) do
+            local mh = m:FindFirstChild("HumanoidRootPart")
+            local hum = m:FindFirstChildOfClass("Humanoid")
+            if mh and hum and hum.Health > 0 and hasAny(string.lower(m.Name), keys) then
+                local d = (mh.Position - hrp.Position).Magnitude
+                if not bestD or d < bestD then best, bestD = m, d end
+            end
+        end
+        return best
+    end
+
+    local function fight(mob)
+        local mh = mob:FindFirstChild("HumanoidRootPart")
+        local hum = mob:FindFirstChildOfClass("Humanoid")
+        if not mh or not hum then return end
+        local t0 = os.clock()
+        repeat
+            task.wait(_G.Fast_Delay or 0.05)
+            pcall(AttackNoCoolDown)
+            pcall(AutoHaki)
+            pcall(EquipTool, SelectWeapon)
+            pcall(function() mh.CanCollide = false end)
+            Tween(mh.CFrame * CFrame.new(0, _G.HW_Height or 30, 0))
+        until not _G.HW_Mobs or not mob.Parent or hum.Health <= 0 or not isAlive() or os.clock() - t0 > 240
+        pcall(StopMovement)
+    end
+
+    -- ---------- VÒNG LẶP CHÍNH (1 vòng duy nhất để các tính năng không tranh nhau di chuyển) ----------
+    task.spawn(function()
+        local cache, lastScan = {}, -100
+        while task.wait(0.15) do
+            if _G.HW_Active and isAlive() then
+                local ok, err = pcall(function()
+                    -- 1) quái / boss sự kiện (ưu tiên cao nhất)
+                    if _G.HW_Mobs then
+                        local mob = findMob(splitKeys(_G.HW_MobKeys))
+                        if mob then fight(mob) return end
+                    end
+                    if not (_G.HW_Doors or _G.HW_Pumpkin) then return end
+                    if os.clock() - lastScan > 4 then
+                        cache = scan()
+                        lastScan = os.clock()
+                    end
+                    -- 2) cửa Trick-or-Treat (Harvest Moon)
+                    if _G.HW_Doors and visit(cache, "door", _G.HW_HellDoor, 25, "cửa") then return end
+                    -- 3) bí ngô (Candy Corn)
+                    if _G.HW_Pumpkin then
+                        if visit(cache, "pumpkin", true, 20, "bí ngô") then return end
+                        -- bí ngô không có nút tương tác: bay tới rồi đập / chạm (gộp từ chức năng cũ)
+                        local plist = GetAllPumpkins and GetAllPumpkins() or {}
+                        for _, p in ipairs(plist) do
+                            if p.Part and p.Part.Parent and not isBlocked(p.Instance) then
+                                block(p.Instance, 12)
+                                local hrp = getHRP()
+                                if not hrp then return end
+                                Tween2(p.Part.CFrame * CFrame.new(0, 3, 0))
+                                local t0 = os.clock()
+                                repeat
+                                    task.wait(_G.Fast_Delay or 0.05)
+                                    pcall(EquipTool, SelectWeapon)
+                                    pcall(AutoHaki)
+                                    pcall(AttackNoCoolDown)
+                                    local cd = p.Instance:FindFirstChildWhichIsA("ClickDetector", true)
+                                    if cd and fireclickdetector then pcall(fireclickdetector, cd) end
+                                    local pp = p.Instance:FindFirstChildWhichIsA("ProximityPrompt", true)
+                                    if pp and fireproximityprompt then pcall(fireproximityprompt, pp) end
+                                    pcall(function()
+                                        firetouchinterest(hrp, p.Part, 0)
+                                        task.wait()
+                                        firetouchinterest(hrp, p.Part, 1)
+                                    end)
+                                until not _G.HW_Pumpkin or not p.Part.Parent or not p.Instance.Parent or os.clock() - t0 > 8
+                                return
+                            end
+                        end
+                    end
+                end)
+                if not ok then warn("[Halloween] " .. tostring(err)) end
+            end
+        end
+    end)
+
+    -- ---------- Spooky Gacha (mẫu giống Valentine gacha của script) ----------
+    task.spawn(function()
+        local lastMsg = ""
+        while task.wait(5) do
+            if _G.HW_Gacha then
+                pcall(function()
+                    local CommF = __RS.Remotes.CommF_
+                    local gtype = tostring(_G.HW_GachaType or "")
+                    if gtype == "" then return end
+                    CommF:InvokeServer("Cousin")
+                    task.wait(0.1)
+                    local can = CommF:InvokeServer("Cousin", "CheckCanBuyType", gtype)
+                    task.wait(0.1)
+                    local res
+                    if can ~= false then
+                        res = CommF:InvokeServer("Cousin", gtype)
+                    end
+                    local msg = "check=" .. tostring(can) .. " | roll=" .. tostring(res)
+                    if msg ~= lastMsg then
+                        lastMsg = msg
+                        print("[Halloween Gacha] " .. msg)
+                    end
+                end)
+            end
+        end
+    end)
+
+    -- ============================================================
+    -- GIAO DIỆN
+    -- ============================================================
+    HW:AddSection("🎃 Hellfire Halloween 2026")
+    local statusLabel = HW:AddParagraph({
+        Title = "Trạng thái",
+        Content = "Đang tải...",
+    })
+    HW:AddParagraph({
+        Title = "Ghi chú",
+        Content = "Candy Corn: nhặt bí ngô, gõ cửa Harvest Moon, đánh Hell Rider. Gacha 500 Candy Corn/lần, 2 lần/giờ.",
+    })
+
+    local tickN, extraInfo = 0, ""
+    task.spawn(function()
+        while task.wait(1) do
+            pcall(function()
+                local m = harvestMoonMinute()
+                local s
+                if m < 10 then
+                    s = "Harvest Moon: ĐANG DIỄN RA (còn ~" .. (10 - m) .. " phút)"
+                else
+                    s = "Harvest Moon: " .. (60 - m) .. " phút nữa"
+                end
+                local left = EVENT_END_UTC - os.time()
+                if left > 0 then
+                    local d = math.floor(left / 86400)
+                    local h = math.floor((left % 86400) / 3600)
+                    s = s .. "\nSự kiện kết thúc sau: " .. d .. " ngày " .. h .. " giờ"
+                else
+                    s = s .. "\nSự kiện đã kết thúc (theo lịch dự kiến)"
+                end
+                tickN = tickN + 1
+                if tickN % 3 == 1 then
+                    pcall(function()
+                        local candy = GetPlayerCandies and GetPlayerCandies() or 0
+                        local pk = GetAllPumpkins and #GetAllPumpkins() or 0
+                        local boss = GetHellfireBoss and GetHellfireBoss() or nil
+                        extraInfo = "\n🍬 Kẹo: " .. tostring(candy) .. " | 🎃 Bí ngô: " .. tostring(pk)
+                            .. " | 🔥 Boss: " .. (boss and "đang có" or "chưa có")
+                    end)
+                end
+                statusLabel:SetText("Trạng thái: " .. s .. extraInfo)
+            end)
+        end
+    end)
+
+    local function onOff(flag)
+        return function(v)
+            _G[flag] = v
+            refresh()
+            if not v then
+                pcall(StopMovement)
+                if _G.AbyAfterToggleOff then pcall(_G.AbyAfterToggleOff) end
+            end
+        end
+    end
+
+    HW:AddSection("Farm Candy Corn")
+    HW:AddToggle("HW_PumpkinToggle", {
+        Title = "Tự Nhặt Bí Ngô (Pumpkin Hunt)",
+        Description = "Bay tới bí ngô gần nhất trên đảo và thu thập (2-5 Candy Corn mỗi cái)",
+        Default = false,
+    }):OnChanged(onOff("HW_Pumpkin"))
+
+    HW:AddToggle("HW_DoorsToggle", {
+        Title = "Tự Gõ Cửa Trick-or-Treat",
+        Description = "Gõ các cửa Harvest Moon (phút 00-09 mỗi giờ), bỏ qua cửa lửa Hellfire",
+        Default = false,
+    }):OnChanged(onOff("HW_Doors"))
+
+    HW:AddToggle("HW_HellDoorToggle", {
+        Title = "Cho Phép Vào Cửa Lửa Hellfire (Hell Rider)",
+        Description = "Bật thì tự vào cửa đang cháy để đánh Hell Rider (thưởng 400 Candy Corn) - boss khó, nên mạnh hãy bật",
+        Default = false,
+    }):OnChanged(function(v) _G.HW_HellDoor = v end)
+
+    HW:AddToggle("HW_MobsToggle", {
+        Title = "Tự Đánh Quái / Boss Sự Kiện",
+        Description = "Hell Rider, Werewolf, Great Pumpkin, Jack O'Lantern... (theo danh sách từ khóa bên dưới)",
+        Default = false,
+    }):OnChanged(onOff("HW_Mobs"))
+
+    HW:AddSlider("HW_HeightSlider", {
+        Title = "Độ Cao Khi Đánh Quái Sự Kiện",
+        Default = 30,
+        Min = 5,
+        Max = 60,
+        Rounding = 0,
+        Callback = function(v) _G.HW_Height = tonumber(v) or 30 end,
+    })
+
+    HW:AddSection("Spooky Gacha")
+    HW:AddToggle("HW_GachaToggle", {
+        Title = "Tự Quay Spooky Gacha",
+        Description = "Quay khi đủ Candy Corn (kết quả in ở console F9 mục [Halloween Gacha])",
+        Default = false,
+    }):OnChanged(function(v) _G.HW_Gacha = v end)
+
+    HW:AddInput("HW_GachaTypeInput", {
+        Title = "Tên Loại Gacha",
+        Description = "Đoán theo mẫu ValentinesGacha26 - nếu không quay được hãy báo lại log F9 để chỉnh",
+        Default = _G.HW_GachaType,
+        Placeholder = "HalloweenGacha26",
+        Callback = function(v)
+            if type(v) == "string" and v ~= "" then _G.HW_GachaType = v end
+        end,
+    })
+
+    HW:AddButton({
+        Title = "Bay Tới Zioles (NPC Gacha)",
+        Description = "Tìm NPC Zioles trong sea hiện tại rồi bay tới",
+        Callback = function()
+            task.spawn(function()
+                local found
+                for _, d in ipairs(__WS:GetDescendants()) do
+                    if d:IsA("Model") and d.Name == "Zioles" then found = d break end
+                end
+                local p = posOf(found)
+                if p then
+                    Tween2(CFrame.new(p + Vector3.new(0, 3, 4)))
+                else
+                    notify("Không thấy Zioles ở sea này (thử Middle Town / Café / Mansion)")
+                end
+            end)
+        end,
+    })
+
+    HW:AddSection("Nâng Cao")
+    HW:AddInput("HW_MobKeysInput", {
+        Title = "Từ Khóa Quái Sự Kiện",
+        Description = "Cách nhau bằng dấu phẩy, không phân biệt hoa thường",
+        Default = _G.HW_MobKeys,
+        Placeholder = "hell rider,werewolf,...",
+        Callback = function(v)
+            if type(v) == "string" and v ~= "" then _G.HW_MobKeys = v end
+        end,
+    })
+    HW:AddInput("HW_DoorKeysInput", {
+        Title = "Từ Khóa Cửa Sự Kiện",
+        Description = "Cách nhau bằng dấu phẩy (khớp tên cửa / chữ trên nút tương tác)",
+        Default = _G.HW_DoorKeys,
+        Placeholder = "trick,treat,knock,...",
+        Callback = function(v)
+            if type(v) == "string" and v ~= "" then _G.HW_DoorKeys = v end
+        end,
+    })
+    HW:AddButton({
+        Title = "In Danh Sách Cửa / Bí Ngô Tìm Thấy (F9)",
+        Description = "Dùng để kiểm tra khi tính năng không bắt được mục tiêu",
+        Callback = function()
+            task.spawn(function()
+                local list = scan()
+                local cnt = { door = 0, pumpkin = 0 }
+                for _, it in ipairs(list) do
+                    cnt[it.kind] = (cnt[it.kind] or 0) + 1
+                    print(("[Halloween] %s | fire=%s | %s | %s"):format(
+                        it.kind, tostring(it.fire), it.inst:GetFullName(), it.label))
+                end
+                notify(("Cửa: %d | Bí ngô: %d (chi tiết ở console F9)"):format(cnt.door, cnt.pumpkin))
+            end)
+        end,
+    })
+    HW:AddButton({
+        Title = "In Quái Sự Kiện Đang Có (F9)",
+        Description = "Liệt kê quái trong Enemies khớp từ khóa",
+        Callback = function()
+            local en = __WS:FindFirstChild("Enemies")
+            local keys = splitKeys(_G.HW_MobKeys)
+            local n = 0
+            if en then
+                for _, m in ipairs(en:GetChildren()) do
+                    if hasAny(string.lower(m.Name), keys) then
+                        n = n + 1
+                        print("[Halloween] quái: " .. m.Name)
+                    end
+                end
+            end
+            notify("Quái khớp từ khóa: " .. n)
+        end,
+    })
+end, function(e)
+    warn("[Abysslixhub] Tab Halloween lỗi: " .. tostring(e))
 end)
 
 -- ===============================================================
 -- [PHẦN 1: 🎃 TỰ ĐỘNG ĐÁNH BÍ NGÔ (AUTO FARM PUMPKINS)]
 -- ===============================================================
 
-_G.AutoFarmPumpkins = false
-Tabs.Main:AddToggle("ToggleAutoPumpkins", {
-    ["Title"] = "🎃 Tự Động Tìm & Đập Bí Ngô (Auto Break Pumpkins)",
-    ["Description"] = "Tự động bay đến các quả bí ngô trên bản đồ, xả sát thương đập vỡ nhặt Kẹo, Xương & Beli",
-    ["Default"] = false,
-}):OnChanged(function(v)
-    _G.AutoFarmPumpkins = v
-    if not v then
-        wait()
-        pcall(function() Tween2(__LP.Character.HumanoidRootPart.CFrame) end)
-    end
-end)
+Tabs.Halloween:AddSection("Bí Ngô: Quét & ESP")
 
-Tabs.Main:AddButton({
+Tabs.Halloween:AddButton({
     ["Title"] = "🔍 Quét Bí Ngô Trên Bản Đồ",
     ["Description"] = "Kiểm tra ngay số lượng quả bí ngô đang tồn tại trong server",
     ["Callback"] = function()
@@ -19896,7 +20235,7 @@ local function ClearPumpkinESP()
     end)
 end
 
-Tabs.Main:AddToggle("ToggleESPPumpkins", {
+Tabs.Halloween:AddToggle("ToggleESPPumpkins", {
     ["Title"] = "👁️ ESP Hiển Thị Vị Trí Bí Ngô",
     ["Description"] = "Đánh dấu và hiển thị khoảng cách đến tất cả quả bí ngô trên màn hình",
     ["Default"] = false,
@@ -19949,180 +20288,13 @@ task.spawn(function()
     end
 end)
 
--- Vòng lặp đập bí ngô tự động
-task.spawn(function()
-    while task.wait(0.05) do
-        if _G.AutoFarmPumpkins then
-            pcall(function()
-                local pumpkins = GetAllPumpkins()
-                if #pumpkins > 0 then
-                    local target = pumpkins[1]
-                    local tPart = target.Part
-                    local tInst = target.Instance
-
-                    if tPart and tPart.Parent then
-                        local myHRP = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
-                        if not myHRP then return end
-
-                        local targetCF = tPart.CFrame * CFrame.new(0, 3, 0)
-                        local dist = (tPart.Position - myHRP.Position).Magnitude
-
-                        if dist > 30 then
-                            Tween2(targetCF)
-                            repeat task.wait(0.05) until not _G.AutoFarmPumpkins or not tPart.Parent
-                                or (tPart.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 30
-                        end
-
-                        repeat
-                            task.wait(_G.Fast_Delay or 0.05)
-                            EquipTool(SelectWeapon)
-                            AutoHaki()
-
-                            -- Khóa vị trí sát quả bí ngô
-                            local snapCF = tPart.CFrame * CFrame.new(0, 3, 0)
-                            if (snapCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 4 then
-                                BKP(snapCF)
-                            end
-
-                            -- Tương tác phá bí ngô (Chém / Click / Prompt / Touch)
-                            AttackNoCoolDown()
-
-                            -- Nếu có ClickDetector
-                            local cd = tInst:FindFirstChildWhichIsA("ClickDetector") or tPart:FindFirstChildWhichIsA("ClickDetector")
-                            if cd and fireclickdetector then pcall(fireclickdetector, cd) end
-
-                            -- Nếu có ProximityPrompt
-                            local pp = tInst:FindFirstChildWhichIsA("ProximityPrompt") or tPart:FindFirstChildWhichIsA("ProximityPrompt")
-                            if pp and fireproximityprompt then pcall(fireproximityprompt, pp) end
-
-                            -- Kích hoạt chạm TouchInterest
-                            pcall(function()
-                                firetouchinterest(myHRP, tPart, 0)
-                                task.wait()
-                                firetouchinterest(myHRP, tPart, 1)
-                            end)
-                        until not _G.AutoFarmPumpkins or not tPart.Parent or not tInst.Parent
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- ===============================================================
--- [PHẦN 2: 🔥 FARM RAID BOSS HELLFIRE]
--- ===============================================================
-
-_G.AutoFarmHellfireBoss = false
-Tabs.Main:AddToggle("ToggleAutoHellfire", {
-    ["Title"] = "🔥 Tự Săn Raid Boss Hellfire",
-    ["Description"] = "Tự phát hiện Boss Hellfire xuất hiện, bay tới khóa góc trên đầu xả sát thương tiêu diệt nhặt quà hiếm",
-    ["Default"] = false,
-}):OnChanged(function(v)
-    _G.AutoFarmHellfireBoss = v
-    if not v then
-        wait()
-        pcall(function() Tween2(__LP.Character.HumanoidRootPart.CFrame) end)
-    end
-end)
-
--- Nút bay đến khu vực Hell Dimension (Nếu có)
-Tabs.Main:AddButton({
-    ["Title"] = "🚀 Bay Đến Cổng Hell Dimension",
-    ["Description"] = "Dịch chuyển nhanh đến khu vực Lửa Ngục Hell Dimension",
-    ["Callback"] = function()
-        pcall(function()
-            local hellCF = CFrame.new(-9570.033, 315.935, 6726.893)
-            if __WS.Map:FindFirstChild("HellDimension") and __WS.Map.HellDimension:FindFirstChild("Torch1") then
-                hellCF = __WS.Map.HellDimension.Torch1.CFrame
-            end
-            Tween2(hellCF)
-            Library:Notify({ Title = "Hell Dimension", Content = "Đang bay đến khu vực Hell Dimension..." })
-        end)
-    end,
-})
-
--- Vòng lặp Săn Raid Boss Hellfire
-task.spawn(function()
-    while task.wait(0.1) do
-        if _G.AutoFarmHellfireBoss then
-            pcall(function()
-                local boss = GetHellfireBoss()
-                if boss and boss:FindFirstChild("HumanoidRootPart") and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 then
-                    local bhrp = boss.HumanoidRootPart
-                    local bhum = boss.Humanoid
-                    local myHRP = __LP.Character and __LP.Character:FindFirstChild("HumanoidRootPart")
-                    if not myHRP then return end
-
-                    -- Bay tới Boss Hellfire
-                    local dist = (bhrp.Position - myHRP.Position).Magnitude
-                    if dist > 35 then
-                        Tween2(bhrp.CFrame * Pos)
-                        repeat task.wait(0.05) until not _G.AutoFarmHellfireBoss or not boss.Parent or bhum.Health <= 0
-                            or (bhrp.Position - __LP.Character.HumanoidRootPart.Position).Magnitude <= 35
-                    end
-
-                    -- Khóa trên đầu và tấn công
-                    repeat
-                        task.wait(_G.Fast_Delay or 0.05)
-                        EquipTool(SelectWeapon)
-                        AutoHaki()
-
-                        bhrp.CanCollide = false
-                        bhum.WalkSpeed = 0
-                        bhum.JumpPower = 0
-                        pcall(function() boss.Head.CanCollide = false end)
-
-                        -- Phóng to hitbox để dễ trúng đòn
-                        bhrp.Size = Vector3.new(50, 50, 50)
-
-                        local snapCF = bhrp.CFrame * Pos
-                        if (snapCF.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then
-                            BKP(snapCF)
-                        end
-
-                        AttackNoCoolDown()
-                    until not _G.AutoFarmHellfireBoss or not boss.Parent or bhum.Health <= 0
-                else
-                    -- Nếu đang ở trong HellDimension và có các ngọn đuốc Torch1, Torch2, Torch3: tự thắp đuốc triệu hồi
-                    if __WS.Map:FindFirstChild("HellDimension") then
-                        pcall(function()
-                            local hd = __WS.Map.HellDimension
-                            if hd:FindFirstChild("Torch1") then
-                                Tween2(hd.Torch1.CFrame)
-                                task.wait(0.8)
-                                __VIM:SendKeyEvent(true, "E", false, game)
-                                task.wait(0.2)
-                                __VIM:SendKeyEvent(false, "E", false, game)
-                            end
-                            if hd:FindFirstChild("Torch2") then
-                                Tween2(hd.Torch2.CFrame)
-                                task.wait(0.8)
-                                __VIM:SendKeyEvent(true, "E", false, game)
-                                task.wait(0.2)
-                                __VIM:SendKeyEvent(false, "E", false, game)
-                            end
-                            if hd:FindFirstChild("Torch3") then
-                                Tween2(hd.Torch3.CFrame)
-                                task.wait(0.8)
-                                __VIM:SendKeyEvent(true, "E", false, game)
-                                task.wait(0.2)
-                                __VIM:SendKeyEvent(false, "E", false, game)
-                            end
-                        end)
-                    end
-                end
-            end)
-        end
-    end
-end)
-
 -- ===============================================================
 -- [PHẦN 3: 🍬 CÀY KẸO HALLOWEEN SEA 1 & ĐỔI QUÀ SHOP]
 -- ===============================================================
 
+Tabs.Halloween:AddSection("Kẹo & Đổi Quà")
 _G.AutoCandyWithQuest = false
-Tabs.Main:AddToggle("ToggleCandyQuest", {
+Tabs.Halloween:AddToggle("ToggleCandyQuest", {
     ["Title"] = "🍬 Cày Kẹo Sea 1 (Kèm Nhiệm Vụ - EXP x2 + Kẹo)",
     ["Description"] = "Tự nhận nhiệm vụ theo cấp hiện tại để vừa lên cấp thần tốc vừa nhặt 100% Kẹo sự kiện",
     ["Default"] = false,
@@ -20195,7 +20367,7 @@ end)
 
 -- Nút bay đến NPC Halloween Middle Town
 local MIDDLE_TOWN_CF = CFrame.new(-690.331, 15.094, 1582.238)
-Tabs.Main:AddButton({
+Tabs.Halloween:AddButton({
     ["Title"] = "🚀 Bay Đến NPC Halloween (Middle Town - Sea 1)",
     ["Description"] = "Dịch chuyển tức thì đến Thị Trấn Trung Tâm nơi đặt NPC sự kiện Halloween đổi quà",
     ["Callback"] = function()
@@ -20232,7 +20404,7 @@ local function BuyCandyReward(idx)
     end)
 end
 
-Tabs.Main:AddDropdown("DropdownCandyShop", {
+Tabs.Halloween:AddDropdown("DropdownCandyShop", {
     ["Title"] = "Chọn Quà Đổi Kẹo",
     ["Values"] = {
         "2x EXP Boost (20 Kẹo - Tăng Cấp Siêu Tốc)",
@@ -20248,7 +20420,7 @@ Tabs.Main:AddDropdown("DropdownCandyShop", {
     elseif string.find(v, "Beli") then _hwSelectedShopItem = 4 end
 end)
 
-Tabs.Main:AddButton({
+Tabs.Halloween:AddButton({
     ["Title"] = "🛍️ Đổi Quà Kẹo Đã Chọn (1 Lần)",
     ["Description"] = "Bấm để đổi ngay phần thưởng đã chọn bằng số Kẹo hiện có",
     ["Callback"] = function()
@@ -20257,7 +20429,7 @@ Tabs.Main:AddButton({
 })
 
 _G.AutoBuyCandyRewards = false
-Tabs.Main:AddToggle("ToggleAutoBuyCandy", {
+Tabs.Halloween:AddToggle("ToggleAutoBuyCandy", {
     ["Title"] = "🔄 Tự Động Đổi Kẹo (Tự Mua Khi Đủ Kẹo)",
     ["Description"] = "Cứ khi cày đủ số kẹo cần thiết sẽ tự động đổi phần thưởng đã chọn (Khuyên dùng: 2x EXP)",
     ["Default"] = false,
@@ -20283,8 +20455,9 @@ end)
 -- [PHẦN 4: 🌐 TỰ ĐỔI SERVER KHI HẾT BÍ NGÔ / HẾT BOSS HELLFIRE]
 -- ===============================================================
 
+Tabs.Halloween:AddSection("Đổi Server")
 _G.AutoHopPumpkinHellfire = false
-Tabs.Main:AddToggle("ToggleHopPumpkinHellfire", {
+Tabs.Halloween:AddToggle("ToggleHopPumpkinHellfire", {
     ["Title"] = "🌐 Tự Đổi Server Khi Hết Bí Ngô / Boss Hellfire",
     ["Description"] = "Server không còn quả bí ngô nào và Boss Hellfire chưa có -> Tự động nhảy server mới",
     ["Default"] = false,
@@ -20348,19 +20521,19 @@ spawn(function()
 end)
 
 -- ========== FARM BOSS SỰ KIỆN ==========
-Tabs.Main:AddSection("Farm Boss Sự Kiện")
+Tabs.Boss:AddSection("Farm Boss Sự Kiện")
 local _bossPainList = {}
 if Sea1 then _bossPainList = {"The Gorilla King","Bobby","Yeti","Mob Leader","Vice Admiral","Warden","Chief Warden","Swan","Magma Admiral","Fishman Lord","Wysper","Thunder God","Cyborg","Saber Expert"}
 elseif Sea2 then _bossPainList = {"Diamond","Jeremy","Fajita","Don Swan","Smoke Admiral","Cursed Captain","Darkbeard","Order","Awakened Ice Admiral","Tide Keeper"}
 elseif Sea3 then _bossPainList = {"Stone","Island Empress","Hydra Leader","Kilo Admiral","Captain Elephant","Beautiful Pirate","rip_indra True Form","Longma","Soul Reaper","Cake Queen","Tyrant of the Skies"}
 end
 if #_bossPainList > 0 then
-    Tabs.Main:AddDropdown("DropSelectBossPain", {
+    Tabs.Boss:AddDropdown("DropSelectBossPain", {
         ["Title"] = "Chọn Boss",
         ["Values"] = _bossPainList,
         ["Default"] = _bossPainList[1]
     }):OnChanged(function(v) _G.SelectBoss = v end)
-    Tabs.Main:AddToggle("ToggleBossPain", {
+    Tabs.Boss:AddToggle("ToggleBossPain", {
         ["Title"] = "Farm Boss Đã Chọn",
         ["Default"] = false
     }):OnChanged(function(v) _G.BossPain = v end)
@@ -31443,6 +31616,18 @@ v496:AddToggle({
             return x
         end
 
+        -- [GỘP TRÙNG] Các nút mở rộng dưới đây trùng chức năng với bản gốc ở tab khác nên không tạo nữa.
+        -- Muốn bật lại nút nào: xóa tên (chữ thường) đó khỏi danh sách SKIP.
+        local SKIP = {}
+        for _, n in ipairs({ "auto farm level", "auto pirates sea", "auto factory", "auto farm nearest", "auto farm tyrant", "summon tyrant of the skies", "auto farm bones", "auto pray", "auto try luck", "farm katakuri", "farm katakuri v2", "auto collect berry", "auto farm chest [ tween ]", "auto farm chest [ bypass ]", "boss list", "auto kill boss selected", "material list", "auto farm material", "autosecondsea", "auto quest sea 3", "auto get saber", "auto get sword pole", "auto get sword saw", "auto get sword wardens", "auto get yama", "auto holy torch tushita", "auto get tushita", "auto get sword canvander", "auto get sword buddy", "auto get sword rengoku", "auto skull guitar", "auto buy haki colors", "auto buy legendary sword", "auto kill rip indra", "kill elite hunter", "auto haki colors", "auto trial human ghost", "auto trial all race", "teleport temple of time", "teleport lever pull", "auto race door", "auto kill player after trial v4", "auto drive boats", "auto kill shark", "auto kill piranha", "auto kill fish crew member", "tween dragon dojo", "craft volcanic magnet", "auto use melee", "auto use sword", "auto use gun", "auto kill aura golem", "auto collect bone", "auto collect egg", "look moon + auto v3", "auto tween to gear", "auto tween kitsune island", "select chip", "auto buy chip", "auto start raid", "auto farm raid next island", "auto buy chip law", "auto start raid law", "auto farm law raid", "points amount", "auto status", "melee", "defense", "sword", "gun", "fruit", "select island", "auto tween to island", "sea 1", "sea 2", "sea 3", "esp players", "esp chest", "esp fruits", "buy black leg", "buy electro", "buy fishman karate", "buy superhuman", "buy death step", "buy sharkman karate", "buy electric claw", "buy dragon talon", "buy god human", "buy sanguine art", "craft dinohood", "buy geppo $10,000", "buy buso haki $25,000", "buy soru $25,000", "buy observation haki $750,000", "buy cutlass $1,000", "buy katana $1,000", "buy iron mace $25,000", "buy dual katana $12,000", "buy triple katana $60,000", "buy pipe $100,000", "buy dual-headed blade $400,000", "buy bisento $1,200,000", "buy soul cane $750,000", "buy pole v2 5,000f", "buy slingshot $5,000", "buy musket $8,000", "buy flintlock $10,500", "refined slingshot $30,000", "buy cannon $100,000", "buy kabucha 1,500f", "buy black cape $50,000", "swordsman hat $150,000", "buy tomoe ring $500,000", "buy ghoul", "buy cyborg", "reset stats 2,500f", "random race 3,000f", "job id", "join clipboard", "bring mob", "speed", "jump", "infinite soru", "dodge no cd", "infinite geppo", "walk on water", "remove sky fog", "open title name", "fps boost", "codes", "rejoin server", "server hop", "anti-reset" }) do SKIP[n] = true end
+        local function skipped(x)
+            local n = string.lower(titleOf(x))
+            n = string.gsub(n, "%s+", " ")
+            n = string.gsub(n, "^ ", "")
+            n = string.gsub(n, " $", "")
+            return SKIP[n] == true
+        end
+
         _mkTab = function(a)
             local name = tostring((type(a) == "table") and (a[1] or a.Name or a.Title) or a)
             local icon = (type(a) == "table") and a[2] or nil
@@ -31478,6 +31663,7 @@ v496:AddToggle({
             function t:AddSection() return _dummy end -- section do ROUTES quyết định
             function t:AddToggle(x)
                 x = norm(x)
+                if skipped(x) then return _dummy end
                 local obj = dest(x):AddToggle(uniq(x.Name or x.Title), x)
                 -- UI có thể không tự bắn callback lúc tạo: ép đồng bộ cờ cho nút mặc định BẬT (vd Fast Attack)
                 if x.Default == true and type(x.Callback) == "function" then
@@ -31485,13 +31671,14 @@ v496:AddToggle({
                 end
                 return _safe(obj)
             end
-            function t:AddButton(x) x = norm(x); return _safe(dest(x):AddButton(x)) end
+            function t:AddButton(x) x = norm(x); if skipped(x) then return _dummy end; return _safe(dest(x):AddButton(x)) end
             function t:AddDropdown(x)
                 x = norm(x)
+                if skipped(x) then return _dummy end
                 if x.MultiSelect and x.Multi == nil then x.Multi = true end
                 return _safe(dest(x):AddDropdown(uniq(x.Name or x.Title), x))
             end
-            function t:AddSlider(x) x = norm(x); return _safe(dest(x):AddSlider(x)) end
+            function t:AddSlider(x) x = norm(x); if skipped(x) then return _dummy end; return _safe(dest(x):AddSlider(x)) end
             function t:AddTextBox(x) x = norm(x); return _safe(dest(x):AddInput(uniq(x.Name or x.Title), x)) end
             function t:AddParagraph(x) x = norm(x); return _safe(dest(x):AddParagraph(x)) end
             return t
