@@ -5089,11 +5089,11 @@ local function wrapTab(rawTab, defaultTitle, tabNameForInfo)
             Selected = multi,
             Default = default,
             Search = (setting.Search == true),
-            Callback = function(val)
+            Callback = function(val, state)
                 holder.value = val
                 if _persist and type(val) == "string" then _G.AbyCfg.set(_ck, val) end
-                if origCallback then pcall(origCallback, val) end
-                if holder.extraCallback then pcall(holder.extraCallback, val) end
+                if origCallback then pcall(origCallback, val, state) end
+                if holder.extraCallback then pcall(holder.extraCallback, val, state) end
             end
         })
 
@@ -12200,26 +12200,35 @@ if Sea3 then
         elseif string.find(val, "M1", 1, true) then _G.SeaAttackMode = "fruit"
         else _G.SeaAttackMode = "default" end
     end)
-    -- [NEW] Danh sách sự kiện biển muốn farm (chỉ áp dụng cho nút farm tự động ở trên)
-    _G.SeaPick = { beast = true, shark = true, pirate = true, ghost = true, crew = true, piranha = true, fish = true }
+    -- [NEW] DANH SÁCH CHỌN SỰ KIỆN BIỂN MUỐN FARM (tick nhiều ô; chỉ áp dụng cho nút Farm Sự Kiện Biển Tự Động ở trên)
+    _G.SeaPick = { beast = false, shark = false, pirate = false, ghost = false, crew = false, piranha = false, fish = false }
     do
-    local SEA_LIST = {
-        { "beast",   "Sự Kiện: Vua Biển (Sea Beast)" },
-        { "shark",   "Sự Kiện: Cá Mập (Terrorshark)" },
-        { "pirate",  "Sự Kiện: Tàu Hải Tặc" },
-        { "ghost",   "Sự Kiện: Tàu Ma" },
-        { "crew",    "Sự Kiện: Tàu Cá (Fish Crew)" },
-        { "piranha", "Sự Kiện: Piranha" },
-        { "fish",    "Sự Kiện: Cá Con (Shark)" },
-    }
-    for _, ev in ipairs(SEA_LIST) do
-        Tabs.Sea:AddToggle("ToggleSeaPick_" .. ev[1], {
-            ["Title"] = ev[2],
-            ["Default"] = true
-        }):OnChanged(function(val)
-            _G.SeaPick[ev[1]] = val
+        local SEA_LIST = {
+            { "beast",   "Vua Biển (Sea Beast)" },
+            { "shark",   "Cá Mập (Terrorshark)" },
+            { "pirate",  "Tàu Hải Tặc" },
+            { "ghost",   "Tàu Ma" },
+            { "crew",    "Tàu Cá (Fish Crew)" },
+            { "piranha", "Piranha" },
+            { "fish",    "Cá Con (Shark)" },
+        }
+        local nameToKey, names = {}, {}
+        for _, ev in ipairs(SEA_LIST) do
+            nameToKey[ev[2]] = ev[1]
+            table.insert(names, ev[2])
+        end
+        local seaPickDD = Tabs.Sea:AddDropdown("DropdownSeaPick", {
+            ["Title"] = "Chọn Sự Kiện Biển Muốn Farm",
+            ["Description"] = "Bấm vào để mở danh sách, tick/bỏ tick từng sự kiện. Mặc định chưa tick cái nào; sự kiện không tick sẽ bị bỏ qua khi farm tự động.",
+            ["Values"] = names,
+            ["Multi"] = true
+        })
+        seaPickDD:OnChanged(function(val, state)
+            local k = nameToKey[val]
+            if k and type(state) == "boolean" then
+                _G.SeaPick[k] = state
+            end
         end)
-    end
     end
 
     -- 1. TỰ ĐÁNH VUA BIỂN (SEA BEAST)
@@ -16856,6 +16865,23 @@ local _fok, _ferr = pcall(function()
         return nil
     end
 
+    -- [FIX STOCK] InvokeServer có thể treo vô hạn (server không trả lời) -> làm cờ refreshing kẹt, stock không bao giờ tải. Thêm timeout.
+    local function invokeT(timeout, ...)
+        local args = table.pack(...)
+        local done, res = false, nil
+        task.spawn(function()
+            local ok, r = pcall(function()
+                return CommF:InvokeServer(unpack_(args, 1, args.n))
+            end)
+            if ok then res = r else _G.AbyLastInvokeErr = tostring(r) end
+            done = true
+        end)
+        local t0 = os.clock()
+        while not done and os.clock() - t0 < timeout do task.wait(0.1) end
+        if not done then _G.AbyLastInvokeErr = "server không phản hồi (timeout " .. timeout .. "s)" end
+        return res
+    end
+
     local function notify(content)
         pcall(function()
             Library:Notify({ Title = "Trái Ác Quỷ", Content = content })
@@ -16872,9 +16898,9 @@ local _fok, _ferr = pcall(function()
     local function readStock(isMirage)
         local data
         if isMirage then
-            data = invoke("GetFruits", true)
+            data = invokeT(6, "GetFruits", true)
         else
-            data = invoke("GetFruits")
+            data = invokeT(6, "GetFruits")
         end
         if type(data) ~= "table" then return nil, nil end
         local onSale, all = {}, {}
@@ -16994,6 +17020,10 @@ local _fok, _ferr = pcall(function()
         updateStatus()
         return l
     end
+    Tab:AddSection({ Name = "Stock Fruits", Open = true })
+    local normalLabel = Tab:AddParagraph({ ["Title"] = "", ["Content"] = "Normal Stock\nĐang tải..." })
+    local mirageLabel = Tab:AddParagraph({ ["Title"] = "", ["Content"] = "Mirage Stock\nĐang tải..." })
+
     Tab:AddButton({
         ["Title"] = "🔍 Quét Trái Ngay",
         ["Description"] = "Cập nhật thẻ Check Fruit ngay (script vẫn tự quét mỗi 10 giây)",
@@ -17001,10 +17031,6 @@ local _fok, _ferr = pcall(function()
             task.spawn(refreshWorld)
         end
     })
-
-    Tab:AddSection({ Name = "Stock Fruits", Open = true })
-    local normalLabel = Tab:AddParagraph({ ["Title"] = "", ["Content"] = "Normal Stock\nĐang tải..." })
-    local mirageLabel = Tab:AddParagraph({ ["Title"] = "", ["Content"] = "Mirage Stock\nĐang tải..." })
 
     local normalDD = nil -- tạo bên dưới nút Làm Mới
     local refreshing = false
@@ -17166,9 +17192,8 @@ local _fok, _ferr = pcall(function()
         -- [FIX] Chưa chọn phe thì server chưa trả stock -> chờ chọn phe xong mới hỏi, và báo rõ lý do trên khung trạng thái
         local tries = 0
         while true do
-            local team = __LP.Team
-            if not (team and (team.Name == "Marines" or team.Name == "Pirates")) then
-                _G.AbyStockNote = "Chưa chọn phe - chọn phe xong sẽ tự lấy stock"
+            if not __LP.Character then
+                _G.AbyStockNote = "Đang chờ nhân vật load..."
                 updateStatus()
                 task.wait(1)
             else
