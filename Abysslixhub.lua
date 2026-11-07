@@ -4991,6 +4991,18 @@ local function wrapTab(rawTab, defaultTitle, tabNameForInfo)
         local proxy = {}
         function proxy:OnChanged(fn)
             holder.extraCallback = fn
+            -- [FIX SETTINGS: HIỆN BẬT NHƯNG KHÔNG CHẠY] Toggle bật sẵn (Default = true hoặc khôi phục từ lần trước)
+            -- được tạo xong rồi mới gắn OnChanged => callback không bao giờ chạy, giao diện báo ON nhưng chức năng chưa bật,
+            -- phải tắt rồi bật lại mới chạy. Nay tự áp dụng trạng thái ON sau khi script nạp xong (chỉ tab Settings).
+            -- Toggle khôi phục từ config đã có đường áp dụng riêng bên dưới (_restored) nên bỏ qua để khỏi chạy 2 lần.
+            if tabNameForInfo == "Settings" and holder.value == true and not _restored then
+                _G.AbyRestore(function()
+                    if holder.value == true then
+                        if origCallback then pcall(origCallback, true) end
+                        pcall(fn, true)
+                    end
+                end)
+            end
             return proxy
         end
         function proxy:SetValue(val)
@@ -8851,8 +8863,8 @@ local function _buildActiveText()
     local list = _G.AbyToggleList or {}
     local byTab, order, count = {}, {}, 0
     for _, t in ipairs(list) do
-        -- bỏ qua các toggle thuộc tab Settings (cấu hình hub, không phải chức năng farm)
-        if t.Holder and t.Holder.value == true and t.Tab ~= "Settings" then
+        -- bỏ qua các toggle thuộc tab Settings, Skill, Server, PVP (không tính vào danh sách đang bật)
+        if t.Holder and t.Holder.value == true and t.Tab ~= "Settings" and t.Tab ~= "Skill" and t.Tab ~= "Server" and t.Tab ~= "PVP" then
             count = count + 1
             if not byTab[t.Tab] then byTab[t.Tab] = {}; table.insert(order, t.Tab) end
             table.insert(byTab[t.Tab], t.Title)
@@ -9045,7 +9057,7 @@ local _qSeen = false
 local _qGoneAt = nil
 local _qLastTitle = ""
 -- [FIX] thời gian tối đa coi quest "đang chạy" khi UI không báo Visible (trước đây 90s => phải chờ 2-3 phút)
-_G.QuestFallbackSec = _G.QuestFallbackSec or 90
+_G.QuestFallbackSec = _G.QuestFallbackSec or 45   -- [FIX] 1 quest chỉ ~30-60s nên chỉ chờ tối đa 45s (trước 90s => sau khi xong quest phải đợi 2-3 phút mới nhận tiếp)
 -- [FIX] đọc tiến độ (x/y) trên tiêu đề quest, đủ số quái => true
 function QuestIsDone(txt)
     local a, b = string.match(tostring(txt), "%((%d+)%s*/%s*(%d+)%)")
@@ -9121,7 +9133,7 @@ spawn(function()
                 end
 
                 -- [FIX] quest do chính script vừa nhận (trong 90s) => tin là đúng, tránh vòng lặp Abandon -> Start -> Abandon
-                if questVisible and _qTries >= 1 and os.clock() - _qStart < 90 then
+                if questVisible and _qTries >= 1 and os.clock() - _qStart < (_G.QuestFallbackSec or 45) then
                     titleOK = true
                 end
 
@@ -9628,40 +9640,7 @@ spawn(function()
         end
     end
 end)
-Tabs.Main:AddToggle("ToggleCastleRaid", {
-    ["Title"] = "Đánh Hải Tặc",
-    ["Default"] = false
-}):OnChanged(function(p281)
-    _G.CastleRaid = p281
-end)
--- [SetValue skipped - Library không cần]
-spawn(function()
-    while task.wait() do
-        if _G.CastleRaid then
-            pcall(function()
-                local v282 = CFrame.new(- 5496.17432, 313.768921, - 2841.53027, 0.924894512, 7.37058015e-9, 0.380223751, 3.5881019e-8, 1, - 1.06665446e-7, - 0.380223751, 1.12297109e-7, 0.924894512)
-                if (CFrame.new(- 5539.3115234375, 313.800537109375, - 2972.372314453125).Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 500 then
-                    Tween2(v282)
-                else
-                    for v285, v286 in pairs(__WS.Enemies:GetChildren()) do
-                        if _G.CastleRaid and (v286:FindFirstChild("HumanoidRootPart") and (v286:FindFirstChild("Humanoid") and (v286.Humanoid.Health > 0 and (v286.HumanoidRootPart.Position - __LP.Character.HumanoidRootPart.Position).Magnitude < 2000))) then
-                            repeat
-                                wait(_G.Fast_Delay)
-                                AttackNoCoolDown()
-                                AutoHaki()
-                                EquipTool(SelectWeapon)
-                                v286.HumanoidRootPart.CanCollide = false
-                                v286.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
-                                local _mc1 = v286.HumanoidRootPart.CFrame * Pos
-                                if (v286.HumanoidRootPart.CFrame.Position - __LP.Character.HumanoidRootPart.Position).Magnitude > 5 then BKP(_mc1) end
-                            until v286.Humanoid.Health <= 0 or not (v286.Parent and _G.CastleRaid)
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
+-- [GỘP] "Đánh Hải Tặc" đã chuyển sang tab Raid Boss (mục Hải Tặc / Pirate Raid) để không bị trùng 2 chỗ.
 Tabs.Main:AddToggle("ToggleHakiFortress", {
     ["Title"] = "Bắt Haki Màu Pháo Đài",
     ["Default"] = false
@@ -10717,7 +10696,7 @@ function AbyQuest.Active(id)
     local vis = GetQuestGui()
     if vis then return true end
     local st = AbyQuest.Get(id)
-    return st.tries >= 2 and os.clock() - st.start < (_G.QuestFallbackSec or 90)
+    return st.tries >= 2 and os.clock() - st.start < (_G.QuestFallbackSec or 45)
 end
 
 -- true = đã có đúng quest, đi farm được; false = vừa xử lý quest (nhận/bỏ), caller nên return
@@ -10765,7 +10744,7 @@ function AbyQuest.Ensure(id, qName, qLv, qMob, qCF, flagFn)
 
     -- UI không báo Visible nhưng đã StartQuest >= 2 lần => coi như đang chạy
     if st.tries >= 2 then
-        if os.clock() - st.start < (_G.QuestFallbackSec or 90) then return true end
+        if os.clock() - st.start < (_G.QuestFallbackSec or 45) then return true end
         st.tries = 0 -- hết thời gian fallback: thử nhận lại
     end
 
@@ -21494,9 +21473,12 @@ end
 -- ========== AUTO RAID PIRATE ==========
 Tabs.Boss:AddSection("Hải Tặc (Pirate Raid)")
 Tabs.Boss:AddToggle("ToggleRaidPirate", {
-    ["Title"] = "Farm Pirate Raid",
+    ["Title"] = "Đánh Hải Tặc (Farm Pirate Raid)",
     ["Default"] = false
-}):OnChanged(function(v) _G.AutoRaidPirate = v end)
+}):OnChanged(function(v)
+    _G.AutoRaidPirate = v
+    _G.CastleRaid = v   -- giữ cờ cũ để các chức năng khác (IsMoveFlagActive) vẫn nhận biết đang đánh hải tặc
+end)
 spawn(function()
     while task.wait() do
         if _G.AutoRaidPirate then pcall(function()
