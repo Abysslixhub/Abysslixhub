@@ -2378,16 +2378,23 @@ end)
 				LabelFrame.AutomaticSize = Enum.AutomaticSize.None
 				LabelBG.AutomaticSize = Enum.AutomaticSize.None
 				TextColor.AutomaticSize = Enum.AutomaticSize.None
+				TextColor.TextYAlignment = Enum.TextYAlignment.Top
 				local function fitLabelRow()
-					local h = math.max(18, math.ceil(TextColor.TextBounds.Y))
+					-- [FIX] chỉ hiện dòng đầu: TextBounds có lúc trả 0 / chưa cập nhật => ép chiều cao tối thiểu theo SỐ DÒNG
+					local _, nl = string.gsub(TextColor.Text, "\n", "\n")
+					local byLines = (nl + 1) * (TextColor.TextSize + 3)
+					local h = math.max(18, byLines, math.ceil(TextColor.TextBounds.Y))
 					LabelFrame.Size = UDim2.new(1, 0, 0, h + 12)
 					LabelBG.Size = UDim2.new(1, -10, 0, h + 12)
 				end
 				fitLabelRow()
 				TextColor:GetPropertyChangedSignal("TextBounds"):Connect(fitLabelRow)
+				TextColor:GetPropertyChangedSignal("Text"):Connect(fitLabelRow)
 				local labelFunction = {}
 				function labelFunction:SetText(text)
 					TextColor.Text = text
+					fitLabelRow()
+					task.defer(fitLabelRow)
 				end
 				function labelFunction.SetColor(color)
 					TextColor.TextColor3 = color
@@ -5416,7 +5423,7 @@ Tabs = {
     ["Player"]   = createTab("PVP", "user"),
     ["Teleport"] = createTab("Teleport Island", "map-pin"),
     ["ESP"]      = createTab("Esp", "eye"),
-    ["Fruit"]    = createTab("Fruits / Raid", "cherry", "Fruits / Raiding"),
+    ["Fruit"]    = createTab("Fruit", "cherry", "Fruits"),
     ["Raid"]     = createTab("Raid", "zap", "Đột Kích"),
     ["Race"]     = createTab("Upgrade Race", "zap"),
     ["Draco"]    = createTab("Draco/Prehistoric", "flame"),
