@@ -8834,34 +8834,6 @@ Tabs.Info:AddButton({
         setclipboard(tostring("www.tiktok.com/@uytins1vn._"))
     end
 })
-Tabs.Info:AddParagraph({
-    ["Title"] = "Phát triển Monster",
-    ["Description"] = "Kỹ Năng: Del có"
-})
-local v252 = nil
-if identifyexecutor then
-    v252 = identifyexecutor()
-elseif getexecutorname then
-    v252 = getexecutorname()
-end
-if v252 then
-    Tabs.Info:AddParagraph({
-        ["Title"] = "Client Đang Dùng",
-        ["Description"] = v252
-    })
-end
-Tabs.Info:AddParagraph({
-    ["Title"] = "Cấp Nhắt",
-    ["Description"] = "Tôi sẽ Cấp nhắt nhiều tính năng hơn trong tương lai"
-})
-Tabs.Info:AddParagraph({
-    ["Title"] = "Các Client Android và Ios Hợ Trỡ",
-    ["Description"] = "Tất Cả Client Android và Ios "
-})
-Tabs.Info:AddParagraph({
-    ["Title"] = "Các Client Pc Hợ Trỡ",
-    ["Description"] = "Tất Cả Client Pc"
-})
 
 -- ==========================================
 -- KIỂM TRA CHỨC NĂNG ĐANG BẬT (tab Thông Tin)
