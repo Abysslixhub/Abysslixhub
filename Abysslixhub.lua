@@ -6075,6 +6075,7 @@ if Tabs and Tabs["ESP"] then
                             local far = origin and ((origin - part.Position).Magnitude > maxDist)
                             e.gui.Enabled = not far
                             e.label.Text = tostring(item.text) .. "\n" .. dist .. " M"
+                            if item.color and e.label.TextColor3 ~= item.color then e.label.TextColor3 = item.color end
                         end
                     end
                 end
@@ -6112,7 +6113,12 @@ if Tabs and Tabs["ESP"] then
                 if hum and hum.Health > 0 then
                     local lv = ""
                     pcall(function() lv = " [Lv." .. p.Data.Level.Value .. "]" end)
-                    table.insert(out, { obj = p.Character, text = p.Name .. lv .. " | HP " .. math.floor(hum.Health), color = Color3.fromRGB(255, 255, 255) })
+                    table.insert(out, { obj = p.Character, text = p.Name .. lv .. " | HP " .. math.floor(hum.Health), color = (function()
+                        local tn = p.Team and p.Team.Name or ""
+                        if tn == "Pirates" then return Color3.fromRGB(255, 50, 50) end      -- Hải Tặc: đỏ
+                        if tn == "Marines" then return Color3.fromRGB(50, 150, 255) end     -- Hải Quân: xanh dương
+                        return Color3.fromRGB(255, 255, 255)
+                    end)() })
                 end
             end
         end
@@ -7617,10 +7623,12 @@ function UpdatePlayerChams()
                         v73.TextYAlignment = "Top"
                         v73.BackgroundTransparency = 1
                         v73.TextStrokeTransparency = 0.5
-                        if vu71.Team ~= __LP.Team then
-                            v73.TextColor3 = Color3.new(255, 0, 0)
+                        if vu71.Team and vu71.Team.Name == "Pirates" then
+                            v73.TextColor3 = Color3.fromRGB(255, 50, 50)
+                        elseif vu71.Team and vu71.Team.Name == "Marines" then
+                            v73.TextColor3 = Color3.fromRGB(50, 150, 255)
                         else
-                            v73.TextColor3 = Color3.new(0, 255, 0)
+                            v73.TextColor3 = Color3.fromRGB(255, 255, 255)
                         end
                     end
                 elseif vu71.Character.Head:FindFirstChild("NameEsp" .. Number) then
@@ -30950,7 +30958,9 @@ local function CreateESP(player)
 			(myHRP.Position - hrp.Position).Magnitude
 		)
 
-    	nameLabel.Text = "<font color='rgb(235,235,235)'>" .. player.Name .. "</font> [ "  ..  distance .. "m ]"
+    	local _tn = player.Team and player.Team.Name or ""
+		local _col = (_tn == "Pirates" and "rgb(255,50,50)") or (_tn == "Marines" and "rgb(50,150,255)") or "rgb(235,235,235)"
+		nameLabel.Text = "<font color='" .. _col .. "'>" .. player.Name .. "</font> [ "  ..  distance .. "m ]"
 		hpLabel.Text = "[" .. math.floor(hum.Health) .. "/" .. math.floor(hum.MaxHealth) .. "]"
 	end)
 end
