@@ -2392,6 +2392,9 @@ end)
 				function labelFunction.SetColor(color)
 					TextColor.TextColor3 = color
 				end
+				function labelFunction.SetRich(on)
+					TextColor.RichText = (on == true)
+				end
 				local controlData = {
                     Name = Title,
                     Section = Section,
@@ -8867,33 +8870,44 @@ Tabs.Info:AddParagraph({
 Tabs.Info:AddSection("Chức Năng Đang Bật")
 local _activeLabel = Tabs.Info:AddLabel("Bấm \"Kiểm Tra\" để xem chức năng nào đang bật")
 local _lastActiveText = nil
+local _GREEN = "#3CFF78"
+local function _esc(t)
+    return (tostring(t):gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"))
+end
+-- trả về: chuỗi rich text, số chức năng đang bật
 local function _buildActiveText()
     local list = _G.AbyToggleList or {}
     local byTab, order, count = {}, {}, 0
     for _, t in ipairs(list) do
-        if t.Holder and t.Holder.value == true then
+        -- bỏ qua các toggle thuộc tab Settings (cấu hình hub, không phải chức năng farm)
+        if t.Holder and t.Holder.value == true and t.Tab ~= "Settings" then
             count = count + 1
             if not byTab[t.Tab] then byTab[t.Tab] = {}; table.insert(order, t.Tab) end
             table.insert(byTab[t.Tab], t.Title)
         end
     end
     if count == 0 then
-        return "Không có chức năng nào đang bật"
+        return "Không có chức năng nào đang bật", 0
     end
-    local lines = { "Đang bật " .. count .. " chức năng:" }
+    local lines = { '<font color="' .. _GREEN .. '">Đang bật ' .. count .. ' chức năng:</font>' }
     for _, tabName in ipairs(order) do
-        table.insert(lines, "[" .. tabName .. "]")
+        table.insert(lines, "[" .. _esc(tabName) .. "]")
         for _, name in ipairs(byTab[tabName]) do
-            table.insert(lines, "  • " .. name)
+            table.insert(lines, '  <font color="' .. _GREEN .. '">• ' .. _esc(name) .. '</font>')
         end
     end
-    return table.concat(lines, "\n")
+    return table.concat(lines, "\n"), count
 end
+pcall(function() _activeLabel.SetRich(true) end)
 local function _refreshActive(force)
-    local txt = _buildActiveText()
+    local txt, cnt = _buildActiveText()
     if force or txt ~= _lastActiveText then
         _lastActiveText = txt
-        pcall(function() _activeLabel:SetText(txt) end)
+        pcall(function()
+            -- có chức năng bật: chữ thường + từng chức năng màu xanh (rich text); không có: cả dòng màu đỏ
+            _activeLabel:SetColor(cnt > 0 and Color3.fromRGB(240, 240, 230) or Color3.fromRGB(255, 70, 70))
+            _activeLabel:SetText(txt)
+        end)
     end
 end
 Tabs.Info:AddButton({
