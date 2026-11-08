@@ -11962,7 +11962,7 @@ if Sea3 then
                         end
                     end
                     if v537 then
-                        v538.MaxSpeed = vu502
+                        v538.MaxSpeed = (_G.AutoSailSpeed or vu502)
                         v538.CFrame = CFrame.new(v538.Position) * v538.CFrame.Rotation
                         vu498:SendKeyEvent(true, "W", false, game)
                         for v543, v544 in pairs(vu499.Boats:GetDescendants()) do
@@ -12037,7 +12037,7 @@ if Sea3 then
             end
         end
         if v564 then
-            v564.MaxSpeed = vu502
+            v564.MaxSpeed = (_G.AutoSailSpeed or vu502)
             local v565 = CFrame.new(- 16217.7568359375, 9.126761436462402, 446.06536865234375)
             local v566 = v564.Position
             local v567 = v565.Position
@@ -12081,7 +12081,7 @@ if Sea3 then
             end
         end
         if v577 then
-            v577.MaxSpeed = vu502
+            v577.MaxSpeed = (_G.AutoSailSpeed or vu502)
             local v578 = CFrame.new(5193.9375, - 0.04690289497375488, 1631.578369140625)
             local v579 = v577.Position
             local v580 = v578.Position
@@ -12365,7 +12365,7 @@ if Sea3 then
                             if not isSeated then
                                 Tween2(seat.CFrame * CFrame.new(0, 1, 0))
                             else
-                                seat.MaxSpeed = 350
+                                seat.MaxSpeed = (_G.AutoSailSpeed or 350)
                                 local tikiOrigin = Vector3.new(-16217, 9, 446)
                                 local deepSeaDir = Vector3.new(-1, 0, 0.15).Unit
                                 local distMulti = 13000
@@ -15303,24 +15303,197 @@ do
         if best then Tween2(best.CFrame * CFrame.new(0, 60, 0)) else notify("Chưa có sự kiện nào trên biển") end
     end})
 
+    -- ===== CHỨC NĂNG ĐANG BẬT TRONG TAB SEA EVENT =====
+    Tabs.Sea:AddSection("⚡ Chức Năng Đang Bật")
+    local SEA_FEATURES = {
+        { "Farm Sự Kiện Biển Tự Động", "SeaEventFarm" },
+        { "Farm Sự Kiện Đã Chọn", "FarmPickedSeaEvent" },
+        { "Tự Đánh Vua Biển", "AutoSeaBeast" },
+        { "Đánh Cá Mập (Terrorshark)", "AutoTerrorshark" },
+        { "Đánh Piranha", "farmpiranya" },
+        { "Đánh Cá Con (Shark)", "AutoShark" },
+        { "Đánh Tàu Cá", "AutoFishCrew" },
+        { "Đánh Tàu Hải Tặc", "Ship" },
+        { "Đánh Tàu Ma", "GhostShip" },
+        { "Tự Đánh Leviathan", "AutoAttackLeviathan" },
+        { "Tự Bắn Lao Kéo Tim", "AutoHarpoonHeart" },
+        { "Tự Lái Thuyền Săn Biển", "AutoSailZone" },
+        { "Tự Nhặt Rương Trên Biển", "CollectSeaChests" },
+        { "Đi Trên Nước", "WalkOnWater" },
+        { "Tăng Tốc Thuyền", "BoatSpeedOn" },
+        { "Lái Thuyền Về Đảo Tiki", "AutoComeTiki" },
+        { "Lái Thuyền Về Đảo Hydra", "AutoComeHydra" },
+        { "Tìm Đảo Dung Nham", "AutoFindPrehistoric" },
+        { "Tìm Đảo Bí Ẩn", "AutoFindMirage" },
+        { "Tìm Đảo Leviathan", "AutoFindFrozen" },
+        { "Bay Về Đảo Cáo", "TweenToKitsune" },
+        { "Nhặt Azure Ember", "CollectAzure" },
+        { "Bay Đến Đảo Dung Nham", "TweenToPrehistoric" },
+        { "Bay Đến Đảo Leviathan", "TweenToFrozenDimension" },
+        { "Bay Tới Đảo Bí Ẩn (Farm đã chọn)", "AbyFarmMirage" },
+        { "Bay Đến Advanced Fruit Dealer", "AutoTpAdvanced" },
+        { "Bay Đến Bánh Răng", "TweenToGear" },
+        { "Nhìn Trăng Và Dùng Tộc", "AutoLockMoon" },
+        { "Định Vị Sự Kiện Biển (ESP)", "ESPSeaEvents" },
+        { "Thông Báo Sự Kiện / Đảo Mới", "SeaNotify" },
+        { "Tự Đổi Server Đến Khi Có Đảo", "SeaHopFind" },
+    }
+    local activeP = Tabs.Sea:AddParagraph({["Title"] = "Đang Bật", ["Description"] = "Đang quét..."})
+    local lastActive = ""
+    spawn(function()
+        while task.wait(1) do
+            pcall(function()
+                local lines = {}
+                for _, f in ipairs(SEA_FEATURES) do
+                    if _G[f[2]] == true then table.insert(lines, "✅ " .. f[1]) end
+                end
+                local txt = (#lines > 0)
+                    and (string.format("%d chức năng đang bật:\n", #lines) .. table.concat(lines, "\n"))
+                    or "Chưa có chức năng nào đang bật"
+                if txt ~= lastActive then lastActive = txt; activeP:SetDesc(txt) end
+            end)
+        end
+    end)
+
+    -- ===== DANH SÁCH SỰ KIỆN BIỂN + FARM SỰ KIỆN ĐÃ CHỌN =====
+    -- Chọn 1 sự kiện trong danh sách rồi bật công tắc => script tự bật đúng chức năng farm của sự kiện đó.
+    -- Sự kiện săn được (Vua Biển, cá, tàu...): chưa có thì tự lái thuyền + nhặt rương tìm, có rồi thì đánh.
+    Tabs.Sea:AddSection("Farm Sự Kiện Đã Chọn")
+    local function _pres(nm) -- có quái tên nm trong Enemies không
+        return function(c, en) return en ~= nil and en:FindFirstChild(nm) ~= nil end
+    end
+    local EVENTS = {
+        { name = "Vua Biển (Sea Beast)", hunt = true, flags = { "AutoSeaBeast" },
+          present = function(c) return c.beast > 0 end },
+        { name = "Terrorshark", hunt = true, flags = { "AutoTerrorshark" }, present = _pres("Terrorshark") },
+        { name = "Piranha", hunt = true, flags = { "farmpiranya" }, present = _pres("Piranha") },
+        { name = "Cá Mập (Shark)", hunt = true, flags = { "AutoShark" }, present = _pres("Shark") },
+        { name = "Tàu Cá (Fish Crew)", hunt = true, flags = { "AutoFishCrew" }, present = _pres("Fish Crew Member") },
+        { name = "Tàu Hải Tặc (Pirate Brigade)", hunt = true, flags = { "Ship" },
+          present = function(c) return (CheckPirateBoat and CheckPirateBoat() and true) or c.ship > 0 end },
+        { name = "Tàu Ma (Ghost Ship)", hunt = true, flags = { "bjirFishBoat", "GhostShip" },
+          present = function() return (CheckFishBoat and CheckFishBoat() and true) or false end },
+        { name = "Leviathan", flags = { "AutoAttackLeviathan" } },
+        { name = "Mirage Island (Đảo Bí Ẩn)", flags = { "AbyFarmMirage" } },
+        { name = "Kitsune Island (Đảo Cáo)", flags = { "TweenToKitsune", "CollectAzure" } },
+        { name = "Prehistoric Island (Đảo Dung Nham)", flags = { "TweenToPrehistoric" } },
+        { name = "Frozen Dimension", flags = { "TweenToFrozenDimension" } },
+    }
+    local EVENT_NAMES = {}
+    for _, e in ipairs(EVENTS) do table.insert(EVENT_NAMES, e.name) end
+    local SAIL = { "AutoSailZone", "CollectSeaChests" }
+
+    local selEv = EVENTS[1]
+    _G.FarmPickedSeaEvent = false
+    local applied = {}
+    local function setFlags(list, v) for _, f in ipairs(list) do _G[f] = v end end
+    local function stopMove() pcall(function() if StopMovement then StopMovement() end end) end
+    local function clearApplied()
+        if #applied > 0 then setFlags(applied, false); applied = {}; stopMove() end
+    end
+    local function applyFlags(list)
+        if table.concat(list, ",") == table.concat(applied, ",") then return end
+        clearApplied()
+        applied = list
+        setFlags(list, true)
+    end
+
+    Tabs.Sea:AddDropdown("SelectedSeaEvent", {
+        ["Title"] = "Chọn Sự Kiện Biển",
+        ["Description"] = "Chọn sự kiện muốn farm, rồi bật công tắc bên dưới",
+        ["Values"] = EVENT_NAMES,
+        ["Multi"] = false,
+        ["Default"] = 1
+    }):OnChanged(function(v)
+        for _, e in ipairs(EVENTS) do
+            if e.name == v then selEv = e end
+        end
+        -- đổi sự kiện khi đang farm: vòng lặp bên dưới sẽ tự chuyển sang chức năng mới
+    end)
+
+    local stP = Tabs.Sea:AddParagraph({["Title"] = "Trạng Thái Farm", ["Description"] = "Chưa bật"})
+    local lastText = "Chưa bật"
+    local function setStatus(t)
+        if t ~= lastText then lastText = t; pcall(function() stP:SetDesc(t) end) end
+    end
+
+    Tabs.Sea:AddToggle("ToggleFarmPickedSeaEvent", {
+        ["Title"] = "Farm Sự Kiện Đã Chọn",
+        ["Description"] = "Săn được: tự lái thuyền tìm rồi đánh. Đảo (Mirage/Kitsune/Dung Nham/Frozen): tự bay tới. Đừng bật cùng 'Farm Sự Kiện Biển Tự Động'",
+        ["Default"] = false
+    }):OnChanged(function(v)
+        _G.FarmPickedSeaEvent = v
+        if v then
+            if _G.SeaEventFarm then notify("Hãy tắt 'Farm Sự Kiện Biển Tự Động' để tránh tranh nhau điều khiển") end
+        else
+            clearApplied()
+            setStatus("Chưa bật")
+        end
+    end)
+
+    spawn(function()
+        while task.wait(0.5) do
+            pcall(function()
+                if not _G.FarmPickedSeaEvent then return end
+                local e = selEv
+                if e.hunt then
+                    local ok, pres = pcall(e.present, scanEvents(), __WS:FindFirstChild("Enemies"))
+                    if ok and pres then
+                        applyFlags(e.flags); setStatus("Đang đánh: " .. e.name)
+                    else
+                        applyFlags(SAIL); setStatus("Chưa có " .. e.name .. " - đang lái thuyền tìm")
+                    end
+                else
+                    applyFlags(e.flags); setStatus("Đang farm: " .. e.name)
+                end
+            end)
+        end
+    end)
+
+    -- Mirage không có sẵn nút farm riêng: bay tới điểm cao nhất của đảo khi đảo đang xuất hiện
+    spawn(function()
+        while task.wait(0.5) do
+            if _G.AbyFarmMirage then
+                pcall(function()
+                    if __WS.Map:FindFirstChild("MysticIsland") and TweenToHighestPoint then TweenToHighestPoint() end
+                end)
+            end
+        end
+    end)
+
     Tabs.Sea:AddSection("Thuyền")
     _G.BoatSpeedOn, _G.BoatSpeed = false, 150
+    _G.AutoSailSpeed = 350
+    -- Tốc độ khi thuyền TỰ LÁI (Auto Sail, Tìm Đảo, Lái Về Tiki/Hydra...): luôn áp dụng, mặc định 350 như cũ
+    Tabs.Sea:AddSlider("AutoSailSpeedSlider", {
+        ["Title"] = "Tốc Độ Thuyền Tự Lái",
+        ["Description"] = "Áp dụng cho các chế độ thuyền tự lái (Auto Sail, tìm đảo, lái về đảo...)",
+        ["Default"] = 350,
+        ["Min"] = 10,
+        ["Max"] = 400,
+        ["Rounding"] = 0,
+        ["Callback"] = function(v) _G.AutoSailSpeed = tonumber(v) or 350 end
+    })
+    -- Tốc độ khi bạn TỰ LÁI THƯỜNG: cần bật công tắc
     Tabs.Sea:AddToggle("BoatSpeedToggle", {
-        ["Title"] = "Tăng Tốc Thuyền",
-        ["Description"] = "Áp dụng cho thuyền bạn đang ngồi",
+        ["Title"] = "Tăng Tốc Lái Thường",
+        ["Description"] = "Áp dụng cho thuyền bạn đang ngồi và tự lái bằng tay",
         ["Default"] = false
     }):OnChanged(function(v) _G.BoatSpeedOn = v end)
     Tabs.Sea:AddSlider("BoatSpeedSlider", {
-        ["Title"] = "Tốc Độ Thuyền",
+        ["Title"] = "Tốc Độ Lái Thường",
         ["Default"] = 150,
-        ["Min"] = 50,
-        ["Max"] = 300,
+        ["Min"] = 10,
+        ["Max"] = 400,
         ["Rounding"] = 0,
         ["Callback"] = function(v) _G.BoatSpeed = tonumber(v) or 150 end
     })
     spawn(function()
         while task.wait(0.5) do
-            if _G.BoatSpeedOn then
+            -- khi thuyền đang tự lái thì để tốc độ tự lái quyết định, tránh hai bên giành nhau
+            local autoDriving = _G.AutoSailZone or _G.AutoComeTiki or _G.AutoComeHydra
+                or _G.AutoFindPrehistoric or _G.AutoFindMirage or _G.AutoFindFrozen
+            if _G.BoatSpeedOn and not autoDriving then
                 pcall(function()
                     local hum = __LP.Character and __LP.Character:FindFirstChildOfClass("Humanoid")
                     local seat = hum and hum.SeatPart
@@ -19212,15 +19385,21 @@ xpcall(function()
     end
 
     SE:AddSection("🔫 Auto M1 (Trái / Súng)")
-    SE:AddToggle("ToggleFreeM1", {
-        ["Title"] = "Auto M1 (Trái / Súng)",
-        ["Description"] = "Tự bắn M1 vào quái gần nhất bằng trái hoặc súng bạn đang cầm trên tay. Không tự cầm vũ khí, không khựng khi di chuyển",
+    SE:AddToggle("ToggleFreeM1Fruit", {
+        ["Title"] = "Auto M1 Trái (Blox Fruit)",
+        ["Description"] = "Tự bắn M1 của trái vào quái gần nhất khi bạn đang cầm trái trên tay",
         ["Default"] = false
-    }):OnChanged(function(v)
-        -- 1 nút duy nhất: bật cả hai, vòng bắn tự chọn theo vũ khí đang cầm (trái hoặc súng)
-        _G.FreeM1Fruit = v
-        _G.FreeM1Gun = v
-    end)
+    }):OnChanged(function(v) _G.FreeM1Fruit = v end)
+    SE:AddToggle("ToggleFreeM1Gun", {
+        ["Title"] = "Auto M1 Súng (Gun)",
+        ["Description"] = "Tự bắn M1 của súng vào quái gần nhất khi bạn đang cầm súng trên tay",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.FreeM1Gun = v end)
+    SE:AddToggle("ToggleFreeM1Equip", {
+        ["Title"] = "Tự Cầm Vũ Khí Cho M1",
+        ["Description"] = "Tự cầm trái/súng đã bật ở trên (bật cả hai thì đổi qua lại mỗi ~1 giây). Đừng bật cùng lúc với Auto Farm vì sẽ tranh vũ khí",
+        ["Default"] = false
+    }):OnChanged(function(v) _G.FreeM1Equip = v end)
 
     SE:AddSection("M1 Nâng Cao")
     SE:AddSlider("SliderFreeM1Range", {
@@ -19237,6 +19416,29 @@ xpcall(function()
                     local hum = char and char:FindFirstChildOfClass("Humanoid")
                     local root = char and char:FindFirstChild("HumanoidRootPart")
                     if not (hum and root) or hum.Health <= 0 then return end
+                    -- [M1 EQUIP] tự cầm trái/súng đã bật (nếu người chơi bật "Tự Cầm Vũ Khí Cho M1")
+                    if _G.FreeM1Equip and (_G.FreeM1Gun or _G.FreeM1Fruit) and os.clock() - lastEquip > 1 then
+                        local heldTip
+                        for _, t in ipairs(char:GetChildren()) do
+                            if t:IsA("Tool") then heldTip = t.ToolTip break end
+                        end
+                        local order = {}
+                        if _G.FreeM1Fruit then order[#order + 1] = "Blox Fruit" end
+                        if _G.FreeM1Gun then order[#order + 1] = "Gun" end
+                        local want
+                        if #order == 2 then
+                            if heldTip == "Gun" then want = "Blox Fruit"
+                            elseif heldTip == "Blox Fruit" then want = "Gun"
+                            else want = order[1] end
+                        elseif heldTip ~= order[1] then
+                            want = order[1]
+                        end
+                        local wt = want and findTool(want)
+                        if wt and wt.Parent ~= char then
+                            hum:EquipTool(wt)
+                            lastEquip = os.clock()
+                        end
+                    end
                     local gun = _G.FreeM1Gun and findTool("Gun") or nil
                     local fruit = _G.FreeM1Fruit and findTool("Blox Fruit") or nil
                     -- [FIX] chỉ bắn bằng vũ khí người chơi đang cầm trên tay, không tự cầm
